@@ -1761,8 +1761,8 @@ function App() {
  </div>
  )}
 
- {/* Hero Section */}
- {showHero && (
+ {/* Hero Section - Hidden */}
+ {false && (
  <div style={{
  background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.8) 100%)',
  borderBottom: '1px solid rgba(255,255,255,0.1)',
