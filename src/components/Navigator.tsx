@@ -48,7 +48,7 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
   return (
     <>
       <style>{styles}</style>
-      <nav>
+      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999 }}>
         <div className="nav-inner">
           <div className="nav-logo">
             <div className="logo-icon">
