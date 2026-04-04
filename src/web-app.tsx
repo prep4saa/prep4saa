@@ -1509,6 +1509,7 @@ function App() {
         setTab(newTab);
         setShowLanding(false);
       }}
+      onLoginClick={() => setShowLoginModal(true)}
     />;
   }
 

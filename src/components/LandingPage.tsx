@@ -10,9 +10,10 @@ type Locale = 'ko' | 'en' | 'ja';
 interface LandingPageProps {
   onGetStarted: () => void;
   onTabChange: (tab: "quiz" | "concept" | "status" | "mockExam") => void;
+  onLoginClick?: () => void;
 }
 
-export default function LandingPage({ onGetStarted, onTabChange }: LandingPageProps) {
+export default function LandingPage({ onGetStarted, onTabChange, onLoginClick }: LandingPageProps) {
   const [locale, setLocale] = useState<Locale>(() => {
     const saved = localStorage.getItem('landingPageLocale') as Locale;
     if (saved && ['ko', 'en', 'ja'].includes(saved)) return saved;
@@ -190,7 +191,7 @@ export default function LandingPage({ onGetStarted, onTabChange }: LandingPagePr
   return (
     <>
       <style>{styles}</style>
-      <Navigator onTabChange={onTabChange} currentLocale={locale} onLocaleChange={handleLanguageChange} showLoginButton={true} onLoginClick={onGetStarted} />
+      <Navigator onTabChange={onTabChange} currentLocale={locale} onLocaleChange={handleLanguageChange} showLoginButton={true} onLoginClick={onLoginClick} />
       <div style={{ width: '100%', minHeight: '100vh', background: '#0F1629', color: '#D1D5DB', fontFamily: 'Inter, sans-serif', overflowX: 'hidden', paddingTop: '5rem' }}>
 
         {/* HERO */}
