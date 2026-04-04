@@ -1514,7 +1514,7 @@ function App() {
 
   return (
  <div className="app">
- <Navigator onTabChange={(newTab) => { setTab(newTab); setShowLanding(false); }} currentLocale={locale} onLocaleChange={setLocale} />
+ <Navigator onTabChange={(newTab) => { setTab(newTab); setShowLanding(false); }} currentLocale={locale} onLocaleChange={setLocale} onLoginClick={() => setShowLoginModal(true)} showLoginButton={!userEmail && isAuthChecked} />
  {/* Additional User Controls (kept separate from Navigator) */}
  <div className="header header-additional">
  <div className="header-right">
@@ -1710,14 +1710,6 @@ function App() {
  </div>
  )}
  </>
- ) : isAuthChecked ? (
- <button onClick={() => setShowLoginModal(true)} style={{
- fontSize: "11px", padding: "8px 12px", background: "#FF9900", color: "#0F1629",
- border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold",
- whiteSpace: "nowrap"
- }}>
- {t("btnLogin")}
- </button>
  ) : null}
  </div>
 

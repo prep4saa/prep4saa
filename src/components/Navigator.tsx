@@ -9,9 +9,11 @@ interface NavigatorProps {
   onTabChange: (tab: "quiz" | "concept" | "status" | "mockExam") => void;
   currentLocale?: Locale;
   onLocaleChange?: (locale: Locale) => void;
+  onLoginClick?: () => void;
+  showLoginButton?: boolean;
 }
 
-export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleChange }: NavigatorProps) {
+export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleChange, onLoginClick, showLoginButton = true }: NavigatorProps) {
   const [locale, setLocale] = useState<Locale>(currentLocale);
 
   const locales = { ko, en, ja };
@@ -35,13 +37,12 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
     .nav-links button{font-size:.875rem;font-weight:500;color:#D1D5DB;transition:color .15s;background:none;border:none;cursor:pointer;}
     .nav-links a:hover,.nav-links button:hover{color:#fff;}
     .nav-actions{display:flex;align-items:center;gap:1rem;}
-    .btn-login{display:none;font-size:.875rem;font-weight:500;color:#D1D5DB;transition:color .15s;cursor:pointer;}
-    .btn-login:hover{color:#fff;}
+    .btn-login{background:#FF9900;color:#0F1629;font-weight:600;font-size:.875rem;padding:.625rem 1.25rem;border-radius:.375rem;transition:all .15s;box-shadow:0 0 15px rgba(255,153,0,.3);cursor:pointer;border:none;}
+    .btn-login:hover{background:#E68A00;box-shadow:0 0 20px rgba(255,153,0,.5);}
     .lang-select{background:#151E32;border:1px solid #2A344A;color:#D1D5DB;font-size:.875rem;padding:.5rem .75rem;border-radius:.375rem;cursor:pointer;transition:all .15s;font-family:Inter,sans-serif;}
     .lang-select:hover{border-color:#FF9900;}
     .lang-select:focus{outline:none;border-color:#FF9900;box-shadow:0 0 10px rgba(255,153,0,.2);}
     .lang-select option{background:#0F1629;color:#D1D5DB;}
-    @media(min-width:640px){.btn-login{display:block;}}
     @media(min-width:768px){.nav-links{display:flex;}}
   `;
 
@@ -82,7 +83,9 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
               <option value="en">English</option>
               <option value="ja">日本語</option>
             </select>
-            <a href="#" className="btn-login">{t.landingNavLogin}</a>
+            {showLoginButton && (
+              <button onClick={onLoginClick} className="btn-login">{t.landingNavLogin}</button>
+            )}
           </div>
         </div>
       </nav>

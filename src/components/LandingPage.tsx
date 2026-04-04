@@ -190,7 +190,7 @@ export default function LandingPage({ onGetStarted, onTabChange }: LandingPagePr
   return (
     <>
       <style>{styles}</style>
-      <Navigator onTabChange={onTabChange} currentLocale={locale} onLocaleChange={handleLanguageChange} />
+      <Navigator onTabChange={onTabChange} currentLocale={locale} onLocaleChange={handleLanguageChange} showLoginButton={false} />
       <div style={{ width: '100%', minHeight: '100vh', background: '#0F1629', color: '#D1D5DB', fontFamily: 'Inter, sans-serif', overflowX: 'hidden', paddingTop: '5rem' }}>
 
         {/* HERO */}
