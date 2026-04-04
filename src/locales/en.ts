@@ -383,7 +383,7 @@ export const en: Strings = {
   landingFooterLegalTerms: "Terms",
   landingFooterLegalPrivacy: "Privacy",
   landingFooterLegalRefund: "Refunds",
-  landingFooterCopyright: "© 2024 AWSArchive.com. AWS is a trademark of Amazon.com. Not affiliated with Amazon.",
+  landingFooterCopyright: "© 2026 AWSArchive.com. AWSArchive is an independent educational platform not affiliated with, endorsed by, or associated with Amazon.com or Amazon Web Services, Inc.",
 
   // Auth Errors
   errorPopupClosedByUser: "Google login window closed. Please try again.",

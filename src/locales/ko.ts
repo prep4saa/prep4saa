@@ -381,7 +381,7 @@ export const ko = {
   landingFooterLegalTerms: "이용약관",
   landingFooterLegalPrivacy: "개인정보",
   landingFooterLegalRefund: "환불정책",
-  landingFooterCopyright: "© 2024 AWSArchive.com. AWS와 Amazon Web Services는 Amazon.com의 상표예요. 이 사이트는 Amazon과 무관합니다.",
+  landingFooterCopyright: "© 2026 AWSArchive.com. AWSArchive는 AWS(Amazon Web Services)와 독립적인 교육 플랫폼입니다. Amazon.com 또는 AWS와 제휴, 승인 또는 연관되어 있지 않습니다.",
 
   // Auth Errors
   errorPopupClosedByUser: "Google 로그인 창이 닫혔습니다. 다시 시도해주세요.",

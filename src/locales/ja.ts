@@ -383,7 +383,7 @@ export const ja: Strings = {
   landingFooterLegalTerms: "利用規約",
   landingFooterLegalPrivacy: "プライバシー",
   landingFooterLegalRefund: "返金",
-  landingFooterCopyright: "© 2024 AWSArchive.com. AWS は Amazon.com の商標です。Amazon とは無関係です。",
+  landingFooterCopyright: "© 2026 AWSArchive.com. AWSArchiveはAmazon Web Servicesと独立した教育プラットフォームです。Amazon.comまたはAWSと提携、承認、または関連していません。",
 
   // Auth Errors
   errorPopupClosedByUser: "Googleログインウィンドウが閉じられました。もう一度試してください。",
