@@ -1514,7 +1514,7 @@ function App() {
 
   return (
  <div className="app">
- <Navigator onTabChange={(newTab) => { setTab(newTab); setShowLanding(false); }} currentLocale={locale} onLocaleChange={setLocale} onLoginClick={() => setShowLoginModal(true)} showLoginButton={!userEmail && isAuthChecked} />
+ <Navigator onTabChange={(newTab) => { setTab(newTab); setShowLanding(false); }} currentLocale={locale} onLocaleChange={setLocale} onLoginClick={() => setShowLoginModal(true)} showLoginButton={!userEmail && isAuthChecked} onLogoClick={() => setShowLanding(true)} />
  {/* Additional User Controls (kept separate from Navigator) */}
  <div className="header header-additional">
  <div className="header-right">

@@ -11,9 +11,10 @@ interface NavigatorProps {
   onLocaleChange?: (locale: Locale) => void;
   onLoginClick?: () => void;
   showLoginButton?: boolean;
+  onLogoClick?: () => void;
 }
 
-export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleChange, onLoginClick, showLoginButton = true }: NavigatorProps) {
+export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleChange, onLoginClick, showLoginButton = true, onLogoClick }: NavigatorProps) {
   const [locale, setLocale] = useState<Locale>(currentLocale);
 
   const locales = { ko, en, ja };
@@ -30,7 +31,8 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
   const styles = `
     nav{position:fixed;width:100%;z-index:50;background-color:rgba(15,22,41,.9);backdrop-filter:blur(12px);border-bottom:1px solid #2A344A;}
     .nav-inner{max-width:80rem;margin:0 auto;padding:0 1.5rem;height:5rem;display:flex;align-items:center;justify-content:space-between;}
-    .nav-logo{display:flex;align-items:center;gap:.5rem;}
+    .nav-logo{display:flex;align-items:center;gap:.5rem;cursor:pointer;transition:opacity 0.2s;}
+    .nav-logo:hover{opacity:0.8;}
     .logo-icon{width:2rem;height:2rem;border-radius:.25rem;background:linear-gradient(135deg,#FF9900,#ea580c);display:flex;align-items:center;justify-content:center;box-shadow:0 0 15px rgba(255,153,0,.4);}
     .nav-links{display:none;align-items:center;gap:2rem;}
     .nav-links a{font-size:.875rem;font-weight:500;color:#D1D5DB;transition:color .15s;}
@@ -51,14 +53,14 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
       <style>{styles}</style>
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999 }}>
         <div className="nav-inner">
-          <div className="nav-logo">
+          <button onClick={onLogoClick} className="nav-logo" style={{ background: 'none', border: 'none', padding: 0, margin: 0 }}>
             <div className="logo-icon">
               <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
             </div>
             <span style={{ color: '#fff', fontWeight: 700, fontSize: '1.25rem', letterSpacing: '-.025em' }}>AWSArchive</span>
-          </div>
+          </button>
           <div className="nav-links">
             <button onClick={() => onTabChange('quiz')} style={{ background: 'none', border: 'none', color: '#D1D5DB', fontSize: '.875rem', fontWeight: 500, cursor: 'pointer', transition: 'color .15s' }}>
               {t.tabQuiz}
