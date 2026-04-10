@@ -491,6 +491,7 @@ function App() {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showEasyMode, setShowEasyMode] = useState(false);
+  const [showOriginalMap, setShowOriginalMap] = useState<Record<number, boolean>>({});
   const [visitorCount, setVisitorCount] = useState(0);
   const [totalVisitorCount, setTotalVisitorCount] = useState(0);
   const [graphPanelWidth, setGraphPanelWidth] = useState(50); // 비율 (%)
@@ -1269,6 +1270,7 @@ function App() {
  const storedDifficulties = localStorage.getItem("mockExamDifficulties");
  const storedDomains = localStorage.getItem("mockExamDomains");
  const storedAllProblems = localStorage.getItem("mockExamAllProblems");
+ const storedConceptServices = localStorage.getItem("mockExamConceptServices");
  // ✅ 시험 시작 시 고정된 언어 사용 (시험 중 언어 변경 방지)
  const mockExamLocale = localStorage.getItem("mockExamStartedLocale") || "ko";
 
@@ -1277,6 +1279,7 @@ function App() {
  const difficulties = JSON.parse(storedDifficulties);
  const domains = JSON.parse(storedDomains);
  const allProblems = JSON.parse(storedAllProblems);
+ const conceptServices: (string | null)[] = storedConceptServices ? JSON.parse(storedConceptServices) : new Array(50).fill(null);
  let newProblems = [...mockExamProblems];
 
  // 점진적 로딩 패턴: 1 → 4 → 9 → 19 → 50
@@ -1304,7 +1307,9 @@ function App() {
  // 추가 생성 (필요시)
  const difficulty = difficulties[startIdx + i] as "medium" | "hard" | "challenge";
  const domain = domains[startIdx + i] as "security" | "resilience" | "performance" | "cost-optimization";
- const problem = await generateSAAProblem([], difficulty, mockExamLocale, domain);
+ const conceptService = conceptServices[startIdx + i];
+ const serviceList = conceptService ? [conceptService] : [];
+ const problem = await generateSAAProblem(serviceList, difficulty, mockExamLocale, domain);
  newProblems.push(problem);
  }
  }
@@ -1325,6 +1330,7 @@ function App() {
  localStorage.removeItem("mockExamDomains");
  localStorage.removeItem("mockExamProblemsCount");
  localStorage.removeItem("mockExamAllProblems");
+ localStorage.removeItem("mockExamConceptServices");
  }
 
  // 로딩 완료
@@ -2538,7 +2544,7 @@ function App() {
  const userAnswer = mockExamAnswers[idx];
  const isCorrect = userAnswer === problem.answer;
  return `
- <div style="page-break-inside: avoid; margin-bottom: 30px; padding: 15px; border: 1px solid #ddd; border-radius: 8px;">
+ <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px;">
  <h3 style="margin: 0 0 10px 0; color: #333;">Q${idx + 1}. ${problem.question}</h3>
 
  <!-- 보기 -->
@@ -2646,8 +2652,9 @@ function App() {
  margin: 10,
  filename: 'SAA-C03_mock_exam_results.pdf',
  image: { type: 'jpeg', quality: 0.98 },
- html2canvas: { scale: 2 },
- jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+ html2canvas: { scale: 2, useCORS: true, logging: false },
+ jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' },
+ pagebreak: { mode: ['css', 'legacy'] }
  };
 
  html2pdf().set(options).from(element).save();
@@ -2703,6 +2710,7 @@ function App() {
  if (!mockExamResults || !mockExamProblems) return;
 
  const element = document.createElement("div");
+ element.style.width = "190mm";
 
  // PDF 번역 문자열 준비
  const pdfLabels = {
@@ -2724,11 +2732,11 @@ function App() {
  const userAnswer = mockExamAnswers[idx];
  const isCorrect = userAnswer === problem.answer;
  return `
- <div style="page-break-inside: avoid; margin-bottom: 30px; padding: 15px; border: 1px solid #ddd; border-radius: 8px;">
+ <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px;">
  <h3 style="margin: 0 0 10px 0; color: #333;">Q${idx + 1}. ${problem.question}</h3>
 
  <!-- 보기 -->
- <div style="margin: 10px 0; padding: 8px; background: #f5f5f5; border-radius: 4px; page-break-inside: avoid; font-size: 13px; line-height: 1.6;">
+ <div style="margin: 10px 0; padding: 8px; background: #f5f5f5; border-radius: 4px; font-size: 13px; line-height: 1.6;">
  <strong>${pdfLabels.options}:</strong><br/>
  <div style="margin-left: 10px;">
  <div style="margin: 3px 0;">A) ${problem.options.A}</div>
@@ -2747,7 +2755,7 @@ function App() {
  </div>
 
  <!-- 정답과 설명 -->
- <div style="margin: 8px 0; page-break-inside: avoid;">
+ <div style="margin: 8px 0;">
  <strong>${pdfLabels.answer} ${problem.answer}</strong><br/>
  <strong style="font-size: 13px;">${pdfLabels.explanation}:</strong>
  <p style="margin: 4px 0; padding: 6px; background: #e3f2fd; border-radius: 4px; font-size: 13px; line-height: 1.5;">${problem.explanation.correct}</p>
@@ -2782,8 +2790,9 @@ function App() {
  margin: 10,
  filename: 'SAA-C03_mock_exam_results.pdf',
  image: { type: 'jpeg', quality: 0.98 },
- html2canvas: { scale: 2 },
- jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+ html2canvas: { scale: 2, useCORS: true, logging: false },
+ jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' },
+ pagebreak: { mode: ['css', 'legacy'] }
  };
 
  html2pdf().set(options).from(element).save();
@@ -3916,6 +3925,43 @@ function App() {
  Q{idx + 1}. {problem.question}
  </h4>
 
+ {/* 원본 보기 버튼 */}
+ <button
+   onClick={() => setShowOriginalMap(prev => ({ ...prev, [idx]: !prev[idx] }))}
+   style={{
+     padding: "4px 10px",
+     marginBottom: "12px",
+     background: showOriginalMap[idx] ? "rgba(99,102,241,0.3)" : "rgba(99,102,241,0.1)",
+     border: "1px solid rgba(99,102,241,0.4)",
+     borderRadius: "4px",
+     color: "#a5b4fc",
+     cursor: "pointer",
+     fontSize: "11px",
+   }}
+ >
+   {showOriginalMap[idx] ? "▲ 원본 닫기" : "▼ 원본 보기"}
+ </button>
+
+ {/* 원본 선택지 표시 */}
+ {showOriginalMap[idx] && (
+   <div style={{ marginBottom: "12px", display: "flex", flexDirection: "column", gap: "6px" }}>
+     {(["A", "B", "C", "D"] as const).map(opt => (
+       <div key={opt} style={{
+         padding: "8px 12px",
+         borderRadius: "6px",
+         fontSize: "12px",
+         background: opt === problem.answer ? "rgba(16,185,129,0.15)" : opt === mockExamAnswers[idx] && opt !== problem.answer ? "rgba(239,68,68,0.1)" : "rgba(71,85,105,0.2)",
+         border: `1px solid ${opt === problem.answer ? "rgba(16,185,129,0.4)" : opt === mockExamAnswers[idx] && opt !== problem.answer ? "rgba(239,68,68,0.3)" : "rgba(100,116,139,0.2)"}`,
+         color: opt === problem.answer ? "#4ade80" : opt === mockExamAnswers[idx] && opt !== problem.answer ? "#f87171" : "#D1D5DB",
+       }}>
+         <strong>{opt}.</strong> {problem.options[opt]}
+         {opt === problem.answer && <span style={{ marginLeft: "8px", fontSize: "10px", color: "#4ade80" }}>✓ 정답</span>}
+         {opt === mockExamAnswers[idx] && opt !== problem.answer && <span style={{ marginLeft: "8px", fontSize: "10px", color: "#f87171" }}>← 내 선택</span>}
+       </div>
+     ))}
+   </div>
+ )}
+
  {/* 정답/오답 표시 */}
  <div style={{ fontSize: "12px", color: isCorrect ? "#10b981" : "#ef4444", marginBottom: "12px", fontWeight: "bold" }}>
  {isCorrect ? t("quizCorrect") : t("quizIncorrect")}
@@ -3975,6 +4021,50 @@ function App() {
  );
  })}
  </div>
+ {/* 다시 보기 버튼 (결과 화면 하단) */}
+ <div style={{ padding: "12px 20px", borderTop: "1px solid rgba(100,116,139,0.2)" }}>
+   <button
+     onClick={async () => {
+       setLoading(true);
+       try {
+         const savedProblems = await getTodayMockExamProblems(locale);
+         if (!savedProblems || savedProblems.length === 0) {
+           alert("저장된 문제가 없습니다.");
+           return;
+         }
+         setMockExamProblems(savedProblems);
+         setMockExamAnswers(new Array(savedProblems.length).fill(null));
+         setMockExamStartTime(Date.now());
+         setMockExamTimeRemaining(130 * 60);
+         setMockExamCurrentIndex(0);
+         setMockExamResults(null);
+         setShowOriginalMap({});
+         localStorage.setItem("mockExamStartedLocale", locale);
+         localStorage.setItem("mockExamAllProblems", JSON.stringify(savedProblems));
+         localStorage.setItem("mockExamProblemsCount", savedProblems.length.toString());
+         setMockExamRunning(true);
+       } catch (err) {
+         alert("문제 불러오기 실패");
+       } finally {
+         setLoading(false);
+       }
+     }}
+     disabled={loading}
+     style={{
+       width: "100%",
+       padding: "10px",
+       background: "rgba(59, 130, 246, 0.2)",
+       border: "1px solid rgba(59, 130, 246, 0.4)",
+       borderRadius: "6px",
+       color: "var(--accent)",
+       cursor: loading ? "not-allowed" : "pointer",
+       fontSize: "13px",
+       fontWeight: "600",
+     }}
+   >
+     {loading ? "불러오는 중..." : "모의시험 다시 보기"}
+   </button>
+ </div>
  </div>
  </>
  ) : mockExamAlreadyTaken ? (
@@ -4002,6 +4092,47 @@ function App() {
  {nextUtcDate} {t("mockExamRetryAtMidnight")}
  </p>
  </div>
+ {/* 다시 보기 버튼 */}
+ <button
+   onClick={async () => {
+     setLoading(true);
+     try {
+       const savedProblems = await getTodayMockExamProblems(locale);
+       if (!savedProblems || savedProblems.length === 0) {
+         alert("저장된 문제가 없습니다.");
+         return;
+       }
+       setMockExamProblems(savedProblems);
+       setMockExamAnswers(new Array(savedProblems.length).fill(null));
+       setMockExamStartTime(Date.now());
+       setMockExamTimeRemaining(130 * 60);
+       setMockExamCurrentIndex(0);
+       setMockExamResults(null);
+       setShowOriginalMap({});
+       localStorage.setItem("mockExamStartedLocale", locale);
+       localStorage.setItem("mockExamAllProblems", JSON.stringify(savedProblems));
+       localStorage.setItem("mockExamProblemsCount", savedProblems.length.toString());
+       setMockExamRunning(true);
+     } catch (err) {
+       alert("문제 불러오기 실패");
+     } finally {
+       setLoading(false);
+     }
+   }}
+   disabled={loading}
+   style={{
+     padding: "12px 24px",
+     background: "rgba(59, 130, 246, 0.3)",
+     border: "2px solid rgba(59, 130, 246, 0.5)",
+     borderRadius: "8px",
+     color: "var(--accent)",
+     cursor: loading ? "not-allowed" : "pointer",
+     fontSize: "14px",
+     fontWeight: "600",
+   }}
+ >
+   {loading ? "불러오는 중..." : "모의시험 다시 보기"}
+ </button>
  </div>
  ) : (
  // 모의시험 시작 전
@@ -4192,6 +4323,33 @@ function App() {
  [difficulties[i], difficulties[j]] = [difficulties[j], difficulties[i]];
  [domains[i], domains[j]] = [domains[j], domains[i]];
  }
+
+ // 개념 탭 서비스 6개 랜덤 지정 (5~8개 중 6개)
+ // NODES에 없는 서비스들로 구성 (보안/분석/거버넌스/마이그레이션/네트워킹 확장)
+ const CONCEPT_TAB_SERVICES = [
+   "SCP", "GuardDuty", "Amazon Inspector", "Amazon Macie", "AWS Network Firewall",
+   "AWS Certificate Manager", "S3 Object Lock",
+   "Amazon EMR", "AWS Glue", "Amazon QuickSight", "Amazon SageMaker",
+   "AWS CloudFormation", "AWS Config", "AWS Organizations", "AWS Backup",
+   "AWS Trusted Advisor", "IAM Identity Center",
+   "AWS DMS", "AWS Transfer Family", "AWS AppFlow",
+   "NAT Gateway", "VPC Endpoints", "Transit Gateway", "AWS Global Accelerator",
+   "Site-to-Site VPN", "VPC Peering"
+ ];
+ const shuffledConcepts = [...CONCEPT_TAB_SERVICES].sort(() => Math.random() - 0.5);
+ const conceptServices: (string | null)[] = new Array(50).fill(null);
+ // 6개 위치를 랜덤으로 선택 (0번 제외 - 첫 문제는 즉시 로드)
+ const usedPositions = new Set<number>();
+ let assigned = 0;
+ while (assigned < 6) {
+   const pos = Math.floor(Math.random() * 49) + 1;
+   if (!usedPositions.has(pos)) {
+     usedPositions.add(pos);
+     conceptServices[pos] = shuffledConcepts[assigned];
+     assigned++;
+   }
+ }
+ localStorage.setItem("mockExamConceptServices", JSON.stringify(conceptServices));
  }
 
  // 2단계: 첫 1문제만 로드

@@ -1,7 +1,7 @@
 export interface AWSNode {
   id: string;
   name: string;
-  cat: 'compute' | 'storage' | 'database' | 'network' | 'security' | 'messaging' | 'monitor';
+  cat: 'compute' | 'storage' | 'database' | 'network' | 'security' | 'messaging' | 'monitor' | 'migration' | 'ops' | 'analytics';
   emoji: string;
   desc: string;
 }
@@ -56,6 +56,49 @@ export const NODES: AWSNode[] = [
   { id:"kinesis",    name:"Kinesis",         cat:"messaging", emoji:"\u{1F30A}", desc:"실시간 스트리밍 · Data Streams/Firehose/Analytics" },
   { id:"cloudwatch", name:"CloudWatch",      cat:"monitor",   emoji:"\u{1F441}\uFE0F", desc:"모니터링 · Metrics/Logs/Alarms/Dashboards" },
   { id:"cloudtrail", name:"CloudTrail",      cat:"monitor",   emoji:"\u{1F4DD}", desc:"API 감사 로그 · 누가 뭘 언제 · S3 저장" },
+  // Compute additions
+  { id:"batch",          name:"AWS Batch",          cat:"compute",   emoji:"\u{1F4E6}", desc:"완전관리형 배치 컴퓨팅 · 동적 프로비저닝 · Job Queue/Definition" },
+  // Storage additions
+  { id:"fsx",            name:"Amazon FSx",          cat:"storage",   emoji:"\u{1F5C3}\uFE0F", desc:"관리형 파일시스템 · Windows(SMB) · Lustre(HPC) · NetApp ONTAP" },
+  { id:"storagegateway", name:"Storage Gateway",     cat:"storage",   emoji:"\u{1F4F1}", desc:"온프레미스↔AWS 하이브리드 스토리지 · File/Volume/Tape Gateway" },
+  { id:"datasync",       name:"AWS DataSync",        cat:"storage",   emoji:"\u{1F504}", desc:"자동화 온라인 데이터 이전 · NFS/SMB→S3/EFS/FSx · 암호화·검증" },
+  { id:"snow",           name:"AWS Snow Family",     cat:"storage",   emoji:"\u2744\uFE0F", desc:"오프라인 대용량 데이터 이전 · Snowcone/Snowball/Snowmobile" },
+  // Network additions
+  { id:"natgw",          name:"NAT Gateway",         cat:"network",   emoji:"\u{1F6AA}", desc:"Private 서브넷 아웃바운드 전용 · 관리형 · AZ별 배포 · Elastic IP" },
+  { id:"vpcendpoint",    name:"VPC Endpoints",       cat:"network",   emoji:"\u{1F517}", desc:"Gateway(S3/DynamoDB 무료) · Interface(PrivateLink) · 인터넷 없이 AWS 접근" },
+  { id:"transitgw",      name:"Transit Gateway",     cat:"network",   emoji:"\u{1F6E3}\uFE0F", desc:"VPC/VPN/DX 허브 · 멀티계정·리전 · 전이적 라우팅 지원" },
+  { id:"globalaccel",    name:"Global Accelerator",  cat:"network",   emoji:"\u{1F680}", desc:"Anycast IP · AWS 글로벌 네트워크 경유 · 자동 헬스체크 장애조치" },
+  { id:"sitevpn",        name:"Site-to-Site VPN",    cat:"network",   emoji:"\u{1F512}", desc:"IPsec VPN · VGW/TGW 연결 · 빠른 설정 · 인터넷 경유" },
+  { id:"vpcpeering",     name:"VPC Peering",         cat:"network",   emoji:"\u{1F91D}", desc:"VPC 간 프라이빗 직접 연결 · 전이적 라우팅 불가 · 크로스 리전 가능" },
+  // Security additions
+  { id:"scp",            name:"SCP",                 cat:"security",  emoji:"\u{1F6AB}", desc:"Organizations 최상위 권한 경계 · 허용/거부 목록 · 멤버 계정 전체 적용" },
+  { id:"networkfirewall",name:"Network Firewall",    cat:"security",  emoji:"\u{1F9F1}", desc:"VPC 상태 기반 방화벽 · IPS · 인바운드/아웃바운드 트래픽 보호" },
+  { id:"guardduty",      name:"GuardDuty",           cat:"security",  emoji:"\u{1F50E}", desc:"ML 기반 위협 탐지 · CloudTrail/VPC Flow Logs/DNS 분석 · 30일 무료" },
+  { id:"inspector",      name:"Amazon Inspector",    cat:"security",  emoji:"\u{1F9EA}", desc:"EC2/Lambda/ECR 취약점 자동 지속 스캔 · CVE · 리스크 점수" },
+  { id:"macie",          name:"Amazon Macie",        cat:"security",  emoji:"\u{1F575}\uFE0F", desc:"S3 내 PII 등 민감 데이터 자동 탐지·분류 · ML 기반" },
+  { id:"acm",            name:"AWS Certificate Mgr", cat:"security",  emoji:"\u{1F4DC}", desc:"SSL/TLS 인증서 무료 발급·자동갱신 · ELB/CloudFront/API GW 통합" },
+  { id:"s3objectlock",   name:"S3 Object Lock",      cat:"security",  emoji:"\u{1F510}", desc:"WORM 보호 · Governance/Compliance 모드 · 법적 데이터 보존" },
+  // Messaging additions
+  { id:"stepfunctions",  name:"Step Functions",      cat:"messaging", emoji:"\u{1F9E9}", desc:"서버리스 워크플로 오케스트레이션 · State Machine · Express/Standard" },
+  { id:"dynamostreams",  name:"DynamoDB Streams",    cat:"messaging", emoji:"\u{1F30A}", desc:"항목 변경 이벤트 순서 보장 스트림 · Lambda 트리거 · 24시간 보관" },
+  // Migration (new)
+  { id:"dms",            name:"AWS DMS",             cat:"migration", emoji:"\u{1F69A}", desc:"이기종/동기종 DB 마이그레이션 · 운영 중 지속 복제 · CDC 지원" },
+  { id:"transferfamily", name:"Transfer Family",     cat:"migration", emoji:"\u{1F4E4}", desc:"SFTP/FTPS/FTP/AS2 완전관리형 · S3·EFS 연결 · 기존 클라이언트 호환" },
+  { id:"appflow",        name:"Amazon AppFlow",      cat:"migration", emoji:"\u{1F500}", desc:"SaaS↔AWS 양방향 데이터 통합 · Salesforce/Slack/SAP → S3/Redshift" },
+  // Ops (new)
+  { id:"cloudformation", name:"CloudFormation",      cat:"ops",       emoji:"\u{1F4CB}", desc:"IaC · JSON/YAML 템플릿 · 스택/스택셋 · 드리프트 감지" },
+  { id:"awsconfig",      name:"AWS Config",          cat:"ops",       emoji:"\u{1F4CA}", desc:"리소스 설정 변경 기록 · 규정 준수 평가 · Config Rules · 자동 교정" },
+  { id:"controltower",   name:"Control Tower",       cat:"ops",       emoji:"\u{1F3D7}\uFE0F", desc:"멀티 계정 Landing Zone · 가드레일(SCP+Config Rules) · Account Factory" },
+  { id:"trustedadvisor", name:"Trusted Advisor",     cat:"ops",       emoji:"\u{1F4A1}", desc:"비용/성능/보안/내결함성/서비스한도 점검 · 모범 사례 권고" },
+  { id:"organizations",  name:"AWS Organizations",   cat:"ops",       emoji:"\u{1F3E2}", desc:"멀티 계정 중앙 관리 · OU · SCP · 통합 결제" },
+  { id:"backup",         name:"AWS Backup",          cat:"ops",       emoji:"\u{1F4BE}", desc:"중앙 집중 백업 · EC2/EBS/RDS/DynamoDB 등 · 백업 볼트·정책" },
+  { id:"iamidentitycenter", name:"IAM Identity Center", cat:"ops",   emoji:"\u{1F194}", desc:"싱글 사인온(SSO) · 다중 계정·앱 통합 접근 · SAML 2.0/SCIM" },
+  // Analytics (new)
+  { id:"emr",            name:"Amazon EMR",          cat:"analytics", emoji:"\u{1F4A5}", desc:"관리형 Hadoop/Spark/Hive · 빅데이터 처리 · S3 데이터 레이크 연동" },
+  { id:"glue",           name:"AWS Glue",            cat:"analytics", emoji:"\u{1F9F5}", desc:"서버리스 ETL · 데이터 카탈로그 · Glue DataBrew(노코드 변환)" },
+  { id:"lakeformation",  name:"Lake Formation",      cat:"analytics", emoji:"\u{1F3DE}\uFE0F", desc:"데이터 레이크 구축·보안 · 열/행 수준 세밀한 접근 제어 · S3 기반" },
+  { id:"quicksight",     name:"Amazon QuickSight",   cat:"analytics", emoji:"\u{1F4C8}", desc:"서버리스 BI · ML Insights · 대화형 대시보드 · 임베디드 분석" },
+  { id:"sagemaker",      name:"Amazon SageMaker",    cat:"analytics", emoji:"\u{1F916}", desc:"완전관리형 ML 플랫폼 · 빌드/학습/배포 · SageMaker Studio · Autopilot" },
 ];
 
 export const LINKS: Link[] = [
@@ -80,7 +123,10 @@ export const CAT: Record<string, {color: string; glow: string; label: string}> =
   network:  {color:"#27ae60",glow:"#55efc4",label:"Network"},
   security: {color:"#c0392b",glow:"#ff6b6b",label:"Security"},
   messaging:{color:"#16a085",glow:"#1abc9c",label:"Messaging"},
-  monitor:  {color:"#7f8c8d",glow:"#bdc3c7",label:"Monitor"},
+  monitor:   {color:"#7f8c8d",glow:"#bdc3c7",label:"Monitor"},
+  migration: {color:"#00897b",glow:"#4db6ac",label:"Migration"},
+  ops:       {color:"#6d4c41",glow:"#a1887f",label:"Ops"},
+  analytics: {color:"#e65100",glow:"#ff8f00",label:"Analytics"},
 };
 
 export const CONCEPTS_KO: Record<string, Concept> = {
@@ -423,6 +469,391 @@ export const CONCEPTS_KO: Record<string, Concept> = {
       {label:"보안", text:"IAM, Cognito Authorizer, Lambda Authorizer, Resource Policy(IP/VPC 제한)", easy:"IAM은 사원증, Cognito는 회원 토큰, Lambda Authorizer는 커스텀 확인."},
       {label:"성능", text:"Throttling: 기본 10,000 RPS. 캐싱: TTL 300초. Stage별 배포(dev/prod)", easy:"요청 폭주 시 번호표 대기. 자주 묻는 건 캐시. dev/prod 분리 관리."},
       {label:"시험 포인트", text:"Edge-Optimized(글로벌), Regional(한 리전), Private(VPC). WebSocket → 실시간 채팅", easy:"전 세계 → Edge, 한 리전 → Regional, 내부망 → Private. 실시간 채팅 → WebSocket!"},
+    ]
+  },
+  batch: {
+    title:"AWS Batch", subtitle:"완전관리형 배치 컴퓨팅",
+    easy:"AWS Batch는 숙제를 자동으로 나눠주는 반장이야! 할 일 목록(Job)을 넣으면 알아서 컴퓨터를 빌려서 처리하고 끝나면 반납해. 직접 서버 관리 안 해도 돼!",
+    points:[
+      {label:"핵심 구성", text:"Job Definition(작업 템플릿), Job Queue(우선순위 큐), Compute Environment(EC2/Fargate 자동 프로비저닝)", easy:"Job Definition은 레시피, Job Queue는 주문 대기줄, Compute Environment는 자동으로 뜨는 요리사."},
+      {label:"컴퓨팅 환경", text:"Managed(AWS가 EC2/Fargate 자동 관리) vs Unmanaged(직접 관리). Spot 인스턴스 활용으로 최대 90% 절감", easy:"Managed는 AWS가 알아서 서버 준비, Unmanaged는 직접 관리. Spot 쓰면 비용 90% 절감!"},
+      {label:"워크플로 통합", text:"Step Functions과 연동해 배치 파이프라인 구성. EventBridge로 스케줄 실행 가능", easy:"Step Functions와 연결하면 '전처리→배치→후처리' 자동화 파이프라인 구성 가능."},
+      {label:"vs Lambda", text:"Lambda: 최대 15분, 단순 이벤트 처리. Batch: 수시간~수일, 대용량 병렬 처리", easy:"Lambda는 단거리, Batch는 장거리! ML 학습, 렌더링, 대용량 분석은 Batch 사용."},
+      {label:"시험 포인트", text:"Batch는 ECS 기반으로 실행. 15분 이상 작업 → Batch. Spot 가격 중단 자동 재시도", easy:"15분 넘는 작업 → AWS Batch! Lambda 대신 써야 해. Spot 중단돼도 자동 재시도!"},
+    ]
+  },
+  fsx: {
+    title:"Amazon FSx", subtitle:"관리형 파일시스템",
+    easy:"FSx는 다양한 파일 서버를 AWS에서 그대로 쓸 수 있게 해주는 서비스야! Windows 공유 폴더, 슈퍼컴퓨터 파일시스템 등을 관리형으로 제공해.",
+    points:[
+      {label:"FSx for Windows File Server", text:"완전관리형 Windows 파일서버. SMB/NTFS. Active Directory 통합. Multi-AZ 지원", easy:"회사 Windows 공유 폴더를 AWS에 그대로! AD 로그인 그대로 쓸 수 있어."},
+      {label:"FSx for Lustre", text:"HPC/ML용 고성능 파일시스템. S3와 직접 통합. 초당 수백 GB 처리량", easy:"슈퍼컴퓨터용 초고속 파일시스템! ML 학습, 게놈 분석, 영상 처리에 사용."},
+      {label:"FSx for NetApp ONTAP", text:"NetApp ONTAP 완전관리형. NFS/SMB/iSCSI. 자동 계층화. 데이터 중복 제거", easy:"기업 NetApp 스토리지를 AWS로 이전 시 그대로 쓸 수 있어. 온프레미스 호환!"},
+      {label:"FSx for OpenZFS", text:"ZFS 기반. NFS 호환. 스냅샷·복제. Linux 워크로드 최적화", easy:"Linux 서버용 고성능 파일시스템. ZFS 기능(스냅샷, 압축)을 관리형으로."},
+      {label:"시험 포인트", text:"Windows 파일 공유 → FSx for Windows(EFS 대신!). HPC/ML → FSx for Lustre. EFS는 Linux NFS 전용", easy:"Windows 공유 폴더 필요 → FSx for Windows! Linux 공유 → EFS. HPC → Lustre!"},
+    ]
+  },
+  storagegateway: {
+    title:"AWS Storage Gateway", subtitle:"하이브리드 스토리지 연결",
+    easy:"Storage Gateway는 회사 서버와 AWS 클라우드를 연결하는 다리야! 기존 온프레미스 서버에서 AWS S3를 마치 로컬 드라이브처럼 쓸 수 있어.",
+    points:[
+      {label:"File Gateway", text:"NFS/SMB로 S3 접근. 로컬 캐시로 저지연. 온프레미스 앱 코드 변경 없이 S3 사용", easy:"회사 파일 서버를 S3로 연결! 직원들은 그냥 네트워크 드라이브처럼 써."},
+      {label:"Volume Gateway", text:"iSCSI 블록 스토리지. Cached(S3에 저장, 자주 쓰는 건 로컬). Stored(로컬에 저장, S3에 백업)", easy:"Cached는 S3에 주로 저장, Stored는 로컬에 저장+S3 백업. 재해 복구용."},
+      {label:"Tape Gateway", text:"가상 테이프 라이브러리(VTL). 기존 백업 소프트웨어(Veeam 등) 그대로 사용. S3/Glacier에 저장", easy:"기존 테이프 백업 시스템을 클라우드로! 소프트웨어 변경 없이 S3에 저장."},
+      {label:"사용 사례", text:"온프레미스→클라우드 백업, 재해 복구, 클라우드 마이그레이션 중간 단계", easy:"회사 데이터를 클라우드로 옮기는 과도기에 많이 사용해."},
+      {label:"시험 포인트", text:"온프레미스에서 S3 접근 → Storage Gateway. 테이프 백업→클라우드 → Tape Gateway. S3/Glacier 연결 가능", easy:"온프레미스+S3 연결 키워드 → Storage Gateway! 테이프 → Glacier!"},
+    ]
+  },
+  datasync: {
+    title:"AWS DataSync", subtitle:"온라인 데이터 이전 서비스",
+    easy:"DataSync는 이삿짐 센터야! 기존 서버의 데이터를 AWS로 빠르고 안전하게 옮겨줘. 자동으로 암호화하고 데이터가 제대로 옮겨졌는지도 확인해줘!",
+    points:[
+      {label:"지원 소스/목적지", text:"소스: NFS, SMB, HDFS, S3, EFS, FSx, 오브젝트 스토리지. 목적지: S3, EFS, FSx", easy:"NFS 서버, Hadoop, S3 등 다양한 소스에서 AWS 스토리지로 이전."},
+      {label:"전송 성능", text:"네트워크 최대 활용. 병렬 전송. DataSync Agent(온프레미스 설치). Direct Connect/VPN 경유 가능", easy:"자동으로 네트워크를 최대한 활용해서 빠르게 전송. Direct Connect랑 같이 쓰면 더 빨라."},
+      {label:"자동화·검증", text:"스케줄 전송. 데이터 무결성 자동 검증. 전송 후 삭제 옵션. CloudWatch 모니터링", easy:"정기적으로 자동 동기화하고, 데이터가 손상 없이 옮겨졌는지 자동 확인!"},
+      {label:"vs Storage Gateway", text:"DataSync: 일회성 또는 주기적 대용량 이전. Storage Gateway: 지속적 온프레미스-클라우드 연결", easy:"DataSync는 이사(데이터 이전), Storage Gateway는 출퇴근(상시 연결)."},
+      {label:"시험 포인트", text:"온프레미스→S3/EFS 대용량 이전 → DataSync. Snow Family는 오프라인, DataSync는 온라인", easy:"네트워크로 데이터 이전 → DataSync! 인터넷 없는 오지 → Snow Family!"},
+    ]
+  },
+  snow: {
+    title:"AWS Snow Family", subtitle:"오프라인 대용량 데이터 이전",
+    easy:"Snow Family는 AWS가 트럭으로 하드디스크를 배달해주는 서비스야! 인터넷이 느리거나 없을 때 수십~수백 PB 데이터를 물리적으로 이전할 때 써.",
+    points:[
+      {label:"Snowcone", text:"초소형(2.1kg). 8TB~14TB. 현장 데이터 수집·이전. DataSync 내장", easy:"가방에 들어가는 초미니 버전. 원격지 현장에서 데이터 수집."},
+      {label:"Snowball Edge", text:"Storage Optimized(80TB), Compute Optimized(42TB+GPU). 엣지 컴퓨팅 가능. 클러스터링", easy:"여행 가방 크기 장치. 단순 이전뿐 아니라 현장에서 컴퓨팅도 가능."},
+      {label:"Snowmobile", text:"40피트 컨테이너 트럭. 최대 100PB. 엑사바이트급 이전", easy:"데이터센터 전체 이전할 때! AWS 트럭이 직접 와서 연결해줘."},
+      {label:"엣지 컴퓨팅", text:"인터넷 없는 오지에서 EC2/Lambda 실행. 수집→처리→AWS 업로드", easy:"인터넷 없는 광산, 선박 등에서 데이터 처리하다가 나중에 AWS로 전송."},
+      {label:"시험 포인트", text:"네트워크로 10년 이상 걸리면 Snow. 오프라인 전용. 전송 후 AWS가 데이터 삭제", easy:"'수십 PB 이전' + '인터넷 제한' → Snow Family! 업로드 후 장치 데이터 완전 삭제."},
+    ]
+  },
+  natgw: {
+    title:"NAT Gateway", subtitle:"Private 서브넷 인터넷 아웃바운드",
+    easy:"NAT Gateway는 Private 동네 주민이 바깥에 나갈 수 있게 해주는 쪽문이야! 나가는 건 되지만 밖에서 들어오는 건 안 돼.",
+    points:[
+      {label:"역할", text:"Private Subnet의 EC2/Lambda가 인터넷으로 아웃바운드 트래픽 허용. 인바운드 불가(Stateful)", easy:"Private 서브넷 인스턴스가 소프트웨어 업데이트, 외부 API 호출 등 가능. 외부에서 접속 불가."},
+      {label:"배포", text:"Public Subnet에 배치. Elastic IP 할당 필수. AZ별로 하나씩 배포 권장(고가용성)", easy:"NAT Gateway 자체는 Public Subnet에 있어야 해. 가용영역마다 하나씩 만들어야 안전."},
+      {label:"NAT Instance", text:"EC2 기반(구형). 직접 관리·패치 필요. Security Group 적용 가능. 비용 저렴", easy:"NAT Gateway는 AWS 관리형, NAT Instance는 EC2 직접 관리. 시험에 트랩으로 자주 등장!"},
+      {label:"비용", text:"시간당 + 처리한 GB당 과금. AZ 간 트래픽 비용 발생. 같은 AZ NAT Gateway 권장", easy:"데이터 많이 보내면 비용 증가. 각 AZ에 NAT Gateway 두면 데이터 전송 비용 절감."},
+      {label:"시험 포인트", text:"NAT Gateway는 Public Subnet에 위치. HA는 AZ별 NAT Gateway. IPv6는 Egress-Only IGW 사용", easy:"IPv6 Private 서브넷 → NAT Gateway 아님, Egress-Only IGW 사용! 시험 트랩!"},
+    ]
+  },
+  vpcendpoint: {
+    title:"VPC Endpoints", subtitle:"인터넷 없이 AWS 서비스 접근",
+    easy:"VPC Endpoint는 AWS 서비스로 가는 비밀 통로야! 인터넷 없이 AWS 내부 네트워크로만 S3, DynamoDB 등에 접근할 수 있어.",
+    points:[
+      {label:"Gateway Endpoint", text:"S3, DynamoDB만 지원. 무료. Route Table에 경로 추가. 리전 내 접근", easy:"S3, DynamoDB → Gateway Endpoint(무료)! Route Table에 목적지 추가하면 됨."},
+      {label:"Interface Endpoint(PrivateLink)", text:"나머지 AWS 서비스(EC2, SQS 등). ENI 생성. 시간당 + 데이터 과금. DNS 해석 변경", easy:"대부분의 AWS 서비스 연결은 Interface Endpoint. ENI 하나 만들어서 통신."},
+      {label:"Gateway Load Balancer Endpoint", text:"GWLB와 연동. 3rd파티 방화벽/IPS 트래픽 투명 삽입. 검사 후 원본 목적지로 전달", easy:"보안 장비를 통과시키는 특수 엔드포인트. 방화벽 검사 투명하게 삽입."},
+      {label:"보안 이점", text:"인터넷 게이트웨이/NAT Gateway 없이 AWS 서비스 접근. Bucket Policy에서 VPC Endpoint 조건 지정 가능", easy:"S3 데이터가 인터넷을 거치지 않아 더 안전! 특정 VPC에서만 버킷 접근 허용 가능."},
+      {label:"시험 포인트", text:"S3/DynamoDB → Gateway(무료). 나머지 → Interface(유료). 온프레미스에서는 사용 불가", easy:"S3 = Gateway Endpoint(무료)! 다른 서비스 = Interface Endpoint. 온프레미스→VPC Endpoint 불가!"},
+    ]
+  },
+  transitgw: {
+    title:"AWS Transit Gateway", subtitle:"네트워크 허브 라우터",
+    easy:"Transit Gateway는 여러 VPC와 온프레미스를 하나의 허브로 연결하는 중앙 교차로야! VPC가 많을수록 Peering보다 훨씬 간단해져.",
+    points:[
+      {label:"허브 앤 스포크", text:"최대 5,000 VPC/VPN 연결. VPC Peering과 달리 전이적 라우팅 지원. 중앙 집중 관리", easy:"VPC가 10개면 Peering은 45개 연결 필요. TGW는 허브 1개에 10개 연결만 하면 끝!"},
+      {label:"멀티 계정", text:"Resource Access Manager(RAM)로 다른 계정 간 공유. Organizations 통합", easy:"여러 AWS 계정의 VPC를 하나의 TGW로 연결. 멀티 계정 아키텍처 필수 요소."},
+      {label:"라우팅 테이블", text:"여러 라우팅 테이블로 트래픽 분리. VPC간 격리 가능. 블랙홀 라우팅", easy:"VPC A↔B는 허용, A↔C는 차단 같은 세밀한 라우팅 제어 가능."},
+      {label:"연결 유형", text:"VPC Attachment, VPN Attachment, Direct Connect Gateway Attachment, Peering Attachment(리전 간)", easy:"VPC, VPN, Direct Connect 모두 TGW 하나로 연결. 리전 간 TGW Peering도 가능."},
+      {label:"시험 포인트", text:"TGW: 전이적 라우팅 O. VPC Peering: 전이적 라우팅 X. 100+ VPC → TGW 권장", easy:"VPC 많다 + 상호 통신 필요 → Transit Gateway! Peering은 1:1만, TGW는 다:다!"},
+    ]
+  },
+  globalaccel: {
+    title:"AWS Global Accelerator", subtitle:"글로벌 네트워크 가속",
+    easy:"Global Accelerator는 전 세계 사용자가 가장 가까운 AWS 엣지에서 바로 연결해서 빠르게 서버에 도달하게 해줘! 인터넷 대신 AWS 내부 고속도로를 타는 거야.",
+    points:[
+      {label:"Anycast IP", text:"2개의 정적 Anycast IP 제공. 전 세계 어디서나 동일 IP로 가장 가까운 엣지 연결", easy:"전화번호가 고정되어 있는데, 어디서 전화해도 가장 가까운 지점으로 연결되는 것."},
+      {label:"성능 향상", text:"인터넷 대신 AWS 글로벌 네트워크 사용. 패킷 손실/지연/지터 감소. 60% 빠른 응답", easy:"인터넷 도로 대신 AWS 전용 고속도로! 막히지 않아서 훨씬 빠르고 안정적."},
+      {label:"헬스체크·장애조치", text:"엔드포인트 헬스체크. 비정상 시 자동으로 다른 리전·엔드포인트로 전환. 30초 이내", easy:"서버 문제 생기면 30초 안에 자동으로 다른 서버로 연결 전환!"},
+      {label:"엔드포인트", text:"ALB, NLB, EC2, Elastic IP. 가중치 기반 트래픽 조절. Blue/Green 배포", easy:"여러 리전의 로드밸런서에 가중치 배분. A/B 테스트, 무중단 배포 가능."},
+      {label:"시험 포인트", text:"CloudFront vs Global Accelerator: CloudFront는 캐싱(HTTP), GA는 TCP/UDP 네트워크 가속", easy:"캐싱이 필요한 정적 콘텐츠 → CloudFront. 게임/실시간/캐싱 없는 가속 → Global Accelerator!"},
+    ]
+  },
+  sitevpn: {
+    title:"AWS Site-to-Site VPN", subtitle:"온프레미스 VPN 연결",
+    easy:"Site-to-Site VPN은 회사 네트워크와 AWS VPC를 인터넷으로 안전하게 연결하는 암호화 터널이야! Direct Connect보다 빨리 설치할 수 있어.",
+    points:[
+      {label:"구성 요소", text:"Virtual Private Gateway(VGW) or Transit Gateway + Customer Gateway(온프레미스 라우터) + IPsec 터널 2개", easy:"AWS 쪽 문(VGW)과 회사 쪽 문(CGW)을 암호화 터널 2개로 연결."},
+      {label:"이중화", text:"터널 2개 자동 생성(Active/Passive). 고가용성. 다른 AZ 종단", easy:"자동으로 터널 2개! 하나가 끊겨도 다른 터널로 계속 통신 가능."},
+      {label:"속도 및 한계", text:"최대 1.25Gbps/터널. 인터넷 경유 → 지연 가변적. 설치 수시간", easy:"Direct Connect보다 빠르게 설치 가능. 하지만 속도는 Direct Connect가 우세."},
+      {label:"VPN over Direct Connect", text:"DX는 암호화 없음. DX + Site-to-Site VPN으로 암호화 추가", easy:"Direct Connect는 암호화 없어서 보안 필요하면 VPN도 같이 설치해야 해."},
+      {label:"시험 포인트", text:"VPN: 빠른 설치, 인터넷 경유. DX: 수주~수개월 설치, 전용선. DX 백업으로 VPN 병행 권장", easy:"'빠르게 연결' → VPN. '안정적 대역폭' → Direct Connect. '암호화+DX' → VPN over DX!"},
+    ]
+  },
+  vpcpeering: {
+    title:"VPC Peering", subtitle:"VPC 간 프라이빗 직접 연결",
+    easy:"VPC Peering은 두 VPC를 비밀 통로로 직접 연결하는 거야! 인터넷 없이 서로 다른 VPC의 서버끼리 통신할 수 있어.",
+    points:[
+      {label:"특징", text:"AWS 네트워크를 통한 프라이빗 연결. 같은 리전 or 크로스 리전. 같은 계정 or 크로스 계정", easy:"두 VPC 사이에 전용 통로 개설. 인터넷 경유 없음. 다른 계정, 다른 리전도 가능."},
+      {label:"전이적 라우팅 불가", text:"A→B→C 전이적 라우팅 불가. A↔C도 연결하려면 별도 Peering 필요", easy:"A-B-C 연결해도 A에서 C로 못 가. A-C도 따로 연결해야 해!"},
+      {label:"CIDR 제한", text:"겹치는 CIDR 블록 사용 시 Peering 불가. 라우팅 테이블 양쪽 모두 수정 필요", easy:"두 VPC의 IP 대역이 겹치면 연결 불가! 설계 시 CIDR 겹치지 않게 주의."},
+      {label:"Transit Gateway와 비교", text:"Peering: 1:1 연결, 전이 불가, 무료. TGW: 허브, 전이 가능, 비용 발생", easy:"VPC 2~3개 → Peering(무료). VPC 많고 복잡 → Transit Gateway."},
+      {label:"시험 포인트", text:"전이적 라우팅 불가. CIDR 겹침 불가. 양방향 라우팅 테이블 수정 필수", easy:"Peering 설정 후 라우팅 테이블 양쪽 다 수정해야 통신돼! 한쪽만 하면 안 됨."},
+    ]
+  },
+  scp: {
+    title:"Service Control Policies (SCP)", subtitle:"Organizations 최상위 권한 경계",
+    easy:"SCP는 회사 전체에 적용되는 헌법이야! 어떤 직원(계정)이 무슨 권한을 가졌든 SCP가 금지하면 절대로 못 해. IAM이 허용해도 SCP가 막으면 차단!",
+    points:[
+      {label:"개요", text:"AWS Organizations의 OU/계정에 적용. 최대 허용 권한 경계 정의. IAM 권한에 추가 조건", easy:"SCP는 각 계정의 최대 권한 상한선. IAM이 모든 권한을 줘도 SCP가 막으면 불가능."},
+      {label:"Allow vs Deny", text:"허용 목록(Allow list): 명시한 것만 허용. 거부 목록(Deny list): 명시한 것만 거부(기본값)", easy:"Deny list가 기본. 특정 서비스만 못 쓰게 막기. Allow list는 허용한 것만 사용 가능."},
+      {label:"적용 범위", text:"루트 계정에 SCP 적용 불가. 멤버 계정에만 적용. Management Account는 영향 없음", easy:"SCP는 자식 계정만 제한. 마스터(관리) 계정은 SCP 영향 없어. 주의!"},
+      {label:"계층적 적용", text:"OU → 하위 OU → 계정 순서로 상속. 상위 OU SCP + 계정 SCP 모두 충족해야 허용", easy:"위에서 아래로 내려오는 규칙. 상위 OU에서 막히면 하위에서 열어줄 수 없어."},
+      {label:"시험 포인트", text:"SCP ≠ IAM Policy. 루트 사용자도 SCP 제한 적용. Management Account는 SCP 영향 없음", easy:"루트 계정이라도 SCP 금지하면 못 해! Management Account만 SCP 영향 없어."},
+    ]
+  },
+  networkfirewall: {
+    title:"AWS Network Firewall", subtitle:"VPC 관리형 네트워크 방화벽",
+    easy:"Network Firewall은 VPC의 경비대야! 들어오고 나가는 모든 트래픽을 상태 기반으로 검사해. WAF가 앱 레이어라면 Network Firewall은 네트워크 레이어!",
+    points:[
+      {label:"개요", text:"완전관리형 상태 기반 방화벽. VPC 인바운드/아웃바운드/동서 트래픽 보호. Gateway Load Balancer 불필요", easy:"VPC 레벨 방화벽. 인터넷→VPC, VPC→인터넷, VPC→VPC 모든 트래픽 검사."},
+      {label:"규칙 유형", text:"Stateless(패킷 단위), Stateful(연결 추적), Domain List(도메인 차단), Suricata IPS(오픈소스 규칙)", easy:"단순 IP/포트 차단부터 도메인 기반 차단, IPS 규칙까지 다양하게 설정 가능."},
+      {label:"아키텍처", text:"전용 Firewall Subnet에 배치. 트래픽 라우팅 조정 필요. 중앙 집중 or 분산 배포", easy:"방화벽 전용 서브넷을 만들고, 모든 트래픽이 거기를 거치도록 라우팅 설정."},
+      {label:"vs WAF vs Security Group", text:"SG: 인스턴스 레벨. WAF: L7 HTTP. Network Firewall: VPC 레벨 L3~L7 종합", easy:"SG는 방문객 명단, WAF는 앱 보안, Network Firewall은 동네 입구 종합 경비."},
+      {label:"시험 포인트", text:"VPC 레벨 트래픽 검사·차단 → Network Firewall. IDS/IPS 기능 필요 → Network Firewall", easy:"VPC 전체 트래픽 필터링 + IPS 기능 → Network Firewall!"},
+    ]
+  },
+  guardduty: {
+    title:"Amazon GuardDuty", subtitle:"ML 기반 위협 탐지",
+    easy:"GuardDuty는 AWS의 탐정이야! 로그를 분석해서 '이상한 로그인', '암호화폐 채굴', '데이터 유출' 같은 위협을 자동으로 찾아내. 설치 없이 바로 켤 수 있어!",
+    points:[
+      {label:"분석 소스", text:"CloudTrail(API 호출), VPC Flow Logs(네트워크), DNS Logs(도메인), EKS 감사 로그, S3 이벤트", easy:"CloudTrail, VPC Flow, DNS를 동시에 분석. 에이전트 설치 없이 30초면 활성화!"},
+      {label:"탐지 유형", text:"비정상 API 호출, 악성 IP 접근, 암호화폐 채굴, 자격증명 탈취, 포트 스캔, S3 유출", easy:"해커 패턴(악성 IP), 내부 위협(비정상 API), 맬웨어(채굴) 등 다양한 위협 감지."},
+      {label:"결과 처리", text:"Finding → EventBridge → Lambda/SNS. 심각도(낮음/중간/높음). 자동 교정 가능", easy:"위협 발견 → EventBridge로 알림 → Lambda로 자동 차단! 완전 자동화 가능."},
+      {label:"멀티 계정", text:"Organizations와 통합. 관리자 계정에서 전체 멤버 계정 중앙 관리", easy:"여러 계정의 위협을 한 곳에서 관리. Organizations 연동 필수."},
+      {label:"시험 포인트", text:"30일 무료 체험. VPC Flow Logs 비활성화해도 GuardDuty는 독립적으로 수집. 에이전트 불필요", easy:"에이전트 없이 켜기만 하면 바로 보호! 위협 감지 → GuardDuty, 취약점 스캔 → Inspector"},
+    ]
+  },
+  inspector: {
+    title:"Amazon Inspector", subtitle:"취약점 자동 스캔",
+    easy:"Inspector는 서버의 보안 점검 로봇이야! EC2, Lambda, 컨테이너에서 알려진 취약점(CVE)을 자동으로 찾아서 위험도 점수와 함께 알려줘.",
+    points:[
+      {label:"스캔 대상", text:"EC2(OS/소프트웨어 CVE), Lambda 함수(코드 의존성), ECR 컨테이너 이미지", easy:"EC2, Lambda, 컨테이너 이미지의 패키지/라이브러리 취약점을 자동으로 검사."},
+      {label:"지속적 스캔", text:"초기 배포 + 새 CVE 발표 시 자동 재스캔. 에이전트(SSM Agent 활용). Near Real-time", easy:"처음 한 번이 아니라 새 취약점이 발견될 때마다 자동 재검사! 항상 최신 상태."},
+      {label:"리스크 점수", text:"CVSSv3 + 네트워크 접근성 결합. 실제 위험도 기반 우선순위. Inspector Score", easy:"단순 CVE 점수가 아니라 인터넷에 노출됐는지도 고려해서 진짜 위험도 계산."},
+      {label:"통합", text:"Finding → Security Hub 통합. EventBridge → 자동화. ECR 이미지 스캔 통합", easy:"Security Hub에서 한 화면으로 관리. 새 취약점 발견 시 자동으로 티켓 생성 가능."},
+      {label:"시험 포인트", text:"GuardDuty: 위협 감지(행동 분석). Inspector: 취약점 스캔(CVE). 다른 목적!", easy:"GuardDuty = 탐정(이상한 행동 감시). Inspector = 의사(건강 검진). 완전히 달라!"},
+    ]
+  },
+  macie: {
+    title:"Amazon Macie", subtitle:"S3 민감 데이터 자동 탐지",
+    easy:"Macie는 S3 창고 속 개인정보 탐지기야! 신용카드 번호, 주민등록번호, 이메일 등 민감한 데이터가 어디에 있는지 자동으로 찾아줘. GDPR 준수에 도움!",
+    points:[
+      {label:"탐지 유형", text:"PII(개인정보), 금융 정보(신용카드·계좌), 의료 정보(PHI), 자격증명(API 키·비밀번호)", easy:"주민번호, 신용카드 번호, API 키 등이 S3에 있으면 자동으로 찾아서 경고!"},
+      {label:"분류 방법", text:"ML + 패턴 매칭. 관리형 데이터 식별자(100+). 커스텀 식별자 추가 가능", easy:"AWS가 만든 100가지 이상 패턴으로 자동 탐지. 회사 고유 패턴도 추가 가능."},
+      {label:"S3 커버리지", text:"계정 내 모든 S3 버킷 자동 검색. 암호화 상태, 퍼블릭 접근 여부 등 보안 상태 표시", easy:"S3 버킷 전체를 자동으로 조사해서 '이 버킷에 민감 데이터 있어요!' 알림."},
+      {label:"결과 처리", text:"Finding → EventBridge → Lambda/SNS. Security Hub 통합. 30일 무료", easy:"민감 데이터 발견 → EventBridge → 자동 알림 또는 이동!"},
+      {label:"시험 포인트", text:"S3 민감 데이터 탐지 → Macie. PII/규정 준수 → Macie. GuardDuty는 위협 탐지!", easy:"'S3 개인정보 어디 있어?' → Macie! '해킹 시도 탐지' → GuardDuty!"},
+    ]
+  },
+  acm: {
+    title:"AWS Certificate Manager", subtitle:"SSL/TLS 인증서 관리",
+    easy:"ACM은 웹사이트의 자물쇠(HTTPS) 인증서를 무료로 발급하고 자동으로 갱신해주는 서비스야! 인증서 만료 걱정 없이 항상 HTTPS 유지!",
+    points:[
+      {label:"핵심 기능", text:"SSL/TLS 인증서 무료 발급. 자동 갱신. 퍼블릭·프라이빗 인증서. DNS/이메일 검증", easy:"인증서 발급, 갱신, 배포를 AWS가 다 해줘. 직접 관리하면 갱신 잊어버려 장애 발생!"},
+      {label:"통합 서비스", text:"ELB(ALB/NLB), CloudFront, API Gateway, Elastic Beanstalk. EC2 직접 배포 불가", easy:"ALB, CloudFront에 인증서 연결 가능. EC2 자체엔 직접 배포 못 함 — ELB 앞에 달아야!"},
+      {label:"퍼블릭 vs 프라이빗", text:"퍼블릭: 무료, 인터넷 서비스용. 프라이빗(ACM Private CA): 유료, 내부 서비스용", easy:"인터넷용 인증서 → 무료! 내부 직원 시스템용 → Private CA(유료)."},
+      {label:"리전 제약", text:"CloudFront용 인증서는 반드시 us-east-1(버지니아)에서 발급. 리전별 독립", easy:"CloudFront + HTTPS → us-east-1에서 인증서 발급! 다른 리전 인증서는 CloudFront에 못 씀."},
+      {label:"시험 포인트", text:"ACM은 EC2 직접 배포 불가. CloudFront 인증서 → us-east-1 필수. 자동 갱신으로 만료 방지", easy:"CloudFront SSL → us-east-1 ACM! EC2 직접 배포 불가, 반드시 ELB/CF를 거쳐야!"},
+    ]
+  },
+  s3objectlock: {
+    title:"S3 Object Lock", subtitle:"WORM 데이터 보호",
+    easy:"S3 Object Lock은 파일에 자물쇠를 채워서 정해진 기간 동안 절대 삭제하거나 수정할 수 없게 해줘. 금융·의료·법무 법률상 보관 의무에 사용해!",
+    points:[
+      {label:"WORM", text:"Write Once, Read Many. 데이터 불변성 보장. 랜섬웨어 방어. 규정 준수 데이터 보존", easy:"한번 쓰면 정해진 기간 동안 읽기만 가능! 삭제·수정 불가. 랜섬웨어도 못 건드려."},
+      {label:"Governance 모드", text:"특별 권한(s3:BypassGovernanceRetention) 있으면 잠금 해제·삭제 가능. 테스트·유연한 보호", easy:"관리자는 특별 권한으로 잠금 해제 가능. 규정보다 유연한 보호."},
+      {label:"Compliance 모드", text:"루트 계정 포함 누구도 삭제/수정 불가. 보존 기간 변경 불가. 엄격한 규정 준수", easy:"루트도 못 지워! 법적 의무 데이터 보관에 사용. 한번 설정하면 변경 불가."},
+      {label:"Legal Hold", text:"보존 기간 없이 무기한 보호. s3:PutObjectLegalHold 권한으로 설정/해제", easy:"기간 없이 법적 조사가 끝날 때까지 보호. 소송 중 증거 보전에 활용."},
+      {label:"시험 포인트", text:"S3 Object Lock은 Versioning 필수. 버킷 생성 시 활성화(이후 변경 불가). Glacier도 Vault Lock 가능", easy:"WORM + 규정 준수 → S3 Object Lock! Compliance 모드는 루트도 삭제 불가!"},
+    ]
+  },
+  stepfunctions: {
+    title:"AWS Step Functions", subtitle:"서버리스 워크플로 오케스트레이션",
+    easy:"Step Functions는 여러 Lambda를 순서대로 연결하는 지휘자야! 성공하면 다음 단계, 실패하면 재시도 또는 에러 처리를 자동으로 해줘.",
+    points:[
+      {label:"State Machine", text:"JSON/YAML로 워크플로 정의. 시각적 편집기. Task/Choice/Wait/Parallel/Map 상태", easy:"흐름도를 코드로 그리는 거야! 조건 분기, 병렬 실행, 대기, 반복 모두 표현 가능."},
+      {label:"Standard vs Express", text:"Standard: 최대 1년, 정확히 1회 실행, 감사 로그. Express: 최대 5분, 고처리량, 비동기", easy:"Standard는 장시간 중요 워크플로, Express는 빠른 고처리량(IoT, 스트리밍) 용."},
+      {label:"통합", text:"Lambda, ECS, DynamoDB, SQS, SNS, Bedrock, SageMaker 등 AWS 서비스 직접 통합", easy:"Lambda 뿐 아니라 ECS, DynamoDB, SageMaker 등을 직접 코드 없이 연결!"},
+      {label:"오류 처리", text:"재시도(Retry), 폴백(Catch). 지수 백오프. 타임아웃. 하트비트", easy:"Lambda 실패하면 3번 재시도, 그래도 실패하면 에러 처리 경로로 자동 분기."},
+      {label:"시험 포인트", text:"복잡한 Lambda 체인 → Step Functions. 병렬 처리 → Map/Parallel 상태. 15분 이상 → Standard", easy:"여러 Lambda를 순서대로, 조건부로, 병렬로 실행해야 하면 → Step Functions!"},
+    ]
+  },
+  dynamostreams: {
+    title:"DynamoDB Streams", subtitle:"DynamoDB 변경 이벤트 스트림",
+    easy:"DynamoDB Streams는 테이블에서 일어나는 모든 변화를 실시간으로 전달하는 알림 시스템이야! 항목이 추가/수정/삭제되면 Lambda가 자동으로 실행돼.",
+    points:[
+      {label:"개요", text:"DynamoDB 항목 변경(INSERT/MODIFY/REMOVE) 순서 보장 스트림. 24시간 보관. 샤드 기반", easy:"테이블 변경 사항을 순서대로 기록하는 테이프. 24시간 안에 처리해야 해."},
+      {label:"스트림 레코드 타입", text:"KEYS_ONLY, NEW_IMAGE, OLD_IMAGE, NEW_AND_OLD_IMAGES 중 선택", easy:"키만 보낼지, 변경 전/후 데이터를 보낼지 선택. 전후 비교는 NEW_AND_OLD_IMAGES."},
+      {label:"Lambda 통합", text:"Lambda 이벤트 소스로 자동 폴링. 배치 처리. 실패 시 재시도. DLQ 설정 가능", easy:"새 변경 오면 Lambda 자동 실행! 배치로 처리하고 실패하면 DLQ로."},
+      {label:"사용 사례", text:"크로스 리전 복제(Global Tables 기반), 이벤트 기반 캐시 무효화, 변경 감사 로그", easy:"주문 완료 시 → 재고 감소·배송 시작·알림 동시 처리! 이벤트 기반 아키텍처."},
+      {label:"시험 포인트", text:"Streams는 Lambda 트리거의 기반. Global Tables는 내부적으로 Streams 사용. Kinesis Data Streams도 선택 가능", easy:"DynamoDB 변경 → Lambda 자동 실행 → Streams! Global Tables도 Streams 기반으로 복제."},
+    ]
+  },
+  dms: {
+    title:"AWS Database Migration Service", subtitle:"데이터베이스 마이그레이션",
+    easy:"DMS는 데이터베이스 이사 도우미야! Oracle에서 Aurora로, MySQL에서 PostgreSQL로 운영 중단 없이 데이터를 옮겨줘. 이사 중에도 서비스는 계속 운영돼!",
+    points:[
+      {label:"마이그레이션 유형", text:"동기종(MySQL→MySQL), 이기종(Oracle→Aurora). Full Load, CDC(지속 복제), Full Load+CDC", easy:"같은 DB엔진이면 바로 이전, 다른 엔진이면 Schema Conversion Tool(SCT)로 변환 후 이전."},
+      {label:"CDC(Change Data Capture)", text:"이전 중에도 소스 DB 변경사항 실시간 복제. 다운타임 최소화", easy:"이사 중에 새로 들어온 물건도 자동으로 이사! 서비스 중단 없이 마이그레이션."},
+      {label:"복제 인스턴스", text:"DMS Replication Instance로 처리. EC2 기반. 크기 선택 가능. Multi-AZ 옵션", easy:"중간에서 데이터를 읽고 쓰는 EC2 서버. 데이터 양에 따라 크기 선택."},
+      {label:"지원 DB", text:"소스/목적지: RDS, Aurora, Redshift, DynamoDB, S3, MongoDB, DocumentDB, Kafka 등", easy:"거의 모든 DB에서 거의 모든 DB로 이전 가능. 온프레미스 → 클라우드도!"},
+      {label:"시험 포인트", text:"이기종 DB 이전 → SCT + DMS. 동기종 → DMS만. 최소 다운타임 → CDC 사용", easy:"Oracle→Aurora(이기종) → SCT로 스키마 변환 후 DMS로 데이터 이전!"},
+    ]
+  },
+  transferfamily: {
+    title:"AWS Transfer Family", subtitle:"관리형 파일 전송 서비스",
+    easy:"Transfer Family는 기존 SFTP 클라이언트로 S3에 파일을 올릴 수 있게 해주는 서비스야! 레거시 시스템을 변경하지 않고도 파일을 S3/EFS로 전송할 수 있어.",
+    points:[
+      {label:"지원 프로토콜", text:"SFTP(SSH FTP), FTPS(FTP over SSL), FTP, AS2(B2B 표준). 완전관리형 엔드포인트 제공", easy:"옛날 방식 SFTP/FTP 클라이언트 그대로 사용! AWS가 엔드포인트 관리."},
+      {label:"스토리지 연결", text:"Amazon S3 또는 Amazon EFS에 파일 저장. 기존 S3 버킷 활용", easy:"SFTP로 올린 파일이 자동으로 S3나 EFS에 저장돼!"},
+      {label:"인증", text:"서비스 관리형 사용자, Active Directory, LDAP, 커스텀 IdP(Lambda) 연동", easy:"회사 AD 계정 그대로 SFTP 로그인! 별도 계정 관리 불필요."},
+      {label:"VPC 배포", text:"인터넷 또는 VPC 내부(프라이빗). EIP로 고정 IP. SG로 접근 제어", easy:"인터넷 공개 or VPC 내부 전용 선택. 고정 IP로 방화벽 설정 편리."},
+      {label:"시험 포인트", text:"레거시 SFTP→S3 이전 → Transfer Family. AS2는 B2B 파트너 파일 교환. EDI 표준", easy:"SFTP 그대로 S3 사용 → Transfer Family! B2B 파일 교환(AS2) → Transfer Family!"},
+    ]
+  },
+  appflow: {
+    title:"Amazon AppFlow", subtitle:"SaaS↔AWS 데이터 통합",
+    easy:"AppFlow는 Salesforce, Slack 같은 SaaS 서비스의 데이터를 AWS로 자동으로 가져오는 커넥터야! 코딩 없이 설정만으로 데이터 파이프라인을 만들 수 있어.",
+    points:[
+      {label:"지원 커넥터", text:"Salesforce, Marketo, Slack, ServiceNow, SAP, Google Analytics → S3, Redshift, EventBridge", easy:"Salesforce CRM 데이터를 S3로 자동 저장! 매일, 특정 이벤트 발생 시, 실시간으로."},
+      {label:"데이터 변환", text:"이전 중 데이터 마스킹, 필터링, 검증, 포맷 변환. 민감 데이터 보호", easy:"SaaS에서 가져올 때 개인정보 마스킹, 필요한 필드만 선택 등 변환 가능."},
+      {label:"보안", text:"전송 중·저장 중 암호화. PrivateLink로 인터넷 없이 전송. 감사 로그", easy:"데이터가 인터넷 노출 없이 AWS 내부 네트워크로만 이동해서 안전."},
+      {label:"트리거", text:"온디맨드, 스케줄(분 단위), 이벤트 기반. 양방향(S3→Salesforce도 가능)", easy:"매일 밤 Salesforce → S3 자동 동기화! 또는 새 데이터 생기면 바로 이전."},
+      {label:"시험 포인트", text:"SaaS→AWS 노코드 통합 → AppFlow. vs EventBridge: AppFlow는 데이터 이동, EB는 이벤트 라우팅", easy:"Salesforce/Slack 데이터 → AWS S3/Redshift → AppFlow! 코딩 없이 설정만으로!"},
+    ]
+  },
+  cloudformation: {
+    title:"AWS CloudFormation", subtitle:"Infrastructure as Code",
+    easy:"CloudFormation은 AWS 인프라를 설계도(코드)로 만들고 자동으로 구축하는 서비스야! 클릭 대신 코드 한 장으로 VPC, EC2, RDS 등을 모두 자동 생성해줘.",
+    points:[
+      {label:"템플릿", text:"JSON/YAML 형식. Resources(필수), Parameters, Mappings, Outputs, Conditions, Metadata 섹션", easy:"레고 설명서야! Resources는 무엇을 만들지, Parameters는 입력값, Outputs는 결과 출력."},
+      {label:"스택", text:"템플릿으로 생성된 AWS 리소스 집합. 스택 삭제 시 리소스 전체 삭제(DeletionPolicy 제외)", easy:"스택은 설명서로 만든 레고 완성품. 스택 삭제하면 레고 해체."},
+      {label:"스택셋", text:"여러 계정·리전에 동시 배포. Organizations 통합. 중앙 집중 배포", easy:"같은 설계도로 여러 계정·리전에 동시에 구축! 표준화된 인프라 자동 배포."},
+      {label:"드리프트 감지", text:"실제 리소스 설정이 템플릿과 달라졌는지 자동 감지", easy:"'누군가 콘솔에서 직접 수정했나?' 확인! 코드와 실제 상태 차이 감지."},
+      {label:"시험 포인트", text:"IaC = CloudFormation. 롤백: 실패 시 자동. Change Set으로 변경 미리 확인. Nested Stack 재사용", easy:"인프라 코드화 → CloudFormation. 변경 전 검토 → Change Set. 모듈화 → Nested Stack!"},
+    ]
+  },
+  awsconfig: {
+    title:"AWS Config", subtitle:"리소스 설정 변경 기록 및 규정 준수",
+    easy:"AWS Config는 AWS 리소스의 블랙박스야! 언제 누가 보안그룹을 바꿨는지, S3 버킷이 퍼블릭으로 바뀌었는지 모두 기록하고 규칙 위반 시 자동 알림!",
+    points:[
+      {label:"설정 기록", text:"모든 리소스의 설정 변경 기록. 시간대별 스냅샷. 누가 언제 무엇을 바꿨는지 추적", easy:"VPC, SG, S3 등 설정이 바뀔 때마다 사진 찍어 저장. 타임라인으로 조회 가능."},
+      {label:"Config Rules", text:"AWS Managed Rules(150+), 커스텀 Rules(Lambda). 규정 준수 지속 평가", easy:"'S3 버킷이 퍼블릭이면 안 돼!' 규칙 설정 → 위반 시 자동 알림!"},
+      {label:"자동 교정", text:"Remediation Actions. SSM Automation으로 비준수 리소스 자동 수정", easy:"규칙 위반 → 자동으로 수정! SG 포트 열렸으면 자동으로 닫기."},
+      {label:"집계", text:"Organizations 전체 계정 설정 중앙 집계. Config Aggregator. 다중 리전", easy:"모든 계정의 규정 준수 상태를 한 화면에서 확인!"},
+      {label:"시험 포인트", text:"CloudTrail(누가 했나) vs Config(무엇이 바뀌었나). 규정 준수 평가 → Config Rules. 비용: 기록당 과금", easy:"CloudTrail = 행동 기록(누가). Config = 상태 기록(무엇). 규정 준수 자동화 → Config!"},
+    ]
+  },
+  controltower: {
+    title:"AWS Control Tower", subtitle:"멀티 계정 Landing Zone",
+    easy:"Control Tower는 AWS 환경의 건물 관리인이야! 여러 AWS 계정을 안전하고 표준화된 방식으로 자동 생성하고 관리해. 처음부터 보안이 잘 설정된 계정을 자동으로 만들어줘!",
+    points:[
+      {label:"Landing Zone", text:"멀티 계정 환경 자동 설정. 로그 아카이브 계정, 감사 계정 자동 생성. Organizations 통합", easy:"건물 기초 공사! 처음에 로그 저장소, 감사 계정 등을 자동으로 만들어줘."},
+      {label:"가드레일", text:"예방 가드레일(SCP 기반): 금지된 작업 차단. 탐지 가드레일(Config 기반): 위반 감지", easy:"예방은 '못 하게 막기'(SCP), 탐지는 '잘못됐으면 알림'(Config Rules)."},
+      {label:"Account Factory", text:"새 계정 자동 프로비저닝. 표준 설정 적용. Service Catalog 통합", easy:"새 AWS 계정 신청하면 자동으로 표준 설정이 완료된 계정 생성!"},
+      {label:"대시보드", text:"모든 계정의 가드레일 준수 현황 한 눈에. 위반 계정 식별. 드리프트 감지", easy:"어느 계정이 규정 위반인지 한 화면에서 관리!"},
+      {label:"시험 포인트", text:"멀티 계정 거버넌스 자동화 → Control Tower. SCP + Config Rules 조합. Account Factory로 표준화", easy:"새 팀에 AWS 계정 자동 발급 + 표준 보안 적용 → Control Tower!"},
+    ]
+  },
+  trustedadvisor: {
+    title:"AWS Trusted Advisor", subtitle:"모범 사례 자동 점검",
+    easy:"Trusted Advisor는 AWS 계정의 건강검진 의사야! 비용 낭비, 보안 구멍, 성능 문제, 서비스 한도 초과 위험을 자동으로 점검해서 알려줘!",
+    points:[
+      {label:"5가지 점검 영역", text:"비용 최적화, 성능, 보안, 내결함성, 서비스 한도. 초록(정상)/노랑(주의)/빨강(위험)", easy:"체크리스트 5가지! 비용 낭비, 보안 구멍, 서비스 한도 초과 등을 자동 점검."},
+      {label:"무료 vs 유료", text:"Basic/Developer: 7가지 핵심 보안/한도 점검. Business/Enterprise: 전체 점검 + API 접근", easy:"무료는 기본 점검만. Business 이상 구독하면 전체 점검 + 자동화 가능."},
+      {label:"주요 점검 항목", text:"사용 안 하는 EBS/EIP, MFA 미설정 루트, 열린 보안그룹(0.0.0.0/0), 서비스 한도 80%", easy:"돈 낭비: 미사용 EBS. 보안: MFA 없는 루트. 한도: 90% 이상 사용 중인 서비스."},
+      {label:"자동화", text:"EventBridge + Lambda로 Trusted Advisor 권고사항 자동 조치. 주간 이메일 알림", easy:"Trusted Advisor가 문제 발견 → Lambda가 자동 수정! 예: 미사용 EIP 자동 해제."},
+      {label:"시험 포인트", text:"서비스 한도 증가 요청 → Support Center. Business/Enterprise 플랜에서 전체 점검. Compute Optimizer와 차이", easy:"서비스 한도 확인 → Trusted Advisor! 실제 한도 증가 → Support 케이스!"},
+    ]
+  },
+  organizations: {
+    title:"AWS Organizations", subtitle:"멀티 계정 중앙 관리",
+    easy:"AWS Organizations는 여러 AWS 계정을 하나의 회사처럼 관리하는 시스템이야! 팀별로 계정을 분리하면서도 중앙에서 통제하고 청구서는 하나로 받을 수 있어.",
+    points:[
+      {label:"구조", text:"Management Account(루트) → Root → OU → Member Accounts. 계층적 정책 상속", easy:"회사 조직도처럼! 본사(Management) → 사업부(OU) → 팀(Member Account)."},
+      {label:"SCP", text:"Service Control Policies. OU/계정별 최대 허용 권한 설정. IAM에 추가로 적용", easy:"SCP는 각 계정의 헌법! IAM이 모든 걸 허용해도 SCP에서 막으면 불가."},
+      {label:"통합 결제", text:"모든 계정 청구서 통합. 볼륨 할인. 리저브드/세이빙플랜 공유. Cost Explorer 통합", easy:"계정이 10개여도 청구서 하나! 여러 계정 합산 사용량으로 볼륨 할인 적용."},
+      {label:"서비스 통합", text:"AWS SSO, Config, CloudTrail, GuardDuty, Security Hub, Macie 등 Organizations 수준 활성화", easy:"보안 서비스를 모든 계정에 한 번에 적용! 새 계정 만들면 자동 적용."},
+      {label:"시험 포인트", text:"통합 결제 → Organizations. 계정 간 권한 제한 → SCP. 서비스 중앙 관리 → Organizations", easy:"멀티 계정 관리, 청구서 통합, SCP 적용 모두 → AWS Organizations!"},
+    ]
+  },
+  backup: {
+    title:"AWS Backup", subtitle:"중앙 집중 백업 서비스",
+    easy:"AWS Backup은 EC2, EBS, RDS, DynamoDB 등 여러 서비스의 백업을 한 곳에서 관리하는 서비스야! 백업 정책을 만들면 자동으로 모두 백업해줘.",
+    points:[
+      {label:"지원 서비스", text:"EC2, EBS, RDS/Aurora, DynamoDB, EFS, FSx, S3, Storage Gateway, DocumentDB, Neptune", easy:"거의 모든 AWS 데이터 서비스를 한 번에 백업! 각 서비스별로 따로 설정 불필요."},
+      {label:"백업 정책(계획)", text:"Backup Plan: 스케줄(일/주/월), 보존 기간, 전환(콜드 스토리지), 리전 간 복사", easy:"'매일 자동 백업, 30일 보관, 오래된 건 Glacier로' 규칙 한 번 설정하면 자동 실행."},
+      {label:"백업 볼트", text:"백업 저장소. 암호화(KMS). Vault Lock(WORM): 삭제 방지. 크로스 계정 공유", easy:"금고에 백업 보관! Vault Lock 걸면 관리자도 삭제 불가. 랜섬웨어 방어에 활용."},
+      {label:"Organizations 통합", text:"중앙 백업 정책을 Organizations 전체에 적용. 모든 계정 자동 백업. 규정 준수", easy:"모든 계정에 동일한 백업 정책 자동 적용! 직원이 직접 설정 안 해도 됨."},
+      {label:"시험 포인트", text:"중앙 집중 백업 → AWS Backup. Vault Lock = WORM. 크로스 리전 백업으로 재해 복구", easy:"여러 서비스 백업 중앙 관리 → AWS Backup! 삭제 방지 백업 → Vault Lock!"},
+    ]
+  },
+  iamidentitycenter: {
+    title:"IAM Identity Center", subtitle:"싱글 사인온(SSO) 서비스",
+    easy:"IAM Identity Center는 AWS 계정과 앱 전체에 대한 통합 로그인 서비스야! 한 번 로그인하면 모든 AWS 계정과 Salesforce, Slack 등 앱에 접근할 수 있어.",
+    points:[
+      {label:"SSO", text:"Single Sign-On. 하나의 로그인으로 여러 AWS 계정·앱 접근. 유저 포털 제공", easy:"한 번 로그인 → 모든 AWS 계정 접근! 계정별로 로그인 반복 불필요."},
+      {label:"ID 소스", text:"IAM Identity Center 자체, Active Directory(AD Connector/AWS Managed AD), 외부 IdP(Okta, Azure AD)", easy:"회사 AD 계정으로 AWS 로그인! Okta, Azure AD도 연결 가능."},
+      {label:"권한 셋", text:"Permission Set: 역할 집합을 계정에 할당. OU 또는 계정별 다른 권한. SCP와 독립적", easy:"개발팀에는 개발 계정 관리자, 운영팀에는 운영 계정 읽기 권한 각각 할당."},
+      {label:"SCIM 자동 프로비저닝", text:"IdP에서 사용자 추가/삭제 시 자동 동기화. 수동 관리 불필요", easy:"HR에서 직원 추가하면 자동으로 AWS 접근 권한 생성! 퇴직 시 자동 삭제."},
+      {label:"시험 포인트", text:"멀티 계정 SSO → IAM Identity Center. Cognito는 앱 사용자 인증, IAM Identity Center는 AWS 계정 접근", easy:"직원 AWS 로그인 통합 관리 → IAM Identity Center! 앱 회원가입/로그인 → Cognito!"},
+    ]
+  },
+  emr: {
+    title:"Amazon EMR", subtitle:"관리형 빅데이터 처리",
+    easy:"EMR은 Hadoop, Spark를 AWS 클러스터에서 쉽게 실행하게 해주는 서비스야! 빅데이터를 분석하고 처리하는 작업을 EC2 대신 관리형으로 쓸 수 있어.",
+    points:[
+      {label:"지원 프레임워크", text:"Apache Spark, Hadoop, Hive, Presto, HBase, Flink, Hudi, Iceberg. JupyterHub 통합", easy:"Spark로 수백 TB 데이터 처리, Hive로 대용량 SQL, HBase는 NoSQL — 모두 EMR에서!"},
+      {label:"클러스터 구성", text:"Primary Node(조율), Core Node(처리+저장), Task Node(처리만). Spot Instance로 비용 절감", easy:"공장장(Primary) + 생산직(Core) + 임시직(Task). Task를 Spot으로 쓰면 80% 절감!"},
+      {label:"스토리지", text:"HDFS(임시), EMR File System(EMRFS, S3 연동), Local. S3를 데이터 레이크로", easy:"S3를 영구 저장소로, HDFS는 임시 작업 공간. 클러스터 종료해도 S3 데이터 유지."},
+      {label:"EMR Serverless", text:"클러스터 관리 없이 Spark/Hive 잡 실행. 자동 스케일링. 초 단위 과금", easy:"클러스터 설정 없이 코드만! 알아서 서버 준비하고 처리하고 반납."},
+      {label:"시험 포인트", text:"빅데이터 처리(Spark/Hadoop) → EMR. S3 데이터 레이크 + EMR 조합. Spot으로 비용 절감", easy:"수백 TB 데이터 처리, ML 학습 데이터 준비 → EMR! Spot Instance로 비용 90% 절감 가능!"},
+    ]
+  },
+  glue: {
+    title:"AWS Glue", subtitle:"서버리스 ETL 서비스",
+    easy:"Glue는 데이터 변환 공장이야! S3, RDS, DynamoDB 등에서 데이터를 꺼내서 깨끗하게 정리하고 다른 곳에 넣는 작업을 서버 없이 자동으로 해줘.",
+    points:[
+      {label:"ETL 작업", text:"서버리스 Apache Spark 기반. Python/Scala 스크립트 자동 생성. 스케줄 또는 이벤트 실행", easy:"S3 원본 데이터를 꺼내서(Extract), 정리하고(Transform), 분석DB에 넣는(Load) 자동화."},
+      {label:"데이터 카탈로그", text:"중앙 메타데이터 저장소. Athena, Redshift Spectrum, EMR과 공유. Glue Crawler로 자동 수집", easy:"'S3 어디에 어떤 데이터가 있는지' 자동으로 조사해서 목록 만들기(Crawler)."},
+      {label:"Glue DataBrew", text:"노코드 시각적 데이터 준비·정리. 250+ 변환 함수. 비개발자도 사용", easy:"코딩 없이 클릭으로 데이터 정리! 엑셀처럼 데이터 변환 작업 가능."},
+      {label:"Glue Studio", text:"시각적 ETL 파이프라인 설계. 드래그 앤 드롭. 실시간 모니터링", easy:"그림 그리듯 ETL 파이프라인 연결! 코드 안 짜도 시각적으로 구성."},
+      {label:"시험 포인트", text:"서버리스 ETL → Glue. 데이터 카탈로그 → Glue Catalog. Athena 쿼리 전 Crawler 실행", easy:"S3 데이터 변환/정리 → Glue ETL! Athena가 S3 쿼리하려면 Glue Catalog 필요!"},
+    ]
+  },
+  lakeformation: {
+    title:"AWS Lake Formation", subtitle:"데이터 레이크 구축 및 보안",
+    easy:"Lake Formation은 데이터 레이크(S3 기반 대용량 데이터 저장소)를 쉽게 만들고 '이 사람은 이 컬럼만 볼 수 있어'처럼 세밀하게 접근을 제어하는 서비스야!",
+    points:[
+      {label:"데이터 레이크 구축", text:"S3 기반. 데이터 가져오기·정리·분류 자동화. Glue와 긴밀 통합", easy:"원시 데이터를 S3에 모아두고 Lake Formation이 정리·보안·접근 제어 담당."},
+      {label:"세밀한 접근 제어", text:"열(Column), 행(Row), 셀(Cell) 레벨 접근 제어. 데이터 마스킹. 태그 기반 제어(LF-Tags)", easy:"'마케팅팀은 고객 이름 컬럼 못 봐', '개인 정보는 마스킹' 같은 세밀한 통제."},
+      {label:"통합 서비스", text:"Athena, Redshift Spectrum, EMR, Glue, QuickSight와 통합. 중앙 권한 관리", easy:"모든 분석 서비스에 일관된 접근 제어 적용. Lake Formation 한 곳에서 권한 관리."},
+      {label:"블루프린트", text:"데이터 수집 자동화 템플릿. RDS/S3→데이터 레이크 파이프라인 자동 구축", easy:"클릭 몇 번으로 RDS 데이터를 S3 데이터 레이크로 자동 적재하는 파이프라인 생성."},
+      {label:"시험 포인트", text:"데이터 레이크 세밀한 권한 → Lake Formation. S3 IAM만으론 행/열 수준 제어 불가", easy:"S3 데이터 레이크 + 행·열 수준 접근 제어 → Lake Formation! IAM/S3 정책만으론 불가!"},
+    ]
+  },
+  quicksight: {
+    title:"Amazon QuickSight", subtitle:"서버리스 클라우드 BI",
+    easy:"QuickSight는 데이터를 시각적 그래프로 보여주는 서버리스 BI 도구야! S3, RDS, Redshift 등 데이터를 연결하면 바로 대시보드와 차트를 만들 수 있어.",
+    points:[
+      {label:"데이터 소스", text:"S3, Athena, RDS/Aurora, Redshift, DynamoDB, Salesforce, 외부 DB 연결", easy:"거의 모든 AWS 데이터 소스 연결 가능. 클릭 몇 번으로 바로 차트 생성!"},
+      {label:"SPICE", text:"Super-fast Parallel In-memory Calculation Engine. 데이터 메모리 캐싱. 빠른 쿼리 응답", easy:"데이터를 메모리에 미리 올려둬서 대시보드가 빠르게 로딩!"},
+      {label:"ML Insights", text:"Anomaly Detection(이상 탐지), Forecasting(예측), Auto-Narratives(자동 설명 생성)", easy:"AI가 '이번 달 매출이 비정상적으로 낮아요' 자동 탐지! 추세 예측도 자동으로."},
+      {label:"임베디드 분석", text:"외부 앱에 대시보드 임베딩. SDK. Q(자연어 쿼리). 익명 접근 가능", easy:"'고객 앱에 분석 대시보드 넣기'! QuickSight를 앱에 내장 가능."},
+      {label:"시험 포인트", text:"서버리스 BI 시각화 → QuickSight. Redshift와 조합. 사용자당 과금(Standard/Enterprise)", easy:"데이터 시각화·대시보드 → QuickSight! 다른 BI 툴 대신 AWS 네이티브 선택."},
+    ]
+  },
+  sagemaker: {
+    title:"Amazon SageMaker", subtitle:"완전관리형 ML 플랫폼",
+    easy:"SageMaker는 ML 모델을 만들고 학습시키고 배포하는 모든 과정을 지원하는 서비스야! 데이터 준비부터 모델 배포까지 한 플랫폼에서 가능해.",
+    points:[
+      {label:"SageMaker Studio", text:"통합 ML 개발 환경. JupyterLab 기반. 데이터 준비→학습→배포 전 과정", easy:"ML을 위한 통합 IDE! 주피터 노트북 + 데이터 관리 + 실험 추적을 한 화면에서."},
+      {label:"학습", text:"관리형 학습 인스턴스(GPU). 분산 학습. Spot Instance 활용(최대 90% 절감). 실험 추적", easy:"GPU 서버 관리 없이 학습 시작! Spot으로 학습 비용 90% 절감 가능."},
+      {label:"배포", text:"Real-time Endpoint(낮은 지연), Serverless(간헐적 트래픽), Batch Transform(대량 추론)", easy:"웹서비스 API 형태로 모델 배포! 트래픽 없을 때 비용 0인 서버리스 옵션도."},
+      {label:"Autopilot & Canvas", text:"AutoML: 자동 피처 엔지니어링·모델 선택·하이퍼파라미터 튜닝. Canvas: 노코드 ML", easy:"Autopilot은 데이터 넣으면 최적 모델 자동 선택! Canvas는 코딩 없이 ML 가능."},
+      {label:"시험 포인트", text:"ML 모델 학습·배포 → SageMaker. Feature Store, Model Registry, Pipelines. Rekognition과 차이", easy:"ML 모델 직접 만들기 → SageMaker. 기성 AI API(이미지 인식 등) → Rekognition!"},
     ]
   },
 };

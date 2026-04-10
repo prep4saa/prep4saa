@@ -39,7 +39,7 @@ function selectServicesFromAnalysis(difficulty: string): string[] {
 async function callGeminiAPI(
   prompt: string,
   maxTokens: number,
-  locale: "ko" | "ja" | "en" = "ko",
+  _locale: "ko" | "ja" | "en" = "ko",
   retries: number = 3
 ): Promise<string> {
   let lastError: Error | null = null;
@@ -297,6 +297,10 @@ export async function generateSAAProblem(
 
     try {
       const problem = JSON.parse(jsonStr) as Problem;
+      // 키워드 최대 4개 제한
+      if (problem.keywords && problem.keywords.length > 4) {
+        problem.keywords = problem.keywords.slice(0, 4);
+      }
       return problem;
     } catch (parseError) {
       // 파싱 실패 시 더 공격적으로 정리

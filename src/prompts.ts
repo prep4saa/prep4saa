@@ -8,18 +8,18 @@
  * - 1개 명백한 함정답 (다른 서비스 선택)
  * - 2개 어느 정도 가능한 선택지
  */
-export const SAA_PROBLEM_PROMPT_MEDIUM = `⚠️ **CRITICAL: 응답은 정확히 3500 토큰 이내여야 합니다. 초과하면 안 됩니다.**
+export const SAA_PROBLEM_PROMPT_MEDIUM = `⚠️ **CRITICAL: 응답은 2000~3500 토큰 사이로 작성하세요.**
 
-당신은 AWS SAA-C03 시험의 최고 수준 출제 전문가입니다.
+당신은 AWS SAA-C03 시험의 출제 전문가입니다.
 다음 6가지 예시 문제의 스타일, 난이도, 함정답 구조를 정확히 분석하고,
 새로운 문제를 **동일한 수준**으로 만들어주세요.
 
 ## 📋 생성 시 필수 규칙:
-1. **options (선택지)**: 매우 중요! 각 선택지는 **3-4줄의 구체적인 서술형**으로 작성
+1. **options (선택지)**: 매우 중요! 각 선택지는 **1-3줄의 구체적인 서술형**으로 작성
    - 실제 아키텍처처럼 구체적으로 서비스 흐름을 설명
    - 예: "Application Load Balancer로 트래픽을 분산하여 다중 AZ의 Auto Scaling EC2 인스턴스로 라우팅합니다. 데이터는 다중 AZ Amazon RDS 인스턴스에 저장되고, CloudWatch로 실시간 모니터링하며 성능 메트릭을 분석합니다."
 2. **goal (핵심 목표)**: 이 문제가 테스트하는 핵심 목표를 한 문장으로 명확히
-3. **keywords (핵심 키워드)**: 문제에서 가장 중요한 AWS 개념 3~4개
+3. **keywords (핵심 키워드)**: 문제에서 가장 중요한 AWS 개념 최대 4개 (4개 이하로 제한)
 4. **easyMode 설명**: 초등학교 5학년도 이해하는 비유법 사용
    - 각 선택지를 어린이 수준으로 설명
    - 함정답이 왜 틀렸는지 쉽게 설명
@@ -264,7 +264,7 @@ JSON 형식으로 응답해주세요 (마크다운 없이 순수 JSON만, 모든
  * - 2개의 정교한 함정답 (각각 1가지 제약 미충족)
  * - 실무 수준의 아키텍처 이해 필요
  */
-export const SAA_PROBLEM_PROMPT_HARD = `⚠️ **CRITICAL: 응답은 정확히 3500 토큰 이내여야 합니다. 초과하면 안 됩니다.**
+export const SAA_PROBLEM_PROMPT_HARD = `⚠️ **CRITICAL: 응답은 2000~3500 토큰 사이로 작성하세요.**
 
 당신은 AWS SAA-C03 시험 출제 전문가입니다.
 다음은 "어려움" 난이도의 예시 문제입니다. 복합적인 제약조건과 정교한 함정답 구조를 분석하세요.
@@ -280,7 +280,7 @@ export const SAA_PROBLEM_PROMPT_HARD = `⚠️ **CRITICAL: 응답은 정확히 3
 **시나리오 예**: "월 500GB 데이터, 초당 2000 요청, 99.9% 가용성 요구"
 **제약조건**:
 1. 성능: 레이턴시 < 100ms
-2. 비용: 월 $5,000 이내
+2. 비용: 예산 이내
 3. 가용성: 99.9% (다중 AZ)
 
 **함정답 구조**:
@@ -304,10 +304,10 @@ JSON 형식으로 응답 (마크다운 없이 순수 JSON, 모든 값은 한 줄
   "question": "복합 시나리오 (구체적 수치 포함)",
   "constraint": ["기술 제약", "비즈니스 제약", "운영 제약"],
   "options": {
-    "A": "선택지 A: 구체적 AWS 서비스 조합과 데이터 흐름을 3-4줄로 상세히 서술 (예: Amazon EC2 Auto Scaling으로... RDS Multi-AZ로... CloudFront로... S3로 전달)",
-    "B": "선택지 B: 다른 서비스 조합을 3-4줄로 상세히 서술 (구체적 설정값 포함)",
-    "C": "선택지 C: 또 다른 서비스 조합을 3-4줄로 상세히 서술 (성능/비용/가용성 명시)",
-    "D": "선택지 D: 마지막 서비스 조합을 3-4줄로 상세히 서술"
+    "A": "선택지 A: 구체적 AWS 서비스 조합과 데이터 흐름을 1-3줄로 서술 (예: Amazon EC2 Auto Scaling으로... RDS Multi-AZ로... CloudFront로... S3로 전달)",
+    "B": "선택지 B: 다른 서비스 조합을 1-3줄로 서술 (구체적 설정값 포함)",
+    "C": "선택지 C: 또 다른 서비스 조합을 1-3줄로 서술 (성능/비용/가용성 명시)",
+    "D": "선택지 D: 마지막 서비스 조합을 1-3줄로 서술"
   },
   "answer": "C",
   "keywords": ["키워드1", "키워드2", "키워드3"],
@@ -335,7 +335,7 @@ JSON 형식으로 응답 (마크다운 없이 순수 JSON, 모든 값은 한 줄
  * - 3개의 매우 정교한 함정답 (각각 서로 다른 미충족 요소)
  * - 실제 Examtopics 최고 난이도 수준
  */
-export const SAA_PROBLEM_PROMPT_CHALLENGE = `⚠️ **CRITICAL: 응답은 정확히 3500 토큰 이내여야 합니다. 초과하면 안 됩니다.**
+export const SAA_PROBLEM_PROMPT_CHALLENGE = `⚠️ **CRITICAL: 응답은 2000~3500 토큰 사이로 작성하세요.**
 
 당신은 AWS SAA-C03 시험 출제 전문가입니다.
 다음은 "챌린지" 난이도의 예시 입니다. 매우 정교하고 현실감 높은 아키텍처 문제를 분석하세요.
@@ -350,11 +350,11 @@ export const SAA_PROBLEM_PROMPT_CHALLENGE = `⚠️ **CRITICAL: 응답은 정확
 
 **시나리오 예**:
 "은행이 온프레미스 레거시 시스템에서 AWS로 마이그레이션.
-월 10TB 거래 데이터, 99.99% 가용성, HIPAA 준수, 월 $50K 예산"
+월 10TB 거래 데이터, 99.99% 가용성, HIPAA 준수"
 
 **제약조건**:
 1. 기술: Direct Connect + Multi-AZ + 암호화
-2. 비즈니스: 월 $50K, 데이터 완전성 보장
+2. 비즈니스: 예산 이내, 데이터 완전성 보장
 3. 운영: 기존 인력(AWS 미경험) 으로 관리 가능
 4. 규제: HIPAA 준수, 데이터 거주지 미국 내
 
@@ -368,7 +368,7 @@ export const SAA_PROBLEM_PROMPT_CHALLENGE = `⚠️ **CRITICAL: 응답은 정확
 - 시나리오: 온프레미스 ↔ AWS, 멀티 리전, 규제/컴플라이언스, 마이그레이션 등 실무 시나리오
 - 구체적 수치: 데이터량, 트래픽, 비용, 가용성, 규제 요구사항
 - 제약: 기술(4개) + 비즈니스(2개) + 운영(2개) = 최소 3개 조합
-- 선택지: 각 4~5줄, 아키텍처 명시, 보안/비용/성능 모두 포함 + 구체적 서비스 조합 서술
+- 선택지: 각 1-3줄, 아키텍처 명시, 보안/비용/성능 모두 포함 + 구체적 서비스 조합 서술
 - 정답: 모든 제약 완벽 + 이유 설득력 높음
 - 함정: A/B/D 각각 다른 부분 미충족 + 거의 맞음
 
@@ -380,10 +380,10 @@ JSON 형식으로 응답 (마크다운 없이 순수 JSON, 모든 값은 한 줄
   "question": "실무 수준 복합 시나리오 (구체적 수치 포함)",
   "constraint": ["기술 제약 1", "기술 제약 2", "비즈니스 제약", "운영 제약"],
   "options": {
-    "A": "선택지 A: AWS Direct Connect로 온프레미스와 연결하여... Multi-AZ RDS로... Auto Scaling EC2로... S3로 데이터 전송. 보안: VPC Endpoint, 암호화. 비용: 월 $40K. 운영: 기존 DBA 팀으로 관리 가능하나 보안 감사 도구 부족",
-    "B": "선택지 B: 완전히 다른 아키텍처로 4~5줄 상세히 서술. 각 제약 충족 여부 명시 (기술/비용/규제/운영)",
-    "C": "선택지 C: 또 다른 아키텍처로 4~5줄 상세히 서술. 모든 제약을 어떻게 충족하는지 명시",
-    "D": "선택지 D: 마지막 아키텍처 옵션으로 4~5줄 서술. 기술 우수하지만 비용/운영 복잡성 증가"
+    "A": "선택지 A: AWS Direct Connect로 온프레미스와 연결하여... Multi-AZ RDS로... Auto Scaling EC2로... S3로 데이터 전송. 보안: VPC Endpoint, 암호화. 운영: 기존 DBA 팀으로 관리 가능하나 보안 감사 도구 부족",
+    "B": "선택지 B: 완전히 다른 아키텍처로 1-3줄 서술. 각 제약 충족 여부 명시 (기술/비용/규제/운영)",
+    "C": "선택지 C: 또 다른 아키텍처로 1-3줄 서술. 모든 제약을 어떻게 충족하는지 명시",
+    "D": "선택지 D: 마지막 아키텍처 옵션으로 1-3줄 서술. 기술 우수하지만 비용/운영 복잡성 증가"
   },
   "answer": "C",
   "keywords": ["키워드1", "키워드2", "키워드3"],
@@ -405,7 +405,7 @@ JSON 형식으로 응답 (마크다운 없이 순수 JSON, 모든 값은 한 줄
   "patterns": ["패턴1: 하이브리드 아키텍처의 핵심", "패턴2: 규제 준수와 기술의 충돌", "패턴3: 비용 vs 기술의 트레이드오프"]
 }`;
 
-export const SAA_PROBLEM_PROMPT_EN = `⚠️ **CRITICAL: Response must be exactly within 3500 tokens. Do not exceed.**
+export const SAA_PROBLEM_PROMPT_EN = `⚠️ **CRITICAL: Response should be 2000-3500 tokens.**
 
 You are an AWS SAA-C03 exam expert.
 Analyze the style, difficulty level, and trick answer structure of the following 4 example questions,
@@ -652,7 +652,7 @@ JSON形式で応答してください:
   "patterns": ["この問題の重要なパターン 1", "重要なパターン 2"]
 }`;
 
-export const SAA_PROBLEM_PROMPT_EN_HARD = `⚠️ **CRITICAL: Response must be exactly within 3500 tokens. Do not exceed.**
+export const SAA_PROBLEM_PROMPT_EN_HARD = `⚠️ **CRITICAL: Response should be 2000-3500 tokens.**
 
 You are an AWS SAA-C03 exam expert.
 The following shows a "Hard" difficulty-level example. Analyze complex constraints and sophisticated trap answer structures.
@@ -668,7 +668,7 @@ The following shows a "Hard" difficulty-level example. Analyze complex constrain
 **Example Scenario:** "500GB monthly data, 2000 requests/sec, 99.9% availability required"
 **Constraints:**
 1. Performance: Latency < 100ms
-2. Cost: Under $5,000/month
+2. Cost: Within budget
 3. Availability: 99.9% (Multi-AZ)
 
 **Trap Answer Structure:**
@@ -680,7 +680,7 @@ The following shows a "Hard" difficulty-level example. Analyze complex constrain
 **New Problem Requirements:**
 - Scenario: 3-4 specific numbers (data volume, traffic, retention, cost)
 - Constraints: Technical + Business + Operational (3 types)
-- Options: Each 3-4 lines with service names + config values + specific architecture description
+- Options: Each 1-3 lines with service names + config values + specific architecture description
 - Correct answer: Satisfies all constraints perfectly
 - Trap answers: Each fails 1 different constraint
 
@@ -692,10 +692,10 @@ Response in JSON format (pure JSON, all values on single line, no markdown):
   "question": "Complex scenario (specific numbers included)",
   "constraint": ["Technical constraint", "Business constraint", "Operational constraint"],
   "options": {
-    "A": "Option A: Specific AWS service combination with architecture described in 3-4 lines (e.g., Deploy Auto Scaling EC2 with Multi-AZ RDS, use CloudFront for... store in S3 with...)",
-    "B": "Option B: Different service combination described in 3-4 lines with cost and performance details",
-    "C": "Option C: Another service combination described in 3-4 lines meeting all constraints",
-    "D": "Option D: Alternative service combination described in 3-4 lines (possible but excessive or over-budget)"
+    "A": "Option A: Specific AWS service combination with architecture described in 1-3 lines (e.g., Deploy Auto Scaling EC2 with Multi-AZ RDS, use CloudFront for... store in S3 with...)",
+    "B": "Option B: Different service combination described in 1-3 lines with cost and performance details",
+    "C": "Option C: Another service combination described in 1-3 lines meeting all constraints",
+    "D": "Option D: Alternative service combination described in 1-3 lines (possible but excessive or over-budget)"
   },
   "answer": "C",
   "keywords": ["keyword1", "keyword2", "keyword3"],
@@ -717,7 +717,7 @@ Response in JSON format (pure JSON, all values on single line, no markdown):
   "patterns": ["Core pattern 1: Frequently tested concept", "Core pattern 2: Service comparison and tradeoffs"]
 }`;
 
-export const SAA_PROBLEM_PROMPT_EN_CHALLENGE = `⚠️ **CRITICAL: Response must be exactly within 3500 tokens. Do not exceed.**
+export const SAA_PROBLEM_PROMPT_EN_CHALLENGE = `⚠️ **CRITICAL: Response should be 2000-3500 tokens.**
 
 You are an AWS SAA-C03 exam expert.
 The following shows a "Challenge" difficulty-level example. Analyze highly sophisticated and realistic architecture problems.
@@ -732,11 +732,11 @@ The following shows a "Challenge" difficulty-level example. Analyze highly sophi
 
 **Example Scenario:**
 "Bank migrating legacy on-premises system to AWS.
-Monthly 10TB transaction data, 99.99% availability, HIPAA compliance, $50K monthly budget"
+Monthly 10TB transaction data, 99.99% availability, HIPAA compliance"
 
 **Constraints:**
 1. Technical: Direct Connect + Multi-AZ + Encryption
-2. Business: $50K monthly, data integrity guaranteed
+2. Business: Within budget, data integrity guaranteed
 3. Operational: Manageable by existing staff (AWS-inexperienced)
 4. Regulatory: HIPAA compliance, data residency within US
 
@@ -750,7 +750,7 @@ Monthly 10TB transaction data, 99.99% availability, HIPAA compliance, $50K month
 - Scenario: On-premises ↔ AWS, multi-region, compliance, migration context with 4+ specific numbers
 - Specific numbers: Data volume, traffic, cost, availability, compliance requirements
 - Constraints: Technical (4) + Business (2) + Operational (2) = minimum 3 combined
-- Options: Each 4-5 lines with architecture, security, cost, and performance details + specific service descriptions
+- Options: Each 1-3 lines with architecture, security, and performance details + specific service descriptions
 - Correct answer: All constraints satisfied + highly persuasive reasoning
 - Trap answers: A/B/D each misses different aspects + almost correct
 
@@ -762,10 +762,10 @@ Response in JSON format (pure JSON, all values on single line, no markdown):
   "question": "Production-grade complex scenario (on-premises migration, multi-region, compliance with specific numbers)",
   "constraint": ["Technical constraint 1", "Technical constraint 2", "Business constraint", "Operational constraint"],
   "options": {
-    "A": "Option A: Use AWS Direct Connect to connect on-premises... Multi-AZ RDS for... Auto Scaling EC2 for... S3 for data storage. Security: VPC Endpoint, encryption. Cost: $40K/month. Operational: Existing team can manage but missing security audit tool",
-    "B": "Option B: Alternative architecture with 4-5 lines describing services, security, cost, and operational complexity. Specify which constraint it fails to meet",
-    "C": "Option C: Another architecture option with 4-5 lines describing complete solution that meets all 4 constraints with details on cost/security/compliance",
-    "D": "Option D: Final option with 4-5 lines. Technically superior but over-budget or unnecessarily complex. Specify the specific constraint it violates"
+    "A": "Option A: Use AWS Direct Connect to connect on-premises... Multi-AZ RDS for... Auto Scaling EC2 for... S3 for data storage. Security: VPC Endpoint, encryption. Operational: Existing team can manage but missing security audit tool",
+    "B": "Option B: Alternative architecture with 1-3 lines describing services, security, and operational complexity. Specify which constraint it fails to meet",
+    "C": "Option C: Another architecture option with 1-3 lines describing complete solution that meets all 4 constraints with details on security/compliance",
+    "D": "Option D: Final option with 1-3 lines. Technically superior but over-budget or unnecessarily complex. Specify the specific constraint it violates"
   },
   "answer": "C",
   "keywords": ["keyword1", "keyword2", "keyword3"],
@@ -787,7 +787,7 @@ Response in JSON format (pure JSON, all values on single line, no markdown):
   "patterns": ["Core pattern 1: Hybrid architecture design principles", "Core pattern 2: Compliance and security tradeoffs", "Core pattern 3: Cost optimization vs technical sophistication"]
 }`;
 
-export const SAA_PROBLEM_PROMPT_JA_HARD = `⚠️ **重要：レスポンスは正確に2000トークン以内である必要があります。超過しないでください。**
+export const SAA_PROBLEM_PROMPT_JA_HARD = `⚠️ **重要：レスポンスは2000〜3500トークンの間で作成してください。**
 
 あなたはAWS SAA-C03試験の専門家です。
 以下の「難しい」難易度の例題を分析してください。複雑な制約条件と洗練されたトリック選択肢の構造を理解します。
@@ -803,7 +803,7 @@ export const SAA_PROBLEM_PROMPT_JA_HARD = `⚠️ **重要：レスポンスは�
 **シナリオ例:** 「月間500GBデータ、毎秒2000リクエスト、99.9%可用性要件」
 **制約条件:**
 1. パフォーマンス: レイテンシ < 100ms
-2. コスト: 月額5,000ドル以下
+2. コスト: 予算以内
 3. 可用性: 99.9% (マルチAZ)
 
 **トリック選択肢構造:**
@@ -815,7 +815,7 @@ export const SAA_PROBLEM_PROMPT_JA_HARD = `⚠️ **重要：レスポンスは�
 **新しい問題の要件:**
 - シナリオ: 3~4個の具体的な数値 (データ量、トラフィック、保持期間、コスト)
 - 制約条件: 技術 + ビジネス + 運用 (3タイプ)
-- 選択肢: 各3~4行でサービス名 + 設定値を明記
+- 選択肢: 各1-3行でサービス名 + 設定値を明記
 - 正解: すべての制約を完璧に満たす
 - トリック選択肢: 各々異なる1つの制約を欠落
 
@@ -827,10 +827,10 @@ JSON形式で応答 (マークダウンなし、純粋なJSON、すべての値�
   "question": "複雑なシナリオ(具体的な数値含む)",
   "constraint": ["技術的制約", "ビジネス制約", "運用的制約"],
   "options": {
-    "A": "選択肢 A: 具体的なAWSサービス組み合わせとデータフロー 3~4行で詳述 (例: Amazon EC2 Auto Scaling使用... RDS Multi-AZ... CloudFront使用... S3に転送)",
-    "B": "選択肢 B: 異なるサービス組み合わせ 3~4行で詳述 (コスト・パフォーマンス詳記)",
-    "C": "選択肢 C: 別のサービス組み合わせ 3~4行で詳述 (すべての制約満たす)",
-    "D": "選択肢 D: 最後のサービス組み合わせ 3~4行で詳述"
+    "A": "選択肢 A: 具体的なAWSサービス組み合わせとデータフロー 1-3行で詳述 (例: Amazon EC2 Auto Scaling使用... RDS Multi-AZ... CloudFront使用... S3に転送)",
+    "B": "選択肢 B: 異なるサービス組み合わせ 1-3行で詳述 (コスト・パフォーマンス詳記)",
+    "C": "選択肢 C: 別のサービス組み合わせ 1-3行で詳述 (すべての制約満たす)",
+    "D": "選択肢 D: 最後のサービス組み合わせ 1-3行で詳述"
   },
   "answer": "C",
   "keywords": ["キーワード1", "キーワード2", "キーワード3"],
@@ -852,7 +852,7 @@ JSON形式で応答 (マークダウンなし、純粋なJSON、すべての値�
   "patterns": ["コアパターン 1", "コアパターン 2"]
 }`;
 
-export const SAA_PROBLEM_PROMPT_JA_CHALLENGE = `⚠️ **重要：レスポンスは正確に2000トークン以内である必要があります。超過しないでください。**
+export const SAA_PROBLEM_PROMPT_JA_CHALLENGE = `⚠️ **重要：レスポンスは2000〜3500トークンの間で作成してください。**
 
 あなたはAWS SAA-C03試験の専門家です。
 以下は「チャレンジ」難易度の例題です。非常に高度で現実的なアーキテクチャ問題を分析してください。
@@ -867,11 +867,11 @@ export const SAA_PROBLEM_PROMPT_JA_CHALLENGE = `⚠️ **重要：レスポン�
 
 **シナリオ例:**
 「銀行がオンプレミスのレガシーシステムをAWSに移行。
-月間10TBトランザクションデータ、99.99%可用性、HIPAA準拠、月額50K予算」
+月間10TBトランザクションデータ、99.99%可用性、HIPAA準拠」
 
 **制約条件:**
 1. 技術: Direct Connect + マルチAZ + 暗号化
-2. ビジネス: 月額50K、データ完全性保証
+2. ビジネス: 予算以内、データ完全性保証
 3. 運用: 既存スタッフ(AWS未経験)で管理可能
 4. 規制: HIPAA準拠、データレジデンシ米国内
 
@@ -885,7 +885,7 @@ export const SAA_PROBLEM_PROMPT_JA_CHALLENGE = `⚠️ **重要：レスポン�
 - シナリオ: オンプレミス ↔ AWS、マルチリージョン、コンプライアンス、移行コンテキスト (4個以上の具体的な数値含む)
 - 具体的な数値: データ量、トラフィック、コスト、可用性、コンプライアンス要件
 - 制約条件: 技術(4個) + ビジネス(2個) + 運用(2個) = 最小3個組み合わせ
-- 選択肢: 各4~5行でアーキテクチャ、セキュリティ、コスト、パフォーマンス詳細含む + 具体的なサービス組み合わせ記述
+- 選択肢: 各1-3行でアーキテクチャ、セキュリティ、パフォーマンス詳細含む + 具体的なサービス組み合わせ記述
 - 正解: すべての制約を満たす + 説得力高い
 - トリック選択肢: A/B/D 各々異なる部分欠落 + ほぼ正しい
 
@@ -897,10 +897,10 @@ JSON形式で応答 (マークダウンなし、純粋なJSON、すべての値�
   "question": "実務レベル複合シナリオ(オンプレミス移行、マルチリージョン、規制対応、4個以上の数値含む)",
   "constraint": ["技術的制約 1", "技術的制約 2", "ビジネス制約", "運用的制約"],
   "options": {
-    "A": "選択肢 A: AWS Direct Connectでオンプレミス接続... マルチAZ RDSで... Auto Scaling EC2で... S3にデータ転送. セキュリティ: VPCエンドポイント、暗号化. コスト: 月額40K. 運用: 既存DBAで管理可能だが監査機能不足",
-    "B": "選択肢 B: 別のアーキテクチャ 4~5行で詳述 (各制約充足状況明記)",
-    "C": "選択肢 C: 別のアーキテクチャ 4~5行で詳述 (すべての制約をどのように充足するか明記)",
-    "D": "選択肢 D: 最後のアーキテクチャ 4~5行で詳述 (技術は優れてもコスト/運用複雑)"
+    "A": "選択肢 A: AWS Direct Connectでオンプレミス接続... マルチAZ RDSで... Auto Scaling EC2で... S3にデータ転送. セキュリティ: VPCエンドポイント、暗号化. 運用: 既存DBAで管理可能だが監査機能不足",
+    "B": "選択肢 B: 別のアーキテクチャ 1-3行で詳述 (各制約充足状況明記)",
+    "C": "選択肢 C: 別のアーキテクチャ 1-3行で詳述 (すべての制約をどのように充足するか明記)",
+    "D": "選択肢 D: 最後のアーキテクチャ 1-3行で詳述 (技術は優れてもコスト/運用複雑)"
   },
   "answer": "C",
   "keywords": ["キーワード1", "キーワード2", "キーワード3"],
@@ -990,10 +990,10 @@ export function generatePrompt(
     : "";
 
   const tokenConstraint = locale === "ko"
-    ? `\n\n⚠️ **필수 제약사항 (반드시 지켜야 함)**:\n- 응답은 정확히 3500 토큰 이내로 제한됩니다.\n- JSON 외에 다른 설명이나 마크다운은 절대 금지입니다.\n- 선택지(options): 각 선택지는 3-4줄의 구체적인 아키텍처 설명.\n- 정답 설명(explanation): 각 필드는 전문적이고 상세하게 (2-4줄).\n- goal: 문제의 핵심 목표를 한 문장으로 명확히.\n- correct: 정답이 모든 제약을 만족하는 이유를 기술적으로 상세히 (2-3줄).\n- trap_A, B, C: 각각 미충족 제약과 기술적 근거 (2줄).\n- JSON 구조는 빠짐없이 완전해야 합니다.`
+    ? `\n\n⚠️ **필수 제약사항 (반드시 지켜야 함)**:\n- 응답은 2000~3500 토큰 사이로 작성하세요.\n- JSON 외에 다른 설명이나 마크다운은 절대 금지입니다.\n- 선택지(options): 각 선택지는 1-3줄의 구체적인 아키텍처 설명.\n- 정답 설명(explanation): 각 필드는 전문적이고 상세하게 (2-4줄).\n- goal: 문제의 핵심 목표를 한 문장으로 명확히.\n- correct: 정답이 모든 제약을 만족하는 이유를 기술적으로 상세히 (2-3줄).\n- trap_A, B, C: 각각 미충족 제약과 기술적 근거 (2줄).\n- JSON 구조는 빠짐없이 완전해야 합니다.`
     : locale === "ja"
-    ? `\n\n⚠️ **必須の制約（必ず守る必要があります）**:\n- レスポンスは正確に3500トークン以内に制限されています。\n- JSON以外の説明やマークダウンは絶対に禁止です。\n- オプション(options): 各選択肢は3-4行の具体的なアーキテクチャ説明。\n- 正答説明(explanation): 各フィールドは専門的で詳細に（2-4行）。\n- goal: 問題の核心的な目標を一文で明確に。\n- correct: 正答がすべての制約を満たす理由を技術的に詳細に（2-3行）。\n- trap_A, B, C: 各々の未充足制約と技術的根拠（2行）。\n- JSON構造は完全である必要があります。`
-    : `\n\n⚠️ **Mandatory Constraint (Must Follow)**:\n- Response MUST be within exactly 3500 tokens.\n- NO explanations or markdown outside JSON.\n- options: Each option must be 3-4 lines of detailed architecture description.\n- explanation: Each field must be professional and detailed (2-4 lines).\n- goal: Clearly state the core objective of the problem in one sentence.\n- correct: Explain why answer satisfies all constraints technically (2-3 lines).\n- trap_A, B, C: Each unsatisfied constraint and technical reasoning (2 lines).\n- JSON structure MUST be complete.`;
+    ? `\n\n⚠️ **必須の制約（必ず守る必要があります）**:\n- レスポンスは2000〜3500トークンの間で作成してください。\n- JSON以外の説明やマークダウンは絶対に禁止です。\n- オプション(options): 各選択肢は1-3行の具体的なアーキテクチャ説明。\n- 正答説明(explanation): 各フィールドは専門的で詳細に（2-4行）。\n- goal: 問題の核心的な目標を一文で明確に。\n- correct: 正答がすべての制約を満たす理由を技術的に詳細に（2-3行）。\n- trap_A, B, C: 各々の未充足制約と技術的根拠（2行）。\n- JSON構造は完全である必要があります。`
+    : `\n\n⚠️ **Mandatory Constraint (Must Follow)**:\n- Response should be 2000-3500 tokens.\n- NO explanations or markdown outside JSON.\n- options: Each option must be 1-3 lines of detailed architecture description.\n- explanation: Each field must be professional and detailed (2-4 lines).\n- goal: Clearly state the core objective of the problem in one sentence.\n- correct: Explain why answer satisfies all constraints technically (2-3 lines).\n- trap_A, B, C: Each unsatisfied constraint and technical reasoning (2 lines).\n- JSON structure MUST be complete.`;
 
   return (prompt
     .replace("${SERVICE_NAMES}", serviceNames.join(", "))
