@@ -1032,7 +1032,7 @@ function App() {
   }, [graphPeriod, graphMonthOffset, graphWeekIndex]);
 
   const onNodeClick = (id: string | null) => {
- if (!id) return;
+ if (!id) { setSelected(null); return; }
  setSelected(id);
  // Add to slots
  if (!slots.includes(id) && slots.length < 4) {
