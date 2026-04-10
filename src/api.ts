@@ -147,14 +147,6 @@ export async function generateSAAProblem(
   domain?: "security" | "resilience" | "performance" | "cost-optimization"
 ): Promise<Problem> {
   const env = (import.meta as any).env;
-  const apiKey = (globalThis as any).__VITE_API_KEY__ || env.VITE_ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      locale === "en" ? "API key is not configured. Check .env file." :
-      locale === "ja" ? "APIキーが設定されていません。.envファイルを確認してください。" :
-      "API 키가 설정되지 않았습니다. .env 파일을 확인하세요."
-    );
-  }
 
   // 📊 모의시험 모드: 빈 배열이면 분석 데이터 기반으로 서비스 선택
   let selectedServices = serviceNames;
@@ -341,10 +333,6 @@ export async function translateConcept(
   locale: "ja" | "en"
 ): Promise<Concept> {
   const env = (import.meta as any).env;
-  const apiKey = (globalThis as any).__VITE_API_KEY__ || env.VITE_ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    throw new Error("API key not configured");
-  }
 
   const targetLang = locale === "ja" ? "Japanese" : "English";
   const prompt = `You are a technical translator. Translate the following AWS concept from Korean to ${targetLang}.
