@@ -13,7 +13,7 @@ import { CONCEPTS_JA } from "./data";
 import { auth, createPost, deleteExpiredResults, deleteOldMockExamProblems, deletePost, getAdminStatsSecure, getAllUsersForAdminSecure, getCurrentUser, getExamStartDate, getPostById, getPosts, getTodayMockExamProblems, getUserPaidStatus, getUserProblemSessions, getUserProblemSessionsSecure, getUserQuizStats, isPasswordLinked, linkEmailPasswordToCurrentUser, onAuthStateChange, recordQuizResult, saveExamStartDate, saveTodayMockExamProblems, saveUserInfoToFirebase, signIn, signInWithGoogle, signOut, signUp, updateMockExamProblemsProgressively, updateStreakInFirebase, updateUserPaidStatus, uploadPDFToStorage } from "./firebase";
 import { useLocale } from "./LocaleContext";
 import { useTheme } from "./ThemeContext";
-import { canGenerateProblemToday, recordProblemGeneration } from "./firebase";
+import { canGenerateProblemToday, recordProblemGeneration, getUserMockExamDate, recordMockExamDate } from "./firebase";
 import "./styles.css";
 
 // ===== 입력값 검증 함수 =====
@@ -1262,49 +1262,46 @@ function App() {
  }
   }, [tab, userEmail]);
 
-  // 모의시험 일일 제한 체크 및 PDF 초기화
+  // 모의시험 일일 제한 체크 및 PDF 초기화 (Firebase 기반)
   useEffect(() => {
- if (tab === "mockExam") {
- const today = new Date().toISOString().split("T")[0];
- const lastMockExamDate = localStorage.getItem("lastMockExamDate");
- const pdfCreatedAtStr = localStorage.getItem("mockExamPdfCreatedAt");
+ if (tab !== "mockExam") return;
 
  // PDF 24시간 자동 삭제 로직
+ const pdfCreatedAtStr = localStorage.getItem("mockExamPdfCreatedAt");
  if (pdfCreatedAtStr) {
- const pdfCreatedAt = parseInt(pdfCreatedAtStr, 10);
- const now = Date.now();
- const elapsedHours = (now - pdfCreatedAt) / (1000 * 60 * 60);
-
- // 24시간이 지났으면 자동 삭제
- if (elapsedHours >= 24) {
- localStorage.removeItem("mockExamPdfCreatedAt");
- setMockExamPdfCreatedAt(null);
- } else {
- setMockExamPdfCreatedAt(pdfCreatedAt);
- }
+   const pdfCreatedAt = parseInt(pdfCreatedAtStr, 10);
+   if ((Date.now() - pdfCreatedAt) / (1000 * 60 * 60) >= 24) {
+     localStorage.removeItem("mockExamPdfCreatedAt");
+     setMockExamPdfCreatedAt(null);
+   } else {
+     setMockExamPdfCreatedAt(pdfCreatedAt);
+   }
  }
 
- //  Admin은 무제한 응시 가능
- if (lastMockExamDate === today && !isAdmin) {
- // 오늘 이미 본 경우 (admin 제외)
- setMockExamAlreadyTaken(true);
- // 내일 자정까지의 남은 시간 계산
- const tomorrow = new Date(today);
- tomorrow.setDate(tomorrow.getDate() + 1);
- const now = new Date();
- const remainingMs = tomorrow.getTime() - now.getTime();
- const hours = Math.floor(remainingMs / (1000 * 60 * 60));
- const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
- setMockExamNextAvailableTime(`${hours}시간 ${minutes}분`);
- } else {
- setMockExamAlreadyTaken(false);
- setMockExamNextAvailableTime("");
- // 새로운 날짜이면 PDF 시간 초기화
- localStorage.removeItem("mockExamPdfCreatedAt");
- setMockExamPdfCreatedAt(null);
- }
- }
-  }, [tab, userEmail]);
+ // Firebase에서 유저별 모의시험 날짜 확인
+ (async () => {
+   const today = new Date().toISOString().split("T")[0];
+   const user = auth.currentUser;
+   let lastMockExamDate: string | null = null;
+
+   if (user && !isAdmin) {
+     lastMockExamDate = await getUserMockExamDate(user.uid);
+   }
+
+   if (lastMockExamDate === today && !isAdmin) {
+     setMockExamAlreadyTaken(true);
+     const tomorrow = new Date(today);
+     tomorrow.setDate(tomorrow.getDate() + 1);
+     const remainingMs = tomorrow.getTime() - Date.now();
+     const hours = Math.floor(remainingMs / (1000 * 60 * 60));
+     const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+     setMockExamNextAvailableTime(`${hours}시간 ${minutes}분`);
+   } else {
+     setMockExamAlreadyTaken(false);
+     setMockExamNextAvailableTime("");
+   }
+ })();
+  }, [tab, userEmail, isAdmin]);
 
   // 모의시험 타이머
   useEffect(() => {
@@ -1334,13 +1331,10 @@ function App() {
  // ✅ 시험 종료: 고정된 언어 정보 제거
  localStorage.removeItem("mockExamStartedLocale");
 
- //  Admin은 일일 제한 없음 (lastMockExamDate 저장 안 함)
- // 일반 사용자는 오늘 날짜 저장 (일일 제한)
- const today = new Date().toISOString().split("T")[0];
- const isAdmin = isAdmin;
- if (!isAdmin) {
- localStorage.setItem("lastMockExamDate", today);
- setMockExamAlreadyTaken(true);
+ // Admin은 일일 제한 없음
+ if (!isAdmin && auth.currentUser) {
+   recordMockExamDate(auth.currentUser.uid); // async, fire-and-forget
+   setMockExamAlreadyTaken(true);
  }
 
  return 0;
@@ -4471,13 +4465,11 @@ function App() {
  // ✅ 시험 시작 시 언어 고정 (시험 중 언어 변경 방지)
  localStorage.setItem("mockExamStartedLocale", locale);
 
- // ✅ 오늘 시험 시작했음을 표시 (하루 한 번 제한용, 테스트/운영자 제외)
- const today = new Date().toISOString().split('T')[0];
- // 환경변수에서 읽은 이메일 목록 사용
+ // ✅ 오늘 시험 시작했음을 Firebase에 기록 (하루 한 번 제한용, 운영자 제외)
  const isUnlimitedUser = TEST_PAID_EMAILS.includes(userEmail || '') || ADMIN_EMAILS.includes(userEmail || '') || isAdmin;
-
- if (!isUnlimitedUser) {
- localStorage.setItem("mockExamStartedToday", today);
+ if (!isUnlimitedUser && auth.currentUser) {
+   await recordMockExamDate(auth.currentUser.uid);
+   setMockExamAlreadyTaken(true);
  }
 
  } catch (err) {

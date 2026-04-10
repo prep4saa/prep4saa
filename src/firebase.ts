@@ -1407,3 +1407,35 @@ export async function recordProblemGeneration(userId: string): Promise<void> {
     console.error("❌ 문제 생성 기록 실패:", error.message);
   }
 }
+
+// ===== 유저별 모의시험 날짜 기록 =====
+
+/**
+ * 유저가 오늘 모의시험을 봤는지 Firebase에서 확인 (UTC 기준)
+ * localStorage 대신 Firestore를 source of truth로 사용
+ */
+export async function getUserMockExamDate(userId: string): Promise<string | null> {
+  try {
+    if (!userId) return null;
+    const userRef = doc(db, "users", userId);
+    const userDoc = await getDoc(userRef);
+    if (!userDoc.exists()) return null;
+    return userDoc.data()?.lastMockExamDate ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 유저의 모의시험 날짜를 Firebase에 저장 (UTC 기준 오늘 날짜)
+ */
+export async function recordMockExamDate(userId: string): Promise<void> {
+  try {
+    if (!userId) return;
+    const today = new Date().toISOString().split("T")[0];
+    const userRef = doc(db, "users", userId);
+    await setDoc(userRef, { lastMockExamDate: today }, { merge: true });
+  } catch (error: any) {
+    console.error("❌ 모의시험 날짜 저장 실패:", error.message);
+  }
+}
