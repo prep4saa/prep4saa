@@ -67,7 +67,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, onSuccess, userEma
 
   const currentLabels = labels[locale as keyof typeof labels] || labels.en;
 
-  const handleLemonSqueezyCheckout = async (e: React.FormEvent) => {
+  const handleLemonSqueezyCheckout = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
       setError(locale === 'ko' ? '이메일을 입력해주세요.' : locale === 'ja' ? 'メールアドレスを入力してください。' : 'Please enter your email.');
@@ -75,38 +75,15 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, onSuccess, userEma
     }
 
     setLoading(true);
-    setError(null);
 
-    try {
-      const env = (import.meta as any).env;
-      const backendUrl = env?.VITE_BACKEND_URL || 'http://localhost:5000';
+    const env = (import.meta as any).env;
+    const storeId = env?.VITE_LEMON_SQUEEZY_STORE_ID;
+    const productId = env?.VITE_LEMON_SQUEEZY_PRODUCT_ID;
 
-      // ✅ Lemon Squeezy Checkout URL 생성
-      const response = await fetch(`${backendUrl}/api/lemonsqueezy/checkout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email,
-          returnUrl: window.location.origin,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Checkout creation failed');
-      }
-
-      const data = await response.json();
-
-      if (data.checkoutUrl) {
-        // Lemon Squeezy 결제 페이지로 리다이렉트
-        window.location.href = data.checkoutUrl;
-      } else {
-        throw new Error(data.error || 'Failed to create checkout');
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    if (storeId && productId) {
+      const checkoutUrl = `https://checkout.lemonsqueezy.com/buy/${storeId}/${productId}?checkout[email]=${encodeURIComponent(email)}`;
+      window.location.href = checkoutUrl;
+    } else {
       setError(currentLabels.errorMessage);
       setLoading(false);
     }
