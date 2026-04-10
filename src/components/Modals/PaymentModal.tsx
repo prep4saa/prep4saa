@@ -81,7 +81,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, onSuccess, userEma
     const productId = env?.VITE_LEMON_SQUEEZY_PRODUCT_ID;
 
     if (storeId && productId) {
-      const checkoutUrl = `https://checkout.lemonsqueezy.com/buy/${storeId}/${productId}?checkout[email]=${encodeURIComponent(email)}`;
+      const checkoutUrl = `https://${storeId}.lemonsqueezy.com/checkout/buy/${productId}?checkout[email]=${encodeURIComponent(email)}`;
       window.location.href = checkoutUrl;
     } else {
       setError(currentLabels.errorMessage);
