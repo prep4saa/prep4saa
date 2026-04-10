@@ -327,17 +327,20 @@ function useForce() {
   const posRef = useRef(pos);
   const dragRef = useRef<string | null>(null);
   const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
   posRef.current = pos;
-  return { pos, setPos, posRef, dragRef, pan, setPan };
+  return { pos, setPos, posRef, dragRef, pan, setPan, zoom, setZoom };
 }
 
-function GraphSVG({ pos, setPos, posRef, dragRef, pan, setPan, selected, slots, onNodeClick, catFilter, theme }: {
+function GraphSVG({ pos, setPos, posRef, dragRef, pan, setPan, zoom, setZoom, selected, slots, onNodeClick, catFilter, theme }: {
   pos: Record<string, any>;
   setPos: any;
   posRef: any;
   dragRef: any;
   pan: {x:number;y:number};
   setPan: any;
+  zoom: number;
+  setZoom: any;
   selected: string | null;
   slots: string[];
   onNodeClick: (id: string | null) => void;
@@ -346,30 +349,50 @@ function GraphSVG({ pos, setPos, posRef, dragRef, pan, setPan, selected, slots, 
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const panStartRef = useRef<{mx:number;my:number;px:number;py:number} | null>(null);
+  const didPanRef = useRef(false);
   const connectedIds = selected
  ? new Set([selected, ...LINKS.filter(l => l.s === selected || l.t === selected).flatMap(l => [l.s, l.t])])
  : null;
+
+  const vw = VW / zoom;
+  const vh = VH / zoom;
 
   const getSvgXY = (cx: number, cy: number) => {
     const r = svgRef.current?.getBoundingClientRect();
     if (!r) return { x: pan.x, y: pan.y };
     return {
-      x: pan.x + ((cx - r.left) / r.width) * VW,
-      y: pan.y + ((cy - r.top) / r.height) * VH,
+      x: pan.x + ((cx - r.left) / r.width) * vw,
+      y: pan.y + ((cy - r.top) / r.height) * vh,
     };
   };
 
-  const clampPan = (x: number, y: number) => ({
-    x: Math.max(0, Math.min(CW - VW, x)),
-    y: Math.max(0, Math.min(CH - VH, y)),
+  const clampPan = (x: number, y: number, z = zoom) => ({
+    x: Math.max(0, Math.min(CW - VW / z, x)),
+    y: Math.max(0, Math.min(CH - VH / z, y)),
   });
 
   const R = 28;
 
   return (
- <svg ref={svgRef} viewBox={`${pan.x} ${pan.y} ${VW} ${VH}`}
- style={{ display: "block", width: "100%", height: "100%", background: "var(--bg-graph)", touchAction: "none", cursor: dragRef.current ? "grabbing" : "grab" }}
+ <svg ref={svgRef} viewBox={`${pan.x} ${pan.y} ${vw} ${vh}`}
+ style={{ display: "block", width: "100%", height: "100%", background: "var(--bg-graph)", touchAction: "none", cursor: "grab" }}
+ onWheel={e => {
+   e.preventDefault();
+   const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+   const newZoom = Math.max(0.3, Math.min(4, zoom * factor));
+   const r = svgRef.current?.getBoundingClientRect();
+   if (!r) { setZoom(newZoom); return; }
+   const mx = (e.clientX - r.left) / r.width;
+   const my = (e.clientY - r.top) / r.height;
+   const canvasX = pan.x + mx * vw;
+   const canvasY = pan.y + my * vh;
+   const newVW = VW / newZoom;
+   const newVH = VH / newZoom;
+   setZoom(newZoom);
+   setPan(clampPan(canvasX - mx * newVW, canvasY - my * newVH, newZoom));
+ }}
  onMouseDown={e => {
+   didPanRef.current = false;
    if (!(e.target as Element).closest('g')) {
      panStartRef.current = { mx: e.clientX, my: e.clientY, px: pan.x, py: pan.y };
    }
@@ -381,16 +404,23 @@ function GraphSVG({ pos, setPos, posRef, dragRef, pan, setPan, selected, slots, 
    } else if (panStartRef.current) {
      const r = svgRef.current?.getBoundingClientRect();
      if (!r) return;
-     const scaleX = VW / r.width;
-     const scaleY = VH / r.height;
-     const dx = (e.clientX - panStartRef.current.mx) * scaleX;
-     const dy = (e.clientY - panStartRef.current.my) * scaleY;
+     const dx = (e.clientX - panStartRef.current.mx) / r.width * vw;
+     const dy = (e.clientY - panStartRef.current.my) / r.height * vh;
+     if (Math.abs(dx) > 2 || Math.abs(dy) > 2) didPanRef.current = true;
      setPan(clampPan(panStartRef.current.px - dx, panStartRef.current.py - dy));
    }
  }}
- onMouseUp={() => { dragRef.current = null; panStartRef.current = null; }}
- onMouseLeave={() => { dragRef.current = null; panStartRef.current = null; }}
+ onMouseUp={e => {
+   dragRef.current = null;
+   if (!didPanRef.current && !(e.target as Element).closest('g')) {
+     onNodeClick(null);
+   }
+   panStartRef.current = null;
+   didPanRef.current = false;
+ }}
+ onMouseLeave={() => { dragRef.current = null; panStartRef.current = null; didPanRef.current = false; }}
  onTouchStart={e => {
+   didPanRef.current = false;
    if (!(e.target as Element).closest('g')) {
      const t = e.touches[0];
      panStartRef.current = { mx: t.clientX, my: t.clientY, px: pan.x, py: pan.y };
@@ -406,14 +436,20 @@ function GraphSVG({ pos, setPos, posRef, dragRef, pan, setPan, selected, slots, 
    const r = svgRef.current?.getBoundingClientRect();
    if (!r) return;
    const t = e.touches[0];
-   const scaleX = VW / r.width;
-   const scaleY = VH / r.height;
-   const dx = (t.clientX - panStartRef.current.mx) * scaleX;
-   const dy = (t.clientY - panStartRef.current.my) * scaleY;
+   const dx = (t.clientX - panStartRef.current.mx) / r.width * vw;
+   const dy = (t.clientY - panStartRef.current.my) / r.height * vh;
+   didPanRef.current = true;
    setPan(clampPan(panStartRef.current.px - dx, panStartRef.current.py - dy));
  }
  }}
- onTouchEnd={() => { dragRef.current = null; panStartRef.current = null; }}
+ onTouchEnd={e => {
+   dragRef.current = null;
+   if (!didPanRef.current && !(e.target as Element).closest('g')) {
+     onNodeClick(null);
+   }
+   panStartRef.current = null;
+   didPanRef.current = false;
+ }}
  >
  <defs>
  <filter id="glow1" x="-60%" y="-60%" width="220%" height="220%">
@@ -493,7 +529,7 @@ function App() {
   const { locale, setLocale, t } = useLocale();
   const { theme, toggleTheme } = useTheme();
   // Fixed node positions for instant page load and immediate footer interactivity
-  const { pos, setPos, posRef, dragRef, pan, setPan } = useForce();
+  const { pos, setPos, posRef, dragRef, pan, setPan, zoom, setZoom } = useForce();
 
   //  Google 로그인 에러 메시지를 다국어로 처리
   const translateAuthError = (errorMessage: string): string => {
@@ -4889,7 +4925,7 @@ function App() {
  <>
  <div className="graph-label">{t("graphLabel")}</div>
  <div className="graph-box">
- <GraphSVG pos={pos} setPos={setPos} posRef={posRef} dragRef={dragRef} pan={pan} setPan={setPan}
+ <GraphSVG pos={pos} setPos={setPos} posRef={posRef} dragRef={dragRef} pan={pan} setPan={setPan} zoom={zoom} setZoom={setZoom}
  selected={selected} slots={slots} onNodeClick={onNodeClick} catFilter={catFilter} theme={theme} />
  </div>
  </>
