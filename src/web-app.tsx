@@ -276,50 +276,68 @@ function setExamStartDate() {
   localStorage.setItem("examStartDate", today);
 }
 
-const W = 900, H = 520;
+// CW/CH = total canvas, VW/VH = visible viewport
+const CW = 1800, CH = 1100, VW = 900, VH = 580;
+// Legacy alias used by background dots
+const W = CW, H = CH;
 
 function initPos() {
+  // Category center positions across the large canvas
   const centers: Record<string, {x:number;y:number}> = {
- compute:{x:160,y:140}, storage:{x:760,y:140}, database:{x:760,y:420},
- network:{x:460,y:90}, security:{x:160,y:420}, messaging:{x:460,y:500}, monitor:{x:80,y:300},
- migration:{x:300,y:560}, ops:{x:600,y:560}, analytics:{x:900,y:300},
+    compute:   {x:185,  y:155},   // 6 nodes
+    network:   {x:580,  y:130},   // 12 nodes
+    storage:   {x:1080, y:130},   // 8 nodes
+    analytics: {x:1560, y:185},   // 5 nodes
+    security:  {x:185,  y:570},   // 12 nodes
+    messaging: {x:660,  y:570},   // 6 nodes
+    database:  {x:1110, y:510},   // 5 nodes
+    monitor:   {x:1560, y:510},   // 2 nodes
+    migration: {x:390,  y:910},   // 3 nodes
+    ops:       {x:960,  y:890},   // 7 nodes
   };
-  const cnt: Record<string,number> = {};
+
+  // First pass: count per category for grid sizing
+  const catCounts: Record<string, number> = {};
+  NODES.forEach(n => { catCounts[n.cat] = (catCounts[n.cat] || 0) + 1; });
+
+  const cnt: Record<string, number> = {};
   const pos: Record<string, {x:number;y:number;vx:number;vy:number}> = {};
+
   NODES.forEach(n => {
- const c = centers[n.cat];
- const i = cnt[n.cat] || 0;
- cnt[n.cat] = i + 1;
- const a = (i / 5) * 2 * Math.PI;
- const r = 65;
- pos[n.id] = {
- x: c.x + Math.cos(a) * r + (Math.random() - 0.5) * 20,
- y: c.y + Math.sin(a) * r + (Math.random() - 0.5) * 20,
- vx: 0, vy: 0,
- };
+    const c = centers[n.cat] ?? {x: 900, y: 550};
+    const i = cnt[n.cat] || 0;
+    cnt[n.cat] = i + 1;
+    const total = catCounts[n.cat];
+    const cols = Math.ceil(Math.sqrt(total));
+    const rows = Math.ceil(total / cols);
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const spacing = 88;
+    pos[n.id] = {
+      x: c.x + (col - (cols - 1) / 2) * spacing,
+      y: c.y + (row - (rows - 1) / 2) * spacing,
+      vx: 0, vy: 0,
+    };
   });
   return pos;
 }
 
 function useForce() {
-  // Initialize positions once and keep them fixed (no animation/physics)
-  // This ensures page loads instantly and footer is immediately responsive
   const [pos, setPos] = useState(initPos);
   const posRef = useRef(pos);
   const dragRef = useRef<string | null>(null);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
   posRef.current = pos;
-
-  // No animation loop - nodes stay in their initial positions
-  // Drag functionality still works via SVG onMouseMove
-
-  return { pos, setPos, posRef, dragRef };
+  return { pos, setPos, posRef, dragRef, pan, setPan };
 }
 
-function GraphSVG({ pos, setPos, posRef, dragRef, selected, slots, onNodeClick, catFilter, theme }: {
+function GraphSVG({ pos, setPos, posRef, dragRef, pan, setPan, selected, slots, onNodeClick, catFilter, theme }: {
   pos: Record<string, any>;
   setPos: any;
   posRef: any;
   dragRef: any;
+  pan: {x:number;y:number};
+  setPan: any;
   selected: string | null;
   slots: string[];
   onNodeClick: (id: string | null) => void;
@@ -327,38 +345,75 @@ function GraphSVG({ pos, setPos, posRef, dragRef, selected, slots, onNodeClick, 
   theme: "dark" | "light";
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const panStartRef = useRef<{mx:number;my:number;px:number;py:number} | null>(null);
   const connectedIds = selected
  ? new Set([selected, ...LINKS.filter(l => l.s === selected || l.t === selected).flatMap(l => [l.s, l.t])])
  : null;
 
   const getSvgXY = (cx: number, cy: number) => {
- const r = svgRef.current?.getBoundingClientRect();
- if (!r) return { x: 0, y: 0 };
- return { x: ((cx - r.left) / r.width) * W, y: ((cy - r.top) / r.height) * H };
+    const r = svgRef.current?.getBoundingClientRect();
+    if (!r) return { x: pan.x, y: pan.y };
+    return {
+      x: pan.x + ((cx - r.left) / r.width) * VW,
+      y: pan.y + ((cy - r.top) / r.height) * VH,
+    };
   };
+
+  const clampPan = (x: number, y: number) => ({
+    x: Math.max(0, Math.min(CW - VW, x)),
+    y: Math.max(0, Math.min(CH - VH, y)),
+  });
 
   const R = 28;
 
   return (
- <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`}
- style={{ display: "block", width: "100%", height: "100%", background: "var(--bg-graph)", touchAction: "none", cursor: "grab" }}
- onMouseMove={e => {
- if (dragRef.current) {
- const { x, y } = getSvgXY(e.clientX, e.clientY);
- setPos((p: any) => ({ ...p, [dragRef.current!]: { ...p[dragRef.current!], x, y, vx: 0, vy: 0 } }));
- }
+ <svg ref={svgRef} viewBox={`${pan.x} ${pan.y} ${VW} ${VH}`}
+ style={{ display: "block", width: "100%", height: "100%", background: "var(--bg-graph)", touchAction: "none", cursor: dragRef.current ? "grabbing" : "grab" }}
+ onMouseDown={e => {
+   if (!(e.target as Element).closest('g')) {
+     panStartRef.current = { mx: e.clientX, my: e.clientY, px: pan.x, py: pan.y };
+   }
  }}
- onMouseUp={() => { dragRef.current = null; }}
- onMouseLeave={() => { dragRef.current = null; }}
+ onMouseMove={e => {
+   if (dragRef.current) {
+     const { x, y } = getSvgXY(e.clientX, e.clientY);
+     setPos((p: any) => ({ ...p, [dragRef.current!]: { ...p[dragRef.current!], x, y, vx: 0, vy: 0 } }));
+   } else if (panStartRef.current) {
+     const r = svgRef.current?.getBoundingClientRect();
+     if (!r) return;
+     const scaleX = VW / r.width;
+     const scaleY = VH / r.height;
+     const dx = (e.clientX - panStartRef.current.mx) * scaleX;
+     const dy = (e.clientY - panStartRef.current.my) * scaleY;
+     setPan(clampPan(panStartRef.current.px - dx, panStartRef.current.py - dy));
+   }
+ }}
+ onMouseUp={() => { dragRef.current = null; panStartRef.current = null; }}
+ onMouseLeave={() => { dragRef.current = null; panStartRef.current = null; }}
+ onTouchStart={e => {
+   if (!(e.target as Element).closest('g')) {
+     const t = e.touches[0];
+     panStartRef.current = { mx: t.clientX, my: t.clientY, px: pan.x, py: pan.y };
+   }
+ }}
  onTouchMove={e => {
  e.preventDefault();
  if (dragRef.current) {
- const t = e.touches[0];
- const { x, y } = getSvgXY(t.clientX, t.clientY);
- setPos((p: any) => ({ ...p, [dragRef.current!]: { ...p[dragRef.current!], x, y, vx: 0, vy: 0 } }));
+   const t = e.touches[0];
+   const { x, y } = getSvgXY(t.clientX, t.clientY);
+   setPos((p: any) => ({ ...p, [dragRef.current!]: { ...p[dragRef.current!], x, y, vx: 0, vy: 0 } }));
+ } else if (panStartRef.current) {
+   const r = svgRef.current?.getBoundingClientRect();
+   if (!r) return;
+   const t = e.touches[0];
+   const scaleX = VW / r.width;
+   const scaleY = VH / r.height;
+   const dx = (t.clientX - panStartRef.current.mx) * scaleX;
+   const dy = (t.clientY - panStartRef.current.my) * scaleY;
+   setPan(clampPan(panStartRef.current.px - dx, panStartRef.current.py - dy));
  }
  }}
- onTouchEnd={() => { dragRef.current = null; }}
+ onTouchEnd={() => { dragRef.current = null; panStartRef.current = null; }}
  >
  <defs>
  <filter id="glow1" x="-60%" y="-60%" width="220%" height="220%">
@@ -438,7 +493,7 @@ function App() {
   const { locale, setLocale, t } = useLocale();
   const { theme, toggleTheme } = useTheme();
   // Fixed node positions for instant page load and immediate footer interactivity
-  const { pos, setPos, posRef, dragRef } = useForce();
+  const { pos, setPos, posRef, dragRef, pan, setPan } = useForce();
 
   //  Google 로그인 에러 메시지를 다국어로 처리
   const translateAuthError = (errorMessage: string): string => {
@@ -4834,7 +4889,7 @@ function App() {
  <>
  <div className="graph-label">{t("graphLabel")}</div>
  <div className="graph-box">
- <GraphSVG pos={pos} setPos={setPos} posRef={posRef} dragRef={dragRef}
+ <GraphSVG pos={pos} setPos={setPos} posRef={posRef} dragRef={dragRef} pan={pan} setPan={setPan}
  selected={selected} slots={slots} onNodeClick={onNodeClick} catFilter={catFilter} theme={theme} />
  </div>
  </>
