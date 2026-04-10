@@ -1920,33 +1920,6 @@ function App() {
  />
 
 
- {/* Admin Tabs Only - Main tabs now in Navigator */}
- {isAdmin && (
- <div className="tabs">
- <button className={`tab ${tab === "admin" ? "active" : ""}`} onClick={async () => {
- // 탭 클릭 시 서버에서 권한 재검증
- if (userEmail) {
- const verified = await isAdminUser(userEmail);
- if (verified) {
- setTab("admin");
- } else {
- alert(t("errorPermissionDenied"));
- }
- }
- }}> Admin</button>
- <button className={`tab ${tab === "users" ? "active" : ""}`} onClick={async () => {
- // 탭 클릭 시 서버에서 권한 재검증
- if (userEmail) {
- const verified = await isAdminUser(userEmail);
- if (verified) {
- setTab("users");
- } else {
- alert(t("errorPermissionDenied"));
- }
- }
- }}> {t("tabUsers")}</button>
- </div>
- )}
 
  {/* Hero Section - Hidden */}
  {false && (
