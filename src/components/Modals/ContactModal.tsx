@@ -282,10 +282,10 @@ const ContactModal: React.FC<ContactModalProps> = ({ onClose }) => {
                 style={{
                   flex: 1,
                   padding: '12px',
-                  background: 'rgba(59, 130, 246, 0.3)',
-                  border: '1px solid rgba(59, 130, 246, 0.5)',
+                  background: 'rgba(255, 153, 0, 0.2)',
+                  border: '1px solid rgba(255, 153, 0, 0.4)',
                   borderRadius: '6px',
-                  color: '#60a5fa',
+                  color: '#FF9900',
                   cursor: loading ? 'not-allowed' : 'pointer',
                   fontSize: '14px',
                   fontWeight: 'bold',

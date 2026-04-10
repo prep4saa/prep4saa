@@ -167,8 +167,8 @@ export const en: Strings = {
   heroDontShowToday: "Don't show for 24 hours",
 
   // Page metadata & SEO
-  pageTitle: "AWS SAA-C03 Exam Prep - Claude AI Question Generator",
-  pageDescription: "Master AWS SAA-C03 with Claude AI. Interactive service architecture map, AI-powered questions, learning analytics, and unlimited practice.",
+  pageTitle: "SAA Cloud Prep - AWS Solutions Architect Associate Exam",
+  pageDescription: "SAA Cloud Prep: AI-powered AWS SAA-C03 exam prep. Interactive architecture diagrams, personalized questions, learning analytics, and practice tests.",
   pageKeywords: "AWS SAA-C03, AWS certification, AWS exam, cloud architect, AWS solutions architect, exam prep, AI question generator, practice exam",
   ogTitle: "AWS SAA-C03 Certification Exam - AI-Powered Study Tool",
   ogDescription: "Interactive AWS service map and AI-generated questions to help you pass the AWS SAA-C03 Solutions Architect Associate exam.",
@@ -383,9 +383,22 @@ export const en: Strings = {
   landingFooterLegalTerms: "Terms",
   landingFooterLegalPrivacy: "Privacy",
   landingFooterLegalRefund: "Refunds",
-  landingFooterCopyright: "© 2026 AWSArchive.com. AWSArchive is an independent educational platform not affiliated with, endorsed by, or associated with Amazon.com or Amazon Web Services, Inc.",
+  landingFooterCopyright: "© 2026 SAA Cloud Prep. SAA Cloud Prep is an independent educational platform not affiliated with, endorsed by, or associated with Amazon.com or Amazon Web Services, Inc.",
 
   // Auth Errors
   errorPopupClosedByUser: "Google login window closed. Please try again.",
   errorPopupBlocked: "Browser blocked the Google login popup. Please allow popups.",
+
+  // Carousel
+  carouselTitle: "Preview",
+  carouselMockExamTitle: "SAA-C03 Practice Exam",
+  carouselMockExamDesc: "Prepare for the exam with a 50-question practice exam similar to the real test. Detailed explanations and key keywords are provided for each question.",
+  carouselConceptsTitle: "AWS Concepts Learning",
+  carouselConceptsDesc: "Learn the core concepts of AWS services such as API Gateway, Lambda, and EC2 clearly and easily. Learn through real-world use cases.",
+  carouselRelationshipMapTitle: "AWS Service Relationship Map",
+  carouselRelationshipMapDesc: "Interactive AWS service relationship diagram that you can drag to move. Visually understand the connections between each service.",
+  carouselProgressTitle: "Learning Progress Analysis",
+  carouselProgressDesc: "Check weak services, accuracy, and total number of problems at a glance. Systematically track your learning progress.",
+  mockExamLoadingProblems: "Loading problems...",
+  mockExamHoursRemaining: "hours remaining",
 };

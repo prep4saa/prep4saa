@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navigator from './Navigator';
 import Footer from './Footer';
+import Carousel from './Carousel';
 import { ko } from '../locales/ko';
 import { en } from '../locales/en';
 import { ja } from '../locales/ja';
@@ -9,11 +10,31 @@ type Locale = 'ko' | 'en' | 'ja';
 
 interface LandingPageProps {
   onGetStarted: () => void;
-  onTabChange: (tab: "quiz" | "concept" | "status" | "mockExam") => void;
+  onTabChange: (tab: "quiz" | "concept" | "status" | "mockExam" | "admin" | "users") => void;
   onLoginClick?: () => void;
+  onProClick?: () => void;
+  userEmail?: string | null;
+  isAuthChecked?: boolean;
+  dday?: string;
+  streak?: number;
+  onDdayClick?: () => void;
+  userStatus?: "guest" | "loggedIn" | "paid";
+  onLogout?: () => void;
+  onCancelSubscription?: () => void;
+  currentLocale?: Locale;
+  onLocaleChange?: (locale: Locale) => void;
+  isAdmin?: boolean;
 }
 
-export default function LandingPage({ onGetStarted, onTabChange, onLoginClick }: LandingPageProps) {
+export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, onProClick, userEmail, isAuthChecked, dday, streak, onDdayClick, userStatus, onLogout, onCancelSubscription, currentLocale = 'ko', onLocaleChange, isAdmin = false }: LandingPageProps) {
+
+  // 버튼 클릭 핸들러: 비로그인 → 로그인 창, 로그인 → 해당 액션
+  const handleFreeClick = () => userEmail ? onGetStarted() : onLoginClick?.();
+  const handleProClick = () => {
+    if (!userEmail) { onLoginClick?.(); return; }
+    if (userStatus === "paid") { onGetStarted(); return; } // 이미 paid → 퀴즈로 이동
+    onProClick?.();
+  };
   const [locale, setLocale] = useState<Locale>(() => {
     const saved = localStorage.getItem('landingPageLocale') as Locale;
     if (saved && ['ko', 'en', 'ja'].includes(saved)) return saved;
@@ -26,9 +47,17 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick }:
   const locales = { ko, en, ja };
   const t = locales[locale];
 
+  // currentLocale prop이 변경되면 내부 locale 상태 업데이트
+  useEffect(() => {
+    setLocale(currentLocale);
+  }, [currentLocale]);
+
   const handleLanguageChange = (newLocale: Locale) => {
     setLocale(newLocale);
     localStorage.setItem('landingPageLocale', newLocale);
+    if (onLocaleChange) {
+      onLocaleChange(newLocale);
+    }
   };
 
   const styles = `
@@ -75,7 +104,7 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick }:
     .mock-card{position:relative;border-radius:1rem;border:1px solid #2A344A;background:#0F1629;box-shadow:0 25px 50px -12px rgba(0,0,0,.25);transform:rotate(2deg);transition:transform .5s;margin-top:2rem;}
     .mock-card:hover{transform:rotate(0);}
     .mock-blur-1{position:absolute;top:-1rem;right:-1rem;width:6rem;height:6rem;background:rgba(255,153,0,.2);filter:blur(64px);border-radius:9999px;}
-    .mock-blur-2{position:absolute;bottom:-2rem;left:-2rem;width:8rem;height:8rem;background:rgba(59,130,246,.2);filter:blur(64px);border-radius:9999px;}
+    .mock-blur-2{position:absolute;bottom:-2rem;left:-2rem;width:8rem;height:8rem;background:rgba(255,153,0,0.15);filter:blur(64px);border-radius:9999px;}
     .mock-bar{display:flex;align-items:center;gap:.5rem;padding:.75rem 1rem;border-bottom:1px solid #2A344A;background:#151E32;border-radius:1rem 1rem 0 0;}
     .dot-red{width:.75rem;height:.75rem;border-radius:9999px;background:rgba(239,68,68,.8);}
     .dot-yellow{width:.75rem;height:.75rem;border-radius:9999px;background:rgba(234,179,8,.8);}
@@ -161,7 +190,7 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick }:
     .cta-bg{position:absolute;inset:0;background:rgba(255,153,0,.05);pointer-events:none;}
     .cta-box{background:linear-gradient(135deg,#151E32,#0F1629);border:1px solid #2A344A;border-radius:2.5rem;padding:3rem;text-align:center;position:relative;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0,0,0,.25);}
     .cta-blur-1{position:absolute;top:-6rem;right:-6rem;width:16rem;height:16rem;background:rgba(255,153,0,.2);filter:blur(80px);border-radius:9999px;pointer-events:none;}
-    .cta-blur-2{position:absolute;bottom:-6rem;left:-6rem;width:16rem;height:16rem;background:rgba(59,130,246,.1);filter:blur(80px);border-radius:9999px;pointer-events:none;}
+    .cta-blur-2{position:absolute;bottom:-6rem;left:-6rem;width:16rem;height:16rem;background:rgba(255,153,0,0.1);filter:blur(80px);border-radius:9999px;pointer-events:none;}
     .cta-h{font-size:2.25rem;font-weight:800;color:#fff;margin-bottom:1.5rem;letter-spacing:-.025em;position:relative;z-index:10;}
     .cta-sub{font-size:1.25rem;color:#D1D5DB;margin-bottom:2.5rem;max-width:42rem;margin-left:auto;margin-right:auto;position:relative;z-index:10;}
     .cta-btns{display:flex;flex-direction:column;align-items:center;gap:1rem;position:relative;z-index:10;}
@@ -191,7 +220,21 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick }:
   return (
     <>
       <style>{styles}</style>
-      <Navigator onTabChange={onTabChange} currentLocale={locale} onLocaleChange={handleLanguageChange} showLoginButton={true} onLoginClick={onLoginClick} />
+      <Navigator
+        onTabChange={onTabChange}
+        currentLocale={locale}
+        onLocaleChange={handleLanguageChange}
+        showLoginButton={!userEmail && isAuthChecked}
+        onLoginClick={onLoginClick}
+        userEmail={userEmail}
+        dday={dday}
+        streak={streak}
+        onDdayClick={onDdayClick}
+        userStatus={userStatus}
+        onLogout={onLogout}
+        onCancelSubscription={onCancelSubscription}
+        isAdmin={isAdmin}
+      />
       <div style={{ width: '100%', minHeight: '100vh', background: '#0F1629', color: '#D1D5DB', fontFamily: 'Inter, sans-serif', overflowX: 'hidden', paddingTop: '5rem' }}>
 
         {/* HERO */}
@@ -208,8 +251,8 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick }:
                 <h1>{t.landingHeading}<br /><span style={{ background: 'linear-gradient(to right,#FF9900,#fb923c)', backgroundClip: 'text', WebkitBackgroundClip: 'text', color: 'transparent' }}>{t.landingHeadingGradient}</span></h1>
                 <p className="hero-sub">{t.landingSub}</p>
                 <div className="hero-ctas">
-                  <button onClick={onGetStarted} className="btn-hero-primary">{t.landingCTAPrimary}</button>
-                  <a href="#how-it-works" className="btn-hero-secondary">{t.landingCTASecondary}</a>
+                  <button onClick={handleFreeClick} className="btn-hero-primary">{t.landingCTAPrimary}</button>
+                  <a href="#preview" className="btn-hero-secondary">{t.landingCTASecondary}</a>
                 </div>
                 <p className="hero-note">
                   <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#4ADE80" strokeWidth="2">
@@ -306,6 +349,39 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick }:
           </div>
         </section>
 
+        {/* CAROUSEL - 훓어보기 */}
+        <section id="preview" style={{ padding: '6rem 0', background: '#0F1629' }}>
+          <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1.5rem' }}>
+            <Carousel
+              title={t.carouselTitle}
+              slides={[
+                {
+                  title: t.carouselMockExamTitle,
+                  description: t.carouselMockExamDesc,
+                  imagePath: '/screenshots/mock-exam.png'
+                },
+                {
+                  title: t.carouselConceptsTitle,
+                  description: t.carouselConceptsDesc,
+                  imagePath: '/screenshots/concepts.png'
+                },
+                {
+                  title: t.carouselRelationshipMapTitle,
+                  description: t.carouselRelationshipMapDesc,
+                  imagePath: '/screenshots/relationship-map.png'
+                },
+                {
+                  title: t.carouselProgressTitle,
+                  description: t.carouselProgressDesc,
+                  imagePath: '/screenshots/progress.png'
+                }
+              ]}
+              autoSlide={true}
+              autoSlideInterval={6000}
+            />
+          </div>
+        </section>
+
         {/* HOW IT WORKS */}
         <section id="how-it-works" className="how-section">
           <div className="section-inner">
@@ -374,7 +450,7 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick }:
                     {t.landingFreePlanFeature4}
                   </div>
                 </div>
-                <button className="btn-free" onClick={onGetStarted}>{t.landingFreePlanBtn}</button>
+                <button className="btn-free" onClick={handleFreeClick}>{t.landingFreePlanBtn}</button>
               </div>
               <div className="price-card price-card-pro">
                 <div className="popular-badge">Most Popular</div>
@@ -414,10 +490,11 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick }:
                     <p className="pro-feature-desc">{t.landingProPlanFeature7Desc}</p>
                   </div>
                 </div>
-                <button className="btn-pro" onClick={onGetStarted}>
-                  {t.landingProPlanBtn} <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <button className="btn-pro" onClick={handleProClick}>
+                  {userStatus === "paid" ? (locale === 'ko' ? '퀴즈 시작하기' : locale === 'ja' ? 'クイズを始める' : 'Start Quiz') : t.landingProPlanBtn}
+                  {userStatus !== "paid" && <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={{ marginLeft: '6px' }}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
+                  </svg>}
                 </button>
               </div>
             </div>
@@ -459,14 +536,14 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick }:
               <h2 className="cta-h">{t.landingCtaTitle}</h2>
               <p className="cta-sub">{t.landingCtaSub}</p>
               <div className="cta-btns">
-                <button onClick={onGetStarted} className="btn-hero-primary" style={{ minWidth: '200px' }}>{t.landingCtaPrimary}</button>
+                <button onClick={handleFreeClick} className="btn-hero-primary" style={{ minWidth: '200px' }}>{t.landingCtaPrimary}</button>
                 <a href="#pricing" style={{ minWidth: '160px', background: 'transparent', border: '1px solid #2A344A', color: '#fff', fontWeight: 600, fontSize: '1.125rem', padding: '1rem 2rem', borderRadius: '.5rem', transition: 'all .15s', textAlign: 'center', display: 'inline-block' }}>{t.landingCtaSecondary}</a>
               </div>
             </div>
           </div>
         </section>
 
-        <Footer onTabChange={onTabChange} />
+        <Footer />
       </div>
     </>
   );

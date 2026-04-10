@@ -167,8 +167,8 @@ export const ja: Strings = {
   heroDontShowToday: "24時間表示しない",
 
   // Page metadata & SEO
-  pageTitle: "AWS SAA-C03試験対策 - Claude AI問題自動生成",
-  pageDescription: "Claude AIでAWS SAA-C03試験に備えましょう。サービスアーキテクチャ図、AI自動問題生成、学習分析で合格を実現します。",
+  pageTitle: "SAA Cloud Prep - AWS SAA-C03試験対策プラットフォーム",
+  pageDescription: "SAA Cloud PrepでAWS SAA-C03試験を準備しましょう。AI問題生成、アーキテクチャ図、学習分析で合格を目指します。",
   pageKeywords: "AWS SAA-C03, AWS認定, AWS試験, ソリューションアーキテクト, AWSクラウド資格, 試験対策, AI問題生成, 練習問題",
   ogTitle: "AWS SAA-C03認定試験 - AI問題自動生成ツール",
   ogDescription: "AWSサービスアーキテクチャ図とClaude AI搭載の問題生成でAWS SAA-C03試験合格をサポートします。",
@@ -383,9 +383,22 @@ export const ja: Strings = {
   landingFooterLegalTerms: "利用規約",
   landingFooterLegalPrivacy: "プライバシー",
   landingFooterLegalRefund: "返金",
-  landingFooterCopyright: "© 2026 AWSArchive.com. AWSArchiveはAmazon Web Servicesと独立した教育プラットフォームです。Amazon.comまたはAWSと提携、承認、または関連していません。",
+  landingFooterCopyright: "© 2026 SAA Cloud Prep. SAA Cloud PrepはAmazon Web Servicesと独立した教育プラットフォームです。Amazon.comまたはAWSと提携、承認、または関連していません。",
 
   // Auth Errors
   errorPopupClosedByUser: "Googleログインウィンドウが閉じられました。もう一度試してください。",
   errorPopupBlocked: "ブラウザがGoogleログインのポップアップをブロックしました。ポップアップを許可してください。",
+
+  // Carousel
+  carouselTitle: "プレビュー",
+  carouselMockExamTitle: "SAA-C03 練習試験",
+  carouselMockExamDesc: "実際の試験に類似した50問の練習試験で試験に備えてください。各問題の詳細な説明と重要なキーワードが提供されます。",
+  carouselConceptsTitle: "AWS概念学習",
+  carouselConceptsDesc: "API Gateway、Lambda、EC2などのAWSサービスのコア概念を簡潔かつ明確に学習してください。実際のユースケースから学びます。",
+  carouselRelationshipMapTitle: "AWSサービス関係図",
+  carouselRelationshipMapDesc: "ドラッグで移動できるインタラクティブなAWSサービス関係図。各サービス間の接続を視覚的に理解してください。",
+  carouselProgressTitle: "学習進度分析",
+  carouselProgressDesc: "弱いサービス、正確度、総問題数をひと目で確認できます。学習の進捗を体系的に追跡します。",
+  mockExamLoadingProblems: "問題を読み込み中...",
+  mockExamHoursRemaining: "時間残り",
 };

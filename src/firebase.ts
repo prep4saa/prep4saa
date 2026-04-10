@@ -158,7 +158,8 @@ export async function signUp(email: string, password: string, displayName: strin
     }
 
     const signInMethods = await getSignInMethodsSafely(email);
-    if ((signInMethods.includes("google.com") && !signInMethods.includes("password")) || signInMethods.length === 0) {
+    // Google 전용 계정인 경우에만 링크 시도 (새 이메일은 바로 가입)
+    if (signInMethods.includes("google.com") && !signInMethods.includes("password")) {
       return await signInWithGoogleAndLinkPassword(email, password);
     }
 
@@ -188,25 +189,23 @@ export async function signIn(email: string, password: string): Promise<User> {
       throw new Error("비밀번호는 6자 이상 128자 이하여야 합니다");
     }
 
-    const signInMethods = await getSignInMethodsSafely(email);
-    if ((signInMethods.includes("google.com") && !signInMethods.includes("password")) || signInMethods.length === 0) {
-      return await signInWithGoogleAndLinkPassword(email, password);
-    }
-
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return userCredential.user;
   } catch (error: any) {
+    const code = error?.code || "";
+
     if (
-      error?.code === "auth/user-not-found" ||
-      error?.code === "auth/wrong-password" ||
-      error?.code === "auth/invalid-login-credentials"
+      code === "auth/user-not-found" ||
+      code === "auth/wrong-password" ||
+      code === "auth/invalid-login-credentials"
     ) {
       const methods = await getSignInMethodsSafely(email);
-      if ((methods.includes("google.com") && !methods.includes("password")) || methods.length === 0) {
+      if (methods.includes("google.com") && !methods.includes("password")) {
         throw new Error("이 계정은 현재 Google 로그인으로만 연결되어 있습니다. 아래 'Google로 계속'을 사용한 뒤 계정 메뉴에서 비밀번호를 연결해주세요.");
       }
     }
-    throw new Error(getErrorMessage(error.code));
+
+    throw new Error(getErrorMessage(code || error?.message || ""));
   }
 }
 
@@ -315,20 +314,80 @@ export async function linkEmailPasswordToCurrentUser(password: string): Promise<
 /**
  * Firebase 에러 메시지 한글화
  */
+function getLocale(): string {
+  try {
+    const saved = localStorage.getItem('locale') || localStorage.getItem('landingPageLocale');
+    if (saved && ['ko', 'en', 'ja'].includes(saved)) return saved;
+    const lang = navigator.language.substring(0, 2);
+    if (lang === 'ja') return 'ja';
+    if (lang === 'ko') return 'ko';
+    return 'en';
+  } catch { return 'ko'; }
+}
+
 function getErrorMessage(errorCode: string): string {
-  const errors: Record<string, string> = {
-    "auth/email-already-in-use": "이미 가입된 이메일입니다",
-    "auth/invalid-email": "유효하지 않은 이메일입니다",
-    "auth/weak-password": "비밀번호는 6자 이상이어야 합니다",
-    "auth/user-not-found": "등록되지 않은 이메일입니다",
-    "auth/wrong-password": "비밀번호가 잘못되었습니다",
-    "auth/invalid-login-credentials": "이메일 또는 비밀번호가 잘못되었습니다",
-    "auth/too-many-requests": "너무 많은 시도가 있었습니다. 나중에 다시 시도해주세요",
-    "auth/popup-closed-by-user": "Google 로그인 창이 닫혔습니다. 다시 시도해주세요.",
-    "auth/popup-blocked": "브라우저가 Google 로그인 창을 차단했습니다. 팝업을 허용해주세요.",
+  const locale = getLocale();
+
+  const errors: Record<string, Record<string, string>> = {
+    "auth/email-already-in-use": {
+      ko: "이미 가입된 이메일입니다",
+      en: "This email is already registered",
+      ja: "このメールアドレスはすでに登録されています",
+    },
+    "auth/invalid-email": {
+      ko: "유효하지 않은 이메일입니다",
+      en: "Invalid email address",
+      ja: "無効なメールアドレスです",
+    },
+    "auth/weak-password": {
+      ko: "비밀번호는 6자 이상이어야 합니다",
+      en: "Password must be at least 6 characters",
+      ja: "パスワードは6文字以上にしてください",
+    },
+    "auth/user-not-found": {
+      ko: "등록되지 않은 이메일입니다",
+      en: "No account found with this email",
+      ja: "このメールアドレスは登録されていません",
+    },
+    "auth/wrong-password": {
+      ko: "비밀번호가 잘못되었습니다",
+      en: "Incorrect password",
+      ja: "パスワードが間違っています",
+    },
+    "auth/invalid-login-credentials": {
+      ko: "이메일 또는 비밀번호가 잘못되었습니다",
+      en: "Incorrect email or password",
+      ja: "メールアドレスまたはパスワードが間違っています",
+    },
+    "auth/too-many-requests": {
+      ko: "너무 많은 시도가 있었습니다. 나중에 다시 시도해주세요",
+      en: "Too many attempts. Please try again later",
+      ja: "試行回数が多すぎます。しばらくしてから再試行してください",
+    },
+    "auth/popup-closed-by-user": {
+      ko: "Google 로그인 창이 닫혔습니다. 다시 시도해주세요",
+      en: "Google sign-in window was closed. Please try again",
+      ja: "Googleログイン画面が閉じられました。もう一度お試しください",
+    },
+    "auth/popup-blocked": {
+      ko: "브라우저가 팝업을 차단했습니다. 팝업을 허용해주세요",
+      en: "Popup was blocked by your browser. Please allow popups",
+      ja: "ブラウザにポップアップがブロックされました。許可してください",
+    },
+    "auth/network-request-failed": {
+      ko: "네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요",
+      en: "Network error. Please check your internet connection",
+      ja: "ネットワークエラーが発生しました。接続を確認してください",
+    },
   };
 
-  return errors[errorCode] || "인증에 실패했습니다. 다시 시도해주세요";
+  const fallback: Record<string, string> = {
+    ko: "인증에 실패했습니다. 다시 시도해주세요",
+    en: "Authentication failed. Please try again",
+    ja: "認証に失敗しました。もう一度お試しください",
+  };
+
+  return errors[errorCode]?.[locale] || fallback[locale];
 }
 
 // ===== Firestore 함수 =====

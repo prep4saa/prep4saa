@@ -177,42 +177,28 @@ function clearSessionTimeout() {
 async function isAdminUser(email: string | null): Promise<boolean> {
   if (!email) return false;
 
+  // 이메일을 키에 노출하지 않기 위해 btoa로 불투명화 (관리자 이메일 은닉)
+  const cacheKey = `_r_${btoa(email).replace(/=/g, '').slice(-10)}`;
+
   //  보안: ADMIN_TOKEN_ 형식만 인식, 다른 "true"는 무시 (DevTools 수정 방지)
-  const cachedToken = sessionStorage.getItem(`isAdmin_${email}`);
+  const cachedToken = sessionStorage.getItem(cacheKey);
   if (cachedToken !== null) {
- // "ADMIN_TOKEN_" 형식의 토큰만 인식
- if (cachedToken.startsWith('ADMIN_TOKEN_')) {
- return true;
- }
- // "true"를 직접 입력하면 false 반환 (DevTools 해킹 방지)
- if (cachedToken === 'true') {
- return false;
- }
+ if (cachedToken.startsWith('ADMIN_TOKEN_')) return true;
  return false;
   }
 
-  // S3 배포 환경에서는 API 호출 불가 (정적 호스팅만 지원)
-  // Firebase 검증만 사용
-
-  // 모든 포트 시도 실패 시 로컬 fallback 사용
-  // (server.js가 실행 중이 아닐 때의 정상 동작)
-  //  환경변수에서 읽음 (하드코딩 금지)
   const env = (import.meta as any).env;
   const adminEmailsStr = env.VITE_ADMIN_EMAILS || '';
-  const paidTestEmailsStr = env.VITE_TEST_PAID_EMAILS || '';
-
   const adminEmails = adminEmailsStr.split(',').map((e: string) => e.trim()).filter(Boolean);
-  const paidTestEmails = paidTestEmailsStr.split(',').map((e: string) => e.trim()).filter(Boolean);
 
   const isAdmin = adminEmails.includes(email);
-  const isPaidTestUser = paidTestEmails.includes(email);
 
   //  보안: 특정 토큰으로만 admin 인식 (true/false 수정 방지)
   if (isAdmin) {
  const adminToken = `ADMIN_TOKEN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
- sessionStorage.setItem(`isAdmin_${email}`, adminToken);
+ sessionStorage.setItem(cacheKey, adminToken);
   } else {
- sessionStorage.setItem(`isAdmin_${email}`, 'NOT_ADMIN');
+ sessionStorage.setItem(cacheKey, 'NOT_ADMIN');
   }
 
   return isAdmin;
@@ -706,6 +692,7 @@ function App() {
  const unsubscribe = onAuthStateChange(async (user) => {
  if (user?.email) {
  setUserEmail(user.email);
+ setShowLanding(false);
  setIsPasswordLoginLinked(isPasswordLinked(user));
 
  // 사용자 정보를 Firestore에 저장
@@ -1397,12 +1384,12 @@ function App() {
  </p>
  <hr style="border: 1px solid #ddd; margin-bottom: 20px;">
  ${session.problems.map((problem, index) => `
- <div style="margin-bottom: 40px; page-break-inside: avoid;">
+ <div style="margin-bottom: 30px;">
  <!-- 문제 번호 및 제목 -->
- <h3 style="margin-bottom: 12px; color: black; border-bottom: 2px solid #333; padding-bottom: 8px;">Q${index + 1}. ${problem.question}</h3>
+ <h3 class="no-break" style="margin-bottom: 12px; color: black; border-bottom: 2px solid #333; padding-bottom: 8px; break-inside: avoid; page-break-inside: avoid;">Q${index + 1}. ${problem.question}</h3>
 
  <!-- 보기 -->
- <div style="margin-left: 20px; margin-bottom: 15px;">
+ <div class="no-break" style="margin-left: 20px; margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid;">
  ${["A", "B", "C", "D"].map(opt => `
  <div style="margin-bottom: 8px; color: black;">
  <strong>${opt}.</strong> ${problem.options[opt as keyof typeof problem.options]}
@@ -1411,42 +1398,48 @@ function App() {
  </div>
 
  <!-- 정답 -->
- <div style="margin-left: 20px; color: black; font-weight: bold; margin-bottom: 20px; background: #f5f5f5; padding: 10px; border-radius: 4px;">
+ <div class="no-break" style="margin-left: 20px; color: black; font-weight: bold; margin-bottom: 15px; background: #f5f5f5; padding: 10px; border-radius: 4px; break-inside: avoid; page-break-inside: avoid;">
  Answer: ${problem.answer}
  </div>
 
  <!-- 핵심 키워드 -->
- <div style="margin-left: 20px; margin-bottom: 15px;">
- <strong style="color: #333; font-size: 13px;"> Keywords:</strong>
- <div style="color: black; font-size: 12px; margin-top: 4px;">
+ <div class="no-break" style="margin-left: 20px; margin-bottom: 12px; break-inside: avoid; page-break-inside: avoid;">
+ <strong style="color: #333; font-size: 13px;">Keywords:</strong>
+ <div style="color: black; font-size: 12px; margin-top: 4px; line-height: 1.6;">
  ${problem.keywords?.join(', ') || 'N/A'}
  </div>
  </div>
 
  <!-- 핵심 목표 -->
- <div style="margin-left: 20px; margin-bottom: 15px;">
- <strong style="color: #333; font-size: 13px;"> Problem Goal:</strong>
+ <div class="no-break" style="margin-left: 20px; margin-bottom: 12px; break-inside: avoid; page-break-inside: avoid;">
+ <strong style="color: #333; font-size: 13px;">Problem Goal:</strong>
  <div style="color: black; font-size: 12px; margin-top: 6px; line-height: 1.6;">
  ${problem.goal || 'N/A'}
  </div>
  </div>
 
- <!-- 정답 설명 -->
- <div style="margin-left: 20px; margin-bottom: 15px;">
- <strong style="color: #333; font-size: 13px;"> Answer Explanation:</strong>
- <div style="color: black; font-size: 12px; margin-top: 6px; line-height: 1.6;">
+ <!-- 정답 설명: 각 항목을 개별 no-break 블록으로 -->
+ <div style="margin-left: 20px; margin-bottom: 12px;">
+ <strong style="color: #333; font-size: 13px;">Answer Explanation:</strong>
+ <div class="no-break" style="color: black; font-size: 12px; margin-top: 6px; line-height: 1.8; break-inside: avoid; page-break-inside: avoid;">
  <div style="margin-bottom: 8px;"><strong>Why Correct:</strong> ${problem.explanation?.correct || 'N/A'}</div>
+ </div>
+ <div class="no-break" style="color: black; font-size: 12px; line-height: 1.8; break-inside: avoid; page-break-inside: avoid;">
  <div style="margin-bottom: 6px;"><strong>Trap A:</strong> ${problem.explanation?.trap_A || 'N/A'}</div>
+ </div>
+ <div class="no-break" style="color: black; font-size: 12px; line-height: 1.8; break-inside: avoid; page-break-inside: avoid;">
  <div style="margin-bottom: 6px;"><strong>Trap B:</strong> ${problem.explanation?.trap_B || 'N/A'}</div>
+ </div>
+ <div class="no-break" style="color: black; font-size: 12px; line-height: 1.8; break-inside: avoid; page-break-inside: avoid;">
  <div style="margin-bottom: 0;"><strong>Trap C:</strong> ${problem.explanation?.trap_C || 'N/A'}</div>
  </div>
  </div>
 
  <!-- 이지 모드 (쉬운 설명) -->
  <div style="margin-left: 20px; margin-bottom: 0;">
- <strong style="color: #333; font-size: 13px;"> Easy Mode (Simplified Explanation):</strong>
- <div style="color: black; font-size: 12px; margin-top: 6px; line-height: 1.6; background: #fafafa; padding: 10px; border-radius: 4px;">
- <div style="margin-bottom: 8px;"><strong>Simple Explanation:</strong> ${problem.easyMode?.explanation || 'N/A'}</div>
+ <strong style="color: #333; font-size: 13px;">Easy Mode (Simplified Explanation):</strong>
+ <div class="no-break" style="color: black; font-size: 12px; margin-top: 6px; line-height: 1.8; background: #fafafa; padding: 10px; border-radius: 4px; break-inside: avoid; page-break-inside: avoid;">
+ <div style="margin-bottom: 6px;"><strong>Simple Explanation:</strong> ${problem.easyMode?.explanation || 'N/A'}</div>
  <div style="margin-bottom: 6px;"><strong>Option A (Easy):</strong> ${problem.easyMode?.A || 'N/A'}</div>
  <div style="margin-bottom: 6px;"><strong>Option B (Easy):</strong> ${problem.easyMode?.B || 'N/A'}</div>
  <div style="margin-bottom: 6px;"><strong>Option C (Easy):</strong> ${problem.easyMode?.C || 'N/A'}</div>
@@ -1454,7 +1447,7 @@ function App() {
  </div>
  </div>
 
- <hr style="border: 1px solid #ddd; margin-top: 20px;">
+ <hr style="border: 1px solid #ddd; margin-top: 20px; break-after: avoid; page-break-after: avoid;">
  </div>
  `).join('')}
  `;
@@ -1463,11 +1456,12 @@ function App() {
 
  // html2pdf 옵션
  const options = {
- margin: 10,
+ margin: [12, 12, 12, 12],
  filename: fileName,
  image: { type: 'jpeg', quality: 0.98 },
- html2canvas: { scale: 2 },
- jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+ html2canvas: { scale: 2, useCORS: true, logging: false },
+ jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' },
+ pagebreak: { mode: ['css', 'legacy'], avoid: ['.no-break'] }
  };
 
  // PDF 생성
@@ -1501,21 +1495,429 @@ function App() {
  }
   };
 
-  // 랜딩 페이지 표시 (초기 상태 또는 비로그인)
-  if (showLanding && !userEmail) {
-    return <LandingPage
-      onGetStarted={() => setShowLanding(false)}
-      onTabChange={(newTab) => {
-        setTab(newTab);
-        setShowLanding(false);
+  const renderPaymentModal = () => !showPaymentModal ? null : (
+    <PaymentModal
+      onClose={() => setShowPaymentModal(false)}
+      onSuccess={async () => {
+        setUserStatusLocal("paid");
+        setDailyCount(0);
+        localStorage.setItem("userStatus", "paid");
+        localStorage.setItem("problemCountDate", new Date().toISOString().split("T")[0]);
+        localStorage.setItem("problemCount", "0");
+        const user = getCurrentUser();
+        if (user) {
+          try { await updateUserPaidStatus(user.uid, true); } catch (error) { /* 에러 무시 */ }
+        }
+        setTimeout(() => setShowPaymentModal(false), 1000);
       }}
-      onLoginClick={() => setShowLoginModal(true)}
-    />;
+      userEmail={userEmail || ""}
+    />
+  );
+
+  const renderLoginModal = () => !showLoginModal ? null : (
+ <div style={{
+ position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+ background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center",
+ zIndex: 1001
+ }}>
+ <div style={{
+ background: "#0F1629", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "16px",
+ padding: "48px 40px", maxWidth: "500px", width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.5)"
+ }} onClick={e => e.stopPropagation()}>
+ <h2 style={{ color: "#fff", marginBottom: "12px", fontSize: "24px", fontWeight: "bold", textAlign: "center" }}>
+ {isSignUp ? " " + t("btnSignUp") : " " + t("btnLogIn")}
+ </h2>
+ <p style={{ color: "#D1D5DB", fontSize: "13px", textAlign: "center", marginBottom: "24px" }}>
+ {t("verifyEmailDesc")}
+ </p>
+
+ {/* Google 로그인 버튼 */}
+ <button
+ onClick={async () => {
+ setLoginError(null);
+ setLoginLoading(true);
+ try {
+ const user = await signInWithGoogle();
+ setUserEmail(user.email);
+ setIsPasswordLoginLinked(isPasswordLinked(user));
+
+ // 사용자 정보 저장 및 결제 상태 로드
+ await saveUserInfoToFirebase(user.uid, user.email);
+ let isPaid = await getUserPaidStatus(user.uid);
+
+ // ✅ 임시 테스트: 특정 이메일은 자동으로 paid 처리
+ // 환경변수에서 읽은 테스트 이메일 목록 사용
+ if (TEST_PAID_EMAILS.includes(user.email)) {
+ isPaid = true;
+ await updateUserPaidStatus(user.uid, true); // ✅ Firebase에도 저장
+ }
+
+ const status: UserStatus = isPaid ? "paid" : "loggedIn";
+ setUserStatusLocal(status);
+ localStorage.setItem("userStatus", status);
+
+ //  Firebase에서 실제 일일 생성 수 조회
+ const { count } = await canGenerateProblemToday(user.uid, status);
+ setDailyCount(count);
+ localStorage.setItem("problemCountDate", new Date().toISOString().split("T")[0]);
+ sessionStorage.setItem(`COUNT_${new Date().toISOString().split("T")[0]}`, `COUNT_${count}`);
+ setShowLoginModal(false);
+
+ // Firebase에서 시험 시작일 확인
+ const examStartDate = await getExamStartDate(user.uid);
+ if (examStartDate) {
+ localStorage.setItem("examStartDate", examStartDate);
+ setDday(getExamDday());
+ } else {
+ // 시험일정이 설정되지 않았을 때만 팝업 띄우기
+ setTimeout(() => setShowExamDateModal(true), 300);
+ }
+ } catch (err: any) {
+ setLoginError(translateAuthError(err.message));
+ } finally {
+ setLoginLoading(false);
+ }
+ }}
+ disabled={loginLoading}
+ style={{
+ width: "100%", padding: "12px", background: "#fff", color: "#000",
+ border: "1px solid #e5e7eb", borderRadius: "8px", cursor: loginLoading ? "not-allowed" : "pointer",
+ fontSize: "14px", fontWeight: "bold", marginTop: "16px", display: "flex",
+ alignItems: "center", justifyContent: "center", gap: "8px", opacity: loginLoading ? 0.6 : 1
+ }}
+ >
+ <svg width="18" height="18" viewBox="0 0 24 24">
+ <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+ <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+ <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC04"/>
+ <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+ </svg>
+ {t("continueWithGoogle")}
+ </button>
+
+ {/* 또는 구분선 */}
+ <div style={{ display: "flex", alignItems: "center", margin: "20px 0", gap: "12px" }}>
+ <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.2)" }}></div>
+ <span style={{ color: "#D1D5DB", fontSize: "12px" }}>또는</span>
+ <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.2)" }}></div>
+ </div>
+
+ {/* 에러 메시지 */}
+ {loginError && (
+ <div style={{
+ marginBottom: "16px", padding: "12px", background: "rgba(239,68,68,0.1)",
+ border: "1px solid rgba(239,68,68,0.3)", borderRadius: "6px", color: "#fca5a5",
+ fontSize: "12px", textAlign: "center"
+ }}>
+ {loginError}
+ </div>
+ )}
+
+ {/* 이메일/비밀번호 입력 */}
+ <form onSubmit={async (e) => {
+ e.preventDefault();
+ setLoginError(null);
+ setLoginLoading(true);
+
+ const email = sanitizeInput((document.getElementById("loginEmail") as HTMLInputElement).value);
+ const password = (document.getElementById("loginPassword") as HTMLInputElement).value;
+ const displayName = "";
+
+ // 입력값 검증
+ if (!validateEmail(email)) {
+ setLoginError(t("errorInvalidEmail"));
+ setLoginLoading(false);
+ return;
+ }
+
+ const passwordValidation = validatePassword(password);
+ if (!passwordValidation.valid) {
+ setLoginError(passwordValidation.error || t("errorPasswordInvalid"));
+ setLoginLoading(false);
+ return;
+ }
+
+ // Rate Limiting 확인
+ if (!checkRateLimit(email)) {
+ setLoginError(t("errorTooManyRequests"));
+ setLoginLoading(false);
+ return;
+ }
+
+ try {
+ if (isSignUp) {
+ await signUp(email, password, displayName);
+ } else {
+ await signIn(email, password);
+ }
+ setIsPasswordLoginLinked(true);
+
+ // 성공 시 상태 업데이트
+ setUserEmail(email);
+ const userName = isSignUp ? displayName : (localStorage.getItem("userName") || email.split("@")[0]);
+
+ // 사용자 정보 저장 및 결제 상태 로드
+ const user = getCurrentUser();
+ if (user) {
+ await saveUserInfoToFirebase(user.uid, email);
+ let isPaid = await getUserPaidStatus(user.uid);
+
+ // ✅ 임시 테스트: 특정 이메일은 자동으로 paid 처리
+ // 환경변수에서 읽은 테스트 이메일 목록 사용
+ if (TEST_PAID_EMAILS.includes(email)) {
+ isPaid = true;
+ await updateUserPaidStatus(user.uid, true); // ✅ Firebase에도 저장
+ }
+
+ const status: UserStatus = isPaid ? "paid" : "loggedIn";
+ setUserStatusLocal(status);
+ localStorage.setItem("userStatus", status);
+ } else {
+ setUserStatusLocal("loggedIn");
+ localStorage.setItem("userStatus", "loggedIn");
+ }
+
+ localStorage.setItem("userName", userName);
+
+ //  Firebase에서 실제 일일 생성 수 조회
+ const currentUser = getCurrentUser();
+ if (currentUser) {
+ const status: UserStatus = localStorage.getItem("userStatus") as UserStatus || "loggedIn";
+ const { count } = await canGenerateProblemToday(currentUser.uid, status);
+ setDailyCount(count);
+ sessionStorage.setItem(`COUNT_${new Date().toISOString().split("T")[0]}`, `COUNT_${count}`);
+ } else {
+ setDailyCount(0);
+ }
+ localStorage.setItem("problemCountDate", new Date().toISOString().split("T")[0]);
+ setShowLoginModal(false);
+
+ // 세션 타임아웃 설정 (30분 비활동 시 자동 로그아웃)
+ resetSessionTimeout(() => {
+ setUserEmail(null);
+ setUserStatusLocal("guest");
+ localStorage.removeItem("userStatus");
+ });
+
+ // Firebase에서 시험 시작일 확인
+ if (currentUser) {
+ const examStartDate = await getExamStartDate(currentUser.uid);
+ if (examStartDate) {
+ localStorage.setItem("examStartDate", examStartDate);
+ setDday(getExamDday());
+ } else {
+ // 시험일정이 설정되지 않았을 때만 팝업 띄우기
+ setTimeout(() => setShowExamDateModal(true), 300);
+ }
+ } else {
+ // user가 없으면 localStorage에서 확인
+ const examDate = localStorage.getItem("examStartDate");
+ if (!examDate) {
+ setTimeout(() => setShowExamDateModal(true), 300);
+ }
+ }
+ } catch (err: any) {
+ setLoginError(translateAuthError(err.message));
+ } finally {
+ setLoginLoading(false);
+ }
+ }} style={{ marginBottom: "24px" }}>
+ <input type="email"
+ id="loginEmail"
+ placeholder={t("verifyEmailPlaceholder")}
+ required
+ style={{
+ width: "100%", padding: "12px 16px", background: "rgba(255,255,255,0.05)",
+ border: "1px solid #2A344A", borderRadius: "8px",
+ color: "#D1D5DB", fontSize: "14px", boxSizing: "border-box",
+ marginBottom: "12px"
+ }} />
+
+ <input type="password"
+ id="loginPassword"
+ placeholder={t("passwordPlaceholder")}
+ required
+ minLength={6}
+ style={{
+ width: "100%", padding: "12px 16px", background: "rgba(255,255,255,0.05)",
+ border: "1px solid #2A344A", borderRadius: "8px",
+ color: "#D1D5DB", fontSize: "14px", boxSizing: "border-box",
+ marginBottom: "12px"
+ }} />
+
+ <button type="submit"
+ disabled={loginLoading}
+ style={{
+ width: "100%", padding: "12px", background: "#FF9900", color: "#0F1629",
+ border: "none", borderRadius: "8px", cursor: loginLoading ? "not-allowed" : "pointer",
+ fontSize: "14px", fontWeight: "bold", opacity: loginLoading ? 0.6 : 1
+ }}>
+ {loginLoading ? t("btnGenerating") : (isSignUp ? t("btnSignUp") : t("btnLogIn"))}
+ </button>
+ </form>
+
+ {/* 로그인/회원가입 토글 */}
+ <div style={{ textAlign: "center", marginBottom: "24px" }}>
+ <span style={{ color: "#D1D5DB", fontSize: "13px" }}>
+ {isSignUp ? t("alreadyHaveAccount") + " " : t("dontHaveAccount") + " "}
+ <button onClick={() => { setIsSignUp(!isSignUp); setLoginError(null); }}
+ style={{
+ background: "none", border: "none", color: "#FF9900",
+ cursor: "pointer", textDecoration: "underline", fontSize: "13px"
+ }}>
+ {isSignUp ? t("btnLogIn") : t("btnSignUp")}
+ </button>
+ </span>
+ </div>
+
+ {/* 정보 박스 */}
+ <div style={{
+ textAlign: "center", color: "#D1D5DB", fontSize: "12px",
+ padding: "16px", background: "rgba(255,153,0,0.1)", borderRadius: "8px",
+ border: "1px solid rgba(255,153,0,0.3)", lineHeight: "1.6"
+ }}>
+ <p style={{ marginBottom: "8px" }}><strong>{t("loginGetTitle")}</strong></p>
+ <p style={{ marginBottom: "12px", color: "#a8d5ff", fontWeight: 500 }}>{t("aiFeature")}</p>
+ <p>{t("loginFreeAttempts")}</p>
+ <p style={{ marginTop: "12px", color: "#FF9900", fontWeight: "bold" }}>{t("loginUpgradeOffer")}</p>
+ <p style={{ marginTop: "8px", color: "#a8d5ff", fontWeight: 500 }}>{t("loginMockExamFeature")}</p>
+ </div>
+
+ <button onClick={() => { setShowLoginModal(false); setLoginError(null); }} style={{
+ width: "100%", padding: "12px", background: "transparent", color: "#D1D5DB",
+ border: "none", cursor: "pointer", fontSize: "14px", marginTop: "20px"
+ }}>
+ {t("cancelBtn")}
+ </button>
+ </div>
+ </div>
+  );
+
+  // 랜딩 페이지 표시 (초기 상태, 비로그인, 또는 로고 클릭 시)
+  if (showLanding) {
+    return <>
+      <LandingPage
+        onGetStarted={() => setShowLanding(false)}
+        onTabChange={(newTab) => {
+          setTab(newTab);
+          setShowLanding(false);
+        }}
+        onLoginClick={() => setShowLoginModal(true)}
+        onProClick={() => setShowPaymentModal(true)}
+        currentLocale={locale}
+        onLocaleChange={setLocale}
+        userEmail={userEmail}
+        isAuthChecked={isAuthChecked}
+        dday={dday}
+        streak={streak}
+        onDdayClick={() => setShowExamDateModal(true)}
+        userStatus={userStatus}
+        onLogout={async () => {
+          await signOut();
+          setUserEmail(null);
+          setUserStatusLocal("guest");
+          localStorage.removeItem("userStatus");
+          setShowLanding(true);
+        }}
+        isAdmin={isAdmin}
+      />
+      {/* 시험 시작일 설정 모달 (랜딩페이지에서도 사용) */}
+      {showExamDateModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 1001
+        }} onClick={() => setShowExamDateModal(false)}>
+          <div style={{
+            background: "#0F1629", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px",
+            padding: "32px", maxWidth: "450px", width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.5)"
+          }} onClick={e => e.stopPropagation()}>
+            <h2 style={{ color: "#fff", marginBottom: "24px", fontSize: "20px", textAlign: "center" }}>{t("examStartDateSetting")}</h2>
+            <div style={{ marginBottom: "24px" }}>
+              <input type="date"
+                defaultValue={localStorage.getItem("examStartDate") || new Date().toISOString().split("T")[0]}
+                id="examDateInputLanding"
+                onChange={(e) => {
+                  const examDate = new Date(e.target.value);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  examDate.setHours(0, 0, 0, 0);
+                  const diff = examDate.getTime() - today.getTime();
+                  const daysLeft = Math.floor(diff / (1000 * 60 * 60 * 24));
+                  const resultDiv = document.getElementById("examDaysResultLanding");
+                  if (resultDiv) {
+                    resultDiv.textContent = daysLeft > 0 ? t("examDaysRemaining").replace("{n}", daysLeft.toString()) : daysLeft === 0 ? t("examToday") : t("examDatePassed");
+                  }
+                }}
+                style={{
+                  width: "100%", padding: "10px", background: "rgba(255,255,255,0.05)",
+                  border: "1px solid #2A344A", borderRadius: "6px",
+                  color: "#D1D5DB", fontSize: "14px", boxSizing: "border-box"
+                }} />
+              <div id="examDaysResultLanding" style={{
+                marginTop: "16px", padding: "12px", background: "rgba(255,153,0,0.1)",
+                border: "1px solid rgba(255,153,0,0.3)", borderRadius: "6px", fontSize: "14px", color: "var(--accent)", textAlign: "center", fontWeight: 600
+              }}>
+                {t("examSelectDate")}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button onClick={async () => {
+                const selectedDate = (document.getElementById("examDateInputLanding") as HTMLInputElement).value;
+                localStorage.setItem("examStartDate", selectedDate);
+                setDday(getExamDday());
+                const user = getCurrentUser();
+                if (user) {
+                  try {
+                    await saveExamStartDate(user.uid, selectedDate);
+                  } catch (error) { /* 에러 처리 */ }
+                }
+                setShowExamDateModal(false);
+              }} style={{
+                flex: 1, padding: "12px", background: "#FF9900", color: "#0F1629",
+                border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold"
+              }}>
+                ✅ 설정 완료
+              </button>
+              <button onClick={() => setShowExamDateModal(false)} style={{
+                flex: 1, padding: "12px", background: "rgba(255,255,255,0.05)", color: "#D1D5DB",
+                border: "1px solid #2A344A", borderRadius: "6px", cursor: "pointer"
+              }}>
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {renderLoginModal()}
+      {renderPaymentModal()}
+      <CookieConsent />
+    </>;
   }
 
   return (
  <div className="app">
- <Navigator onTabChange={(newTab) => { setTab(newTab); setShowLanding(false); }} currentLocale={locale} onLocaleChange={setLocale} onLoginClick={() => setShowLoginModal(true)} showLoginButton={!userEmail && isAuthChecked} onLogoClick={() => setShowLanding(true)} />
+ <Navigator
+   onTabChange={(newTab) => { setTab(newTab); setShowLanding(false); }}
+   currentLocale={locale}
+   onLocaleChange={setLocale}
+   onLoginClick={() => setShowLoginModal(true)}
+   showLoginButton={!userEmail && isAuthChecked}
+   onLogoClick={() => setShowLanding(true)}
+   userEmail={userEmail}
+   dday={dday}
+   streak={streak}
+   onDdayClick={() => setShowExamDateModal(true)}
+   userStatus={userStatus}
+   onLogout={async () => {
+     await signOut();
+     setUserEmail(null);
+     setUserStatusLocal("guest");
+     localStorage.removeItem("userStatus");
+     setShowLanding(true);
+   }}
+   isAdmin={isAdmin}
+ />
 
 
  {/* Admin Tabs Only - Main tabs now in Navigator */}
@@ -4506,284 +4908,7 @@ function App() {
  </div>
  )}
 
- {showLoginModal && (
- <div style={{
- position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
- background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center",
- zIndex: 1001
- }}>
- <div style={{
- background: "#0F1629", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "16px",
- padding: "48px 40px", maxWidth: "500px", width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.5)"
- }} onClick={e => e.stopPropagation()}>
- <h2 style={{ color: "#fff", marginBottom: "12px", fontSize: "24px", fontWeight: "bold", textAlign: "center" }}>
- {isSignUp ? " " + t("btnSignUp") : " " + t("btnLogIn")}
- </h2>
- <p style={{ color: "#D1D5DB", fontSize: "13px", textAlign: "center", marginBottom: "24px" }}>
- {t("verifyEmailDesc")}
- </p>
-
- {/* Google 로그인 버튼 */}
- <button
- onClick={async () => {
- setLoginError(null);
- setLoginLoading(true);
- try {
- const user = await signInWithGoogle();
- setUserEmail(user.email);
- setIsPasswordLoginLinked(isPasswordLinked(user));
-
- // 사용자 정보 저장 및 결제 상태 로드
- await saveUserInfoToFirebase(user.uid, user.email);
- let isPaid = await getUserPaidStatus(user.uid);
-
- // ✅ 임시 테스트: 특정 이메일은 자동으로 paid 처리
- // 환경변수에서 읽은 테스트 이메일 목록 사용
- if (TEST_PAID_EMAILS.includes(user.email)) {
- isPaid = true;
- await updateUserPaidStatus(user.uid, true); // ✅ Firebase에도 저장
- }
-
- const status: UserStatus = isPaid ? "paid" : "loggedIn";
- setUserStatusLocal(status);
- localStorage.setItem("userStatus", status);
-
- //  Firebase에서 실제 일일 생성 수 조회
- const { count } = await canGenerateProblemToday(user.uid, status);
- setDailyCount(count);
- localStorage.setItem("problemCountDate", new Date().toISOString().split("T")[0]);
- sessionStorage.setItem(`COUNT_${new Date().toISOString().split("T")[0]}`, `COUNT_${count}`);
- setShowLoginModal(false);
-
- // Firebase에서 시험 시작일 확인
- const examStartDate = await getExamStartDate(user.uid);
- if (examStartDate) {
- localStorage.setItem("examStartDate", examStartDate);
- setDday(getExamDday());
- } else {
- // 시험일정이 설정되지 않았을 때만 팝업 띄우기
- setTimeout(() => setShowExamDateModal(true), 300);
- }
- } catch (err: any) {
- setLoginError(translateAuthError(err.message));
- } finally {
- setLoginLoading(false);
- }
- }}
- disabled={loginLoading}
- style={{
- width: "100%", padding: "12px", background: "#fff", color: "#000",
- border: "1px solid #e5e7eb", borderRadius: "8px", cursor: loginLoading ? "not-allowed" : "pointer",
- fontSize: "14px", fontWeight: "bold", marginTop: "16px", display: "flex",
- alignItems: "center", justifyContent: "center", gap: "8px", opacity: loginLoading ? 0.6 : 1
- }}
- >
- <svg width="18" height="18" viewBox="0 0 24 24">
- <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
- <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
- <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC04"/>
- <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
- </svg>
- {t("continueWithGoogle")}
- </button>
-
- {/* 또는 구분선 */}
- <div style={{ display: "flex", alignItems: "center", margin: "20px 0", gap: "12px" }}>
- <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.2)" }}></div>
- <span style={{ color: "#D1D5DB", fontSize: "12px" }}>또는</span>
- <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.2)" }}></div>
- </div>
-
- {/* 에러 메시지 */}
- {loginError && (
- <div style={{
- marginBottom: "16px", padding: "12px", background: "rgba(239,68,68,0.1)",
- border: "1px solid rgba(239,68,68,0.3)", borderRadius: "6px", color: "#fca5a5",
- fontSize: "12px", textAlign: "center"
- }}>
- {loginError}
- </div>
- )}
-
- {/* 이메일/비밀번호 입력 */}
- <form onSubmit={async (e) => {
- e.preventDefault();
- setLoginError(null);
- setLoginLoading(true);
-
- const email = sanitizeInput((document.getElementById("loginEmail") as HTMLInputElement).value);
- const password = (document.getElementById("loginPassword") as HTMLInputElement).value;
- const displayName = "";
-
- // 입력값 검증
- if (!validateEmail(email)) {
- setLoginError(t("errorInvalidEmail"));
- setLoginLoading(false);
- return;
- }
-
- const passwordValidation = validatePassword(password);
- if (!passwordValidation.valid) {
- setLoginError(passwordValidation.error || t("errorPasswordInvalid"));
- setLoginLoading(false);
- return;
- }
-
- // Rate Limiting 확인
- if (!checkRateLimit(email)) {
- setLoginError(t("errorTooManyRequests"));
- setLoginLoading(false);
- return;
- }
-
- try {
- if (isSignUp) {
- await signUp(email, password, displayName);
- } else {
- await signIn(email, password);
- }
- setIsPasswordLoginLinked(true);
-
- // 성공 시 상태 업데이트
- setUserEmail(email);
- const userName = isSignUp ? displayName : (localStorage.getItem("userName") || email.split("@")[0]);
-
- // 사용자 정보 저장 및 결제 상태 로드
- const user = getCurrentUser();
- if (user) {
- await saveUserInfoToFirebase(user.uid, email);
- let isPaid = await getUserPaidStatus(user.uid);
-
- // ✅ 임시 테스트: 특정 이메일은 자동으로 paid 처리
- // 환경변수에서 읽은 테스트 이메일 목록 사용
- if (TEST_PAID_EMAILS.includes(email)) {
- isPaid = true;
- await updateUserPaidStatus(user.uid, true); // ✅ Firebase에도 저장
- }
-
- const status: UserStatus = isPaid ? "paid" : "loggedIn";
- setUserStatusLocal(status);
- localStorage.setItem("userStatus", status);
- } else {
- setUserStatusLocal("loggedIn");
- localStorage.setItem("userStatus", "loggedIn");
- }
-
- localStorage.setItem("userName", userName);
-
- //  Firebase에서 실제 일일 생성 수 조회
- const currentUser = getCurrentUser();
- if (currentUser) {
- const status: UserStatus = localStorage.getItem("userStatus") as UserStatus || "loggedIn";
- const { count } = await canGenerateProblemToday(currentUser.uid, status);
- setDailyCount(count);
- sessionStorage.setItem(`COUNT_${new Date().toISOString().split("T")[0]}`, `COUNT_${count}`);
- } else {
- setDailyCount(0);
- }
- localStorage.setItem("problemCountDate", new Date().toISOString().split("T")[0]);
- setShowLoginModal(false);
-
- // 세션 타임아웃 설정 (30분 비활동 시 자동 로그아웃)
- resetSessionTimeout(() => {
- setUserEmail(null);
- setUserStatusLocal("guest");
- localStorage.removeItem("userStatus");
- });
-
- // Firebase에서 시험 시작일 확인
- if (currentUser) {
- const examStartDate = await getExamStartDate(currentUser.uid);
- if (examStartDate) {
- localStorage.setItem("examStartDate", examStartDate);
- setDday(getExamDday());
- } else {
- // 시험일정이 설정되지 않았을 때만 팝업 띄우기
- setTimeout(() => setShowExamDateModal(true), 300);
- }
- } else {
- // user가 없으면 localStorage에서 확인
- const examDate = localStorage.getItem("examStartDate");
- if (!examDate) {
- setTimeout(() => setShowExamDateModal(true), 300);
- }
- }
- } catch (err: any) {
- setLoginError(translateAuthError(err.message));
- } finally {
- setLoginLoading(false);
- }
- }} style={{ marginBottom: "24px" }}>
- <input type="email"
- id="loginEmail"
- placeholder={t("verifyEmailPlaceholder")}
- required
- style={{
- width: "100%", padding: "12px 16px", background: "rgba(255,255,255,0.05)",
- border: "1px solid #2A344A", borderRadius: "8px",
- color: "#D1D5DB", fontSize: "14px", boxSizing: "border-box",
- marginBottom: "12px"
- }} />
-
- <input type="password"
- id="loginPassword"
- placeholder={t("passwordPlaceholder")}
- required
- minLength={6}
- style={{
- width: "100%", padding: "12px 16px", background: "rgba(255,255,255,0.05)",
- border: "1px solid #2A344A", borderRadius: "8px",
- color: "#D1D5DB", fontSize: "14px", boxSizing: "border-box",
- marginBottom: "12px"
- }} />
-
- <button type="submit"
- disabled={loginLoading}
- style={{
- width: "100%", padding: "12px", background: "#FF9900", color: "#0F1629",
- border: "none", borderRadius: "8px", cursor: loginLoading ? "not-allowed" : "pointer",
- fontSize: "14px", fontWeight: "bold", opacity: loginLoading ? 0.6 : 1
- }}>
- {loginLoading ? t("btnGenerating") : (isSignUp ? t("btnSignUp") : t("btnLogIn"))}
- </button>
- </form>
-
- {/* 로그인/회원가입 토글 */}
- <div style={{ textAlign: "center", marginBottom: "24px" }}>
- <span style={{ color: "#D1D5DB", fontSize: "13px" }}>
- {isSignUp ? t("alreadyHaveAccount") + " " : t("dontHaveAccount") + " "}
- <button onClick={() => { setIsSignUp(!isSignUp); setLoginError(null); }}
- style={{
- background: "none", border: "none", color: "#FF9900",
- cursor: "pointer", textDecoration: "underline", fontSize: "13px"
- }}>
- {isSignUp ? t("btnLogIn") : t("btnSignUp")}
- </button>
- </span>
- </div>
-
- {/* 정보 박스 */}
- <div style={{
- textAlign: "center", color: "#D1D5DB", fontSize: "12px",
- padding: "16px", background: "rgba(255,153,0,0.1)", borderRadius: "8px",
- border: "1px solid rgba(255,153,0,0.3)", lineHeight: "1.6"
- }}>
- <p style={{ marginBottom: "8px" }}><strong>{t("loginGetTitle")}</strong></p>
- <p style={{ marginBottom: "12px", color: "#a8d5ff", fontWeight: 500 }}>{t("aiFeature")}</p>
- <p>{t("loginFreeAttempts")}</p>
- <p style={{ marginTop: "12px", color: "#FF9900", fontWeight: "bold" }}>{t("loginUpgradeOffer")}</p>
- <p style={{ marginTop: "8px", color: "#a8d5ff", fontWeight: 500 }}>{t("loginMockExamFeature")}</p>
- </div>
-
- <button onClick={() => { setShowLoginModal(false); setLoginError(null); }} style={{
- width: "100%", padding: "12px", background: "transparent", color: "#D1D5DB",
- border: "none", cursor: "pointer", fontSize: "14px", marginTop: "20px"
- }}>
- {t("cancelBtn")}
- </button>
- </div>
- </div>
- )}
+ {renderLoginModal()}
 
  {/* 인증 모달 */}
  {showAuthModal && (
@@ -4886,33 +5011,8 @@ function App() {
  </div>
  )}
 
- {/* Payment Modal (Stripe) */}
- {showPaymentModal && (
- <PaymentModal
- onClose={() => setShowPaymentModal(false)}
- onSuccess={async () => {
- setUserStatusLocal("paid");
- setUserStatus("paid");
- setDailyCount(0);
- localStorage.setItem("userStatus", "paid");
- localStorage.setItem("problemCountDate", new Date().toISOString().split("T")[0]);
- localStorage.setItem("problemCount", "0");
-
- // Firestore에 결제 상태 저장
- const user = getCurrentUser();
- if (user) {
- try {
- await updateUserPaidStatus(user.uid, true);
- } catch (error) {
- // 에러 무시
- }
- }
-
- setTimeout(() => setShowPaymentModal(false), 1000);
- }}
- userEmail={userEmail || ""}
- />
- )}
+ {/* Payment Modal */}
+ {renderPaymentModal()}
 
  {/* Write Post Modal */}
  {showPostForm && (
@@ -5121,7 +5221,7 @@ function App() {
  </div>
 
  {/* Footer */}
- <Footer onTabChange={(newTab) => { setTab(newTab); setShowLanding(false); }} />
+ <Footer />
 
  {/* Cookie Consent */}
  <CookieConsent />

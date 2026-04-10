@@ -10,10 +10,10 @@ export default defineConfig({
   server: {
     open: true,
     port: 3000,
-    host: "127.0.0.1",
+    host: "localhost",
     hmr: {
       protocol: "ws",
-      host: "127.0.0.1",
+      host: "localhost",
       port: 3000,
     },
     proxy: {

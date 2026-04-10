@@ -11,11 +11,11 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // ✅ 보안 헤더 설정 (XSS, Clickjacking, MIME-sniffing 방지)
 app.use(helmet());
 
-// ✅ CORS 설정 (awsarchive.com만 허용)
+// ✅ CORS 설정
 app.use(cors({
   origin: [
-    'https://awsarchive.com',
-    'https://www.awsarchive.com',
+    'https://prep4saa.com',
+    'https://www.prep4saa.com',
     'http://localhost:5173',  // 개발 환경
     'http://localhost:3000',  // Vite 대체 포트
     'http://localhost:3001',  // Vite 대체 포트
