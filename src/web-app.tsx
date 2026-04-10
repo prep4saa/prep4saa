@@ -282,6 +282,7 @@ function initPos() {
   const centers: Record<string, {x:number;y:number}> = {
  compute:{x:160,y:140}, storage:{x:760,y:140}, database:{x:760,y:420},
  network:{x:460,y:90}, security:{x:160,y:420}, messaging:{x:460,y:500}, monitor:{x:80,y:300},
+ migration:{x:300,y:560}, ops:{x:600,y:560}, analytics:{x:900,y:300},
   };
   const cnt: Record<string,number> = {};
   const pos: Record<string, {x:number;y:number;vx:number;vy:number}> = {};
