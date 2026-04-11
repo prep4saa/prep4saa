@@ -193,7 +193,7 @@ D. 프로비저닝된 용량 모드에서 테이블을 생성하고 Global Table
 ### 1. 시나리오 (1-2문장, 간결)
 - 매 문제마다 다른 업종 사용 (제조업체, 금융사, SaaS, 의료기관, 이커머스, 미디어, 게임사, 공공기관, 보험사, 물류, 스타트업, 교육 등)
 - 핵심 요구사항만 1-2문장으로 명시 — 제약조건은 별도 나열하지 않고 시나리오 안에 자연스럽게 포함
-- 수치는 꼭 필요한 경우만 포함 (매번 다르게: 보관기간 1년/3년/7년, 가용성 99.9%/99.99%, 비용 절감 30% 등)
+- 수치는 꼭 필요한 경우만 포함 (매번 다르게: 보관기간 1년/3년/7년, 비용 절감 30% 등, 가용성 수치 표현 금지)
 
 ### 2. 선택지 A~D (덤프 스타일, 2-3줄 이내)
 - **서비스명 + 핵심 특징** 위주로 간결하게 작성
@@ -275,11 +275,11 @@ export const SAA_PROBLEM_PROMPT_HARD = `⚠️ **CRITICAL: 응답은 2000~3500 �
 - 함정답: 거의 맞지만 비용, 성능, 운영 측면 중 하나 미충족
 - 실무 시나리오 (구체적 수치 + 비즈니스 맥락)
 
-**시나리오 예**: "월 500GB 데이터, 초당 2000 요청, 99.9% 가용성 요구"
+**시나리오 예**: "월 500GB 데이터, 초당 2000 요청, 높은 가용성 요구"
 **제약조건**:
 1. 성능: 레이턴시 < 100ms
 2. 비용: 예산 이내
-3. 가용성: 99.9% (다중 AZ)
+3. 가용성: 다중 AZ 구성
 
 **함정답 구조**:
 - A: 비용은 맞지만 성능 미흡 (단일 AZ)
@@ -349,7 +349,7 @@ export const SAA_PROBLEM_PROMPT_CHALLENGE = `⚠️ **CRITICAL: 응답은 2000~3
 
 **시나리오 예**:
 "은행이 온프레미스 레거시 시스템에서 AWS로 마이그레이션.
-월 10TB 거래 데이터, 99.99% 가용성, HIPAA 준수"
+월 10TB 거래 데이터, 고가용성 보장, HIPAA 준수"
 
 **제약조건**:
 1. 기술: Direct Connect + Multi-AZ + 암호화
@@ -664,11 +664,11 @@ The following shows a "Hard" difficulty-level example. Analyze complex constrain
 - Trick answers: Almost correct but missing one aspect (cost, performance, or operational efficiency)
 - Real-world scenarios with specific numbers and business context
 
-**Example Scenario:** "500GB monthly data, 2000 requests/sec, 99.9% availability required"
+**Example Scenario:** "500GB monthly data, 2000 requests/sec, high availability required"
 **Constraints:**
 1. Performance: Latency < 100ms
 2. Cost: Within budget
-3. Availability: 99.9% (Multi-AZ)
+3. Availability: Multi-AZ configuration
 
 **Trap Answer Structure:**
 - A: Meets cost but lacks performance (single AZ)
@@ -732,7 +732,7 @@ The following shows a "Challenge" difficulty-level example. Analyze highly sophi
 
 **Example Scenario:**
 "Bank migrating legacy on-premises system to AWS.
-Monthly 10TB transaction data, 99.99% availability, HIPAA compliance"
+Monthly 10TB transaction data, high availability required, HIPAA compliance"
 
 **Constraints:**
 1. Technical: Direct Connect + Multi-AZ + Encryption
@@ -868,7 +868,7 @@ export const SAA_PROBLEM_PROMPT_JA_CHALLENGE = `⚠️ **重要：レスポン�
 
 **シナリオ例:**
 「銀行がオンプレミスのレガシーシステムをAWSに移行。
-月間10TBトランザクションデータ、99.99%可用性、HIPAA準拠」
+月間10TBトランザクションデータ、高可用性確保、HIPAA準拠」
 
 **制約条件:**
 1. 技術: Direct Connect + マルチAZ + 暗号化
