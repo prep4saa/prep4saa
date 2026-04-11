@@ -1464,6 +1464,10 @@ function App() {
   const generatePDF = async (session: any) => {
  if (!session || !session.problems || session.problems.length === 0) return;
 
+ // undefined/null 문제 필터링
+ const validProblems = session.problems.filter((p: any) => p != null);
+ if (validProblems.length === 0) return;
+
  // 로딩 상태 시작
  setPdfGeneratingId(session.sessionTimestamp);
 
@@ -1478,7 +1482,7 @@ function App() {
  Date: ${session.date} ${session.time}
  </p>
  <hr style="border: 1px solid #ddd; margin-bottom: 20px;">
- ${session.problems.map((problem, index) => `
+ ${validProblems.map((problem: any, index: number) => `
  <div style="margin-bottom: 30px;">
  <!-- 문제 번호 및 제목 -->
  <h3 class="no-break" style="margin-bottom: 12px; color: black; border-bottom: 2px solid #333; padding-bottom: 8px; break-inside: avoid; page-break-inside: avoid;">Q${index + 1}. ${problem.question}</h3>
@@ -1559,17 +1563,28 @@ function App() {
  pagebreak: { mode: ['css', 'legacy'], avoid: ['.no-break'] }
  };
 
- // PDF 생성
- const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
+ // PDF Blob 생성 (native Promise 래핑 - html2pdf Worker의 await 호환 문제 해결)
+ const pdfBlob = await new Promise<Blob>((resolve, reject) => {
+ (html2pdf() as any)
+   .set(options)
+   .from(element)
+   .toPdf()
+   .get('pdf', (pdf: any) => {
+     try {
+       resolve(pdf.output('blob'));
+     } catch (e) {
+       reject(e);
+     }
+   });
+ });
 
  // Cloud Storage에 업로드
  const user = getCurrentUser();
  if (user) {
  try {
  await uploadPDFToStorage(user.uid, pdfBlob, session.date, session.time);
- // PDF 업로드 완료
  } catch (error) {
- // 에러 처리만 수행 (로깅 제거)
+ // 업로드 실패는 무시 (다운로드는 계속 진행)
  }
  }
 
@@ -1583,7 +1598,7 @@ function App() {
  document.body.removeChild(link);
  URL.revokeObjectURL(url);
  } catch (error) {
- // 에러 처리만 수행 (로깅 제거)
+ alert(locale === 'en' ? 'PDF generation failed. Please try again.' : locale === 'ja' ? 'PDF生成に失敗しました。' : 'PDF 생성에 실패했습니다. 다시 시도해주세요.');
  } finally {
  // 로딩 상태 종료
  setPdfGeneratingId(null);
