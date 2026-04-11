@@ -4180,6 +4180,11 @@ function App() {
  </div>
  </div>
  </>
+ ) : !isAuthChecked ? (
+ // Firebase 인증 확인 중 - 로딩
+ <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
+   <div style={{ fontSize: "14px", color: "#6B7280" }}>...</div>
+ </div>
  ) : mockExamAlreadyTaken ? (
  // 오늘 이미 본 경우
  <div style={{
