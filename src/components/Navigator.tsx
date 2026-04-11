@@ -127,13 +127,6 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
               </>
             )}
           </div>
-          {/* 햄버거 버튼 (모바일 전용) */}
-          <button className="hamburger" onClick={() => setShowMobileMenu(!showMobileMenu)} aria-label="메뉴">
-            <span style={{ transform: showMobileMenu ? 'rotate(45deg) translate(5px, 5px)' : 'none' }}></span>
-            <span style={{ opacity: showMobileMenu ? 0 : 1 }}></span>
-            <span style={{ transform: showMobileMenu ? 'rotate(-45deg) translate(5px, -5px)' : 'none' }}></span>
-          </button>
-
           <div className="nav-actions">
             {userEmail && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: '#D1D5DB', fontSize: '.875rem', position: 'relative' }}>
@@ -256,6 +249,12 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
             {showLoginButton && (
               <button onClick={() => onLoginClick && onLoginClick()} className="btn-login">{t.landingNavLogin}</button>
             )}
+            {/* 햄버거 버튼 (모바일 전용) */}
+            <button className="hamburger" onClick={() => setShowMobileMenu(!showMobileMenu)} aria-label="메뉴">
+              <span style={{ transform: showMobileMenu ? 'rotate(45deg) translate(5px, 5px)' : 'none' }}></span>
+              <span style={{ opacity: showMobileMenu ? 0 : 1 }}></span>
+              <span style={{ transform: showMobileMenu ? 'rotate(-45deg) translate(5px, -5px)' : 'none' }}></span>
+            </button>
           </div>
         </div>
       </nav>

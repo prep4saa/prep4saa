@@ -656,6 +656,8 @@ select option:hover {
 }
 
 @media (max-width: 480px) {
+  .app { padding-top: 4rem; }
+
   /* Header */
   .header {
     padding: 10px 12px;
