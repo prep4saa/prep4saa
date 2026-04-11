@@ -1276,6 +1276,7 @@ function App() {
   // 모의시험 일일 제한 체크 및 PDF 초기화 (Firebase 기반)
   useEffect(() => {
  if (tab !== "mockExam") return;
+ if (!isAuthChecked) return; // Firebase 인증 준비 전에는 실행하지 않음
 
  // PDF 24시간 자동 삭제 로직
  const pdfCreatedAtStr = localStorage.getItem("mockExamPdfCreatedAt");
@@ -1295,11 +1296,11 @@ function App() {
    const user = auth.currentUser;
    let lastMockExamDate: string | null = null;
 
-   if (user && !isAdmin) {
+   if (user) {
      lastMockExamDate = await getUserMockExamDate(user.uid);
    }
 
-   if (lastMockExamDate === today && !isAdmin) {
+   if (lastMockExamDate === today) {
      setMockExamAlreadyTaken(true);
      const tomorrow = new Date(today);
      tomorrow.setDate(tomorrow.getDate() + 1);
@@ -1312,7 +1313,7 @@ function App() {
      setMockExamNextAvailableTime("");
    }
  })();
-  }, [tab, userEmail, isAdmin]);
+  }, [tab, userEmail, isAdmin, isAuthChecked]);
 
   // 모의시험 타이머
   useEffect(() => {
@@ -4491,9 +4492,8 @@ function App() {
  // ✅ 시험 시작 시 언어 고정 (시험 중 언어 변경 방지)
  localStorage.setItem("mockExamStartedLocale", locale);
 
- // ✅ 오늘 시험 시작했음을 Firebase에 기록 (하루 한 번 제한용, 운영자 제외)
- const isUnlimitedUser = TEST_PAID_EMAILS.includes(userEmail || '') || ADMIN_EMAILS.includes(userEmail || '') || isAdmin;
- if (!isUnlimitedUser && auth.currentUser) {
+ // ✅ 오늘 시험 시작했음을 Firebase에 기록 (모든 로그인 사용자)
+ if (auth.currentUser) {
    await recordMockExamDate(auth.currentUser.uid);
    setMockExamAlreadyTaken(true);
  }
