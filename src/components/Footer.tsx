@@ -101,7 +101,7 @@ const legalCopy: Record<Locale, Record<LegalPolicyKey, PolicyCopy>> = {
           bullets: [
             '서비스 내용, 가격, 제공 범위는 사전 고지 후 변경될 수 있습니다.',
             '법령, 보안, 운영상 필요가 있는 경우 서비스가 일시 중단될 수 있습니다.',
-            '문의는 artsociety931@gmail.com 로 보내 주세요.',
+            '문의는 awsarchive06@gmail.com 로 보내 주세요.',
           ],
         },
       ],
@@ -142,7 +142,7 @@ const legalCopy: Record<Locale, Record<LegalPolicyKey, PolicyCopy>> = {
           bullets: [
             '법령 또는 분쟁 대응이 필요한 경우에만 필요한 기간 동안 보관합니다.',
             '이용자는 열람, 정정, 삭제를 요청할 수 있습니다.',
-            '문의는 artsociety931@gmail.com 로 보내 주세요.',
+            '문의는 awsarchive06@gmail.com 로 보내 주세요.',
           ],
         },
       ],
@@ -181,7 +181,7 @@ const legalCopy: Record<Locale, Record<LegalPolicyKey, PolicyCopy>> = {
         {
           heading: '4. 요청 방법',
           bullets: [
-            '주문 번호, 결제 이메일, 요청 사유를 포함해 artsociety931@gmail.com 로 문의해 주세요.',
+            '주문 번호, 결제 이메일, 요청 사유를 포함해 awsarchive06@gmail.com 로 문의해 주세요.',
             '가능한 한 빠르게 확인 후 안내드리겠습니다.',
           ],
         },
@@ -254,7 +254,7 @@ const legalCopy: Record<Locale, Record<LegalPolicyKey, PolicyCopy>> = {
           bullets: [
             'Features, pricing, and service scope may change with prior notice.',
             'Service may be suspended temporarily for legal, security, or operational reasons.',
-            'Contact artsociety931@gmail.com for questions.',
+            'Contact awsarchive06@gmail.com for questions.',
           ],
         },
       ],
@@ -295,7 +295,7 @@ const legalCopy: Record<Locale, Record<LegalPolicyKey, PolicyCopy>> = {
           bullets: [
             'We retain data only as long as needed for legal or dispute resolution purposes.',
             'Users may request access, correction, or deletion of their data.',
-            'Contact artsociety931@gmail.com for privacy requests.',
+            'Contact awsarchive06@gmail.com for privacy requests.',
           ],
         },
       ],
@@ -334,7 +334,7 @@ const legalCopy: Record<Locale, Record<LegalPolicyKey, PolicyCopy>> = {
         {
           heading: '4. How to request a refund',
           bullets: [
-            'Email artsociety931@gmail.com with your order number, billing email, and reason for the request.',
+            'Email awsarchive06@gmail.com with your order number, billing email, and reason for the request.',
             'We will review it as quickly as possible and reply with the next steps.',
           ],
         },
@@ -407,7 +407,7 @@ const legalCopy: Record<Locale, Record<LegalPolicyKey, PolicyCopy>> = {
           bullets: [
             '機能、料金、提供範囲は事前通知のうえ変更される場合があります。',
             '法令、セキュリティ、運用上の必要がある場合、サービスを一時停止することがあります。',
-            'お問い合わせは artsociety931@gmail.com までご連絡ください。',
+            'お問い合わせは awsarchive06@gmail.com までご連絡ください。',
           ],
         },
       ],
@@ -448,7 +448,7 @@ const legalCopy: Record<Locale, Record<LegalPolicyKey, PolicyCopy>> = {
           bullets: [
             '法令または紛争対応に必要な期間のみ保管します。',
             '利用者は開示、訂正、削除を請求できます。',
-            'artsociety931@gmail.com までご連絡ください。',
+            'awsarchive06@gmail.com までご連絡ください。',
           ],
         },
       ],
@@ -487,7 +487,7 @@ const legalCopy: Record<Locale, Record<LegalPolicyKey, PolicyCopy>> = {
         {
           heading: '4. 申請方法',
           bullets: [
-            '注文番号、請求メール、申請理由を添えて artsociety931@gmail.com へご連絡ください。',
+            '注文番号、請求メール、申請理由を添えて awsarchive06@gmail.com へご連絡ください。',
             'できるだけ早く確認してご案内します。',
           ],
         },
