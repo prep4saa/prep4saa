@@ -4177,32 +4177,18 @@ function App() {
  {/* 다시 보기 버튼 (결과 화면 하단) */}
  <div style={{ padding: "12px 20px", borderTop: "1px solid rgba(100,116,139,0.2)" }}>
    <button
-     onClick={async () => {
-       setLoading(true);
-       try {
-         const savedProblems = await getTodayMockExamProblems(locale);
-         if (!savedProblems || savedProblems.length === 0) {
-           alert("저장된 문제가 없습니다.");
-           return;
-         }
-         setMockExamProblems(savedProblems);
-         setMockExamAnswers(new Array(savedProblems.length).fill(null));
+     onClick={() => {
+       // 결과 화면: state에 이미 문제가 있으므로 바로 재시작
+       if (mockExamProblems.length > 0) {
+         setMockExamAnswers(new Array(mockExamProblems.length).fill(null));
          setMockExamStartTime(Date.now());
          setMockExamTimeRemaining(130 * 60);
          setMockExamCurrentIndex(0);
          setMockExamResults(null);
          setShowOriginalMap({});
-         localStorage.setItem("mockExamStartedLocale", locale);
-         localStorage.setItem("mockExamAllProblems", JSON.stringify(savedProblems));
-         localStorage.setItem("mockExamProblemsCount", savedProblems.length.toString());
          setMockExamRunning(true);
-       } catch (err) {
-         alert("문제 불러오기 실패");
-       } finally {
-         setLoading(false);
        }
      }}
-     disabled={loading}
      style={{
        width: "100%",
        padding: "10px",
@@ -4210,12 +4196,12 @@ function App() {
        border: "1px solid rgba(59, 130, 246, 0.4)",
        borderRadius: "6px",
        color: "var(--accent)",
-       cursor: loading ? "not-allowed" : "pointer",
+       cursor: "pointer",
        fontSize: "13px",
        fontWeight: "600",
      }}
    >
-     {loading ? "불러오는 중..." : "모의시험 다시 보기"}
+     모의시험 다시 보기
    </button>
  </div>
  </div>
@@ -4260,7 +4246,21 @@ function App() {
    onClick={async () => {
      setLoading(true);
      try {
-       const savedProblems = await getTodayMockExamProblems(locale);
+       // 1순위: localStorage 캐시 (시험 당시 locale로 저장된 것)
+       const examLocale = localStorage.getItem("mockExamStartedLocale") || locale;
+       let savedProblems = await getTodayMockExamProblems(examLocale);
+
+       // 2순위: 현재 locale로 재시도
+       if (!savedProblems || savedProblems.length === 0) {
+         savedProblems = await getTodayMockExamProblems(locale);
+       }
+
+       // 3순위: localStorage의 mockExamAllProblems
+       if (!savedProblems || savedProblems.length === 0) {
+         const stored = localStorage.getItem("mockExamAllProblems");
+         if (stored) savedProblems = JSON.parse(stored);
+       }
+
        if (!savedProblems || savedProblems.length === 0) {
          alert("저장된 문제가 없습니다.");
          return;
@@ -4272,7 +4272,7 @@ function App() {
        setMockExamCurrentIndex(0);
        setMockExamResults(null);
        setShowOriginalMap({});
-       localStorage.setItem("mockExamStartedLocale", locale);
+       localStorage.setItem("mockExamStartedLocale", examLocale);
        localStorage.setItem("mockExamAllProblems", JSON.stringify(savedProblems));
        localStorage.setItem("mockExamProblemsCount", savedProblems.length.toString());
        setMockExamRunning(true);
