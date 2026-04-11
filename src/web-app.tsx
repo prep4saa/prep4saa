@@ -1395,7 +1395,10 @@ function App() {
   //  모의시험 백그라운드 점진적 로딩 (1 → 4 → 9 → 19 → 50)
   // UTC 기준으로 생성된 문제 사용 (모든 사용자 공유)
   useEffect(() => {
- if (!mockExamRunning || mockExamProblems.length >= 50) return;
+ if (!mockExamRunning || mockExamProblems.length >= 50) {
+   setMockExamIsLoading(false);
+   return;
+ }
 
  setMockExamIsLoading(true);
 
@@ -4182,7 +4185,6 @@ function App() {
      onClick={() => {
        // 결과 화면: state에 이미 문제가 있으므로 바로 재시작
        if (mockExamProblems.length > 0) {
-         setMockExamIsLoading(true);
          setMockExamAnswers(new Array(mockExamProblems.length).fill(null));
          setMockExamStartTime(Date.now());
          setMockExamTimeRemaining(130 * 60);
