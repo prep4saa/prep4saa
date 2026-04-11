@@ -349,7 +349,14 @@ function GraphSVG({ pos, setPos, posRef, dragRef, pan, setPan, zoom, setZoom, se
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const panStartRef = useRef<{mx:number;my:number;px:number;py:number} | null>(null);
+  const pinchStartRef = useRef<{dist:number;zoom:number;midX:number;midY:number} | null>(null);
   const didPanRef = useRef(false);
+
+  const getPinchDist = (e: React.TouchEvent) => {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
   const connectedIds = selected
  ? new Set([selected, ...LINKS.filter(l => l.s === selected || l.t === selected).flatMap(l => [l.s, l.t])])
  : null;
@@ -421,14 +428,34 @@ function GraphSVG({ pos, setPos, posRef, dragRef, pan, setPan, zoom, setZoom, se
  onMouseLeave={() => { dragRef.current = null; panStartRef.current = null; didPanRef.current = false; }}
  onTouchStart={e => {
    didPanRef.current = false;
-   if (!(e.target as Element).closest('g')) {
+   if (e.touches.length === 2) {
+     const dist = getPinchDist(e);
+     const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+     const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+     pinchStartRef.current = { dist, zoom, midX, midY };
+     panStartRef.current = null;
+   } else if (e.touches.length === 1 && !(e.target as Element).closest('g')) {
      const t = e.touches[0];
      panStartRef.current = { mx: t.clientX, my: t.clientY, px: pan.x, py: pan.y };
    }
  }}
  onTouchMove={e => {
  e.preventDefault();
- if (dragRef.current) {
+ if (e.touches.length === 2 && pinchStartRef.current) {
+   const dist = getPinchDist(e);
+   const scale = dist / pinchStartRef.current.dist;
+   const newZoom = Math.max(0.3, Math.min(4, pinchStartRef.current.zoom * scale));
+   const r = svgRef.current?.getBoundingClientRect();
+   if (!r) { setZoom(newZoom); return; }
+   const mx = (pinchStartRef.current.midX - r.left) / r.width;
+   const my = (pinchStartRef.current.midY - r.top) / r.height;
+   const canvasX = pan.x + mx * vw;
+   const canvasY = pan.y + my * vh;
+   const newVW = VW / newZoom;
+   const newVH = VH / newZoom;
+   setZoom(newZoom);
+   setPan(clampPan(canvasX - mx * newVW, canvasY - my * newVH, newZoom));
+ } else if (dragRef.current) {
    const t = e.touches[0];
    const { x, y } = getSvgXY(t.clientX, t.clientY);
    setPos((p: any) => ({ ...p, [dragRef.current!]: { ...p[dragRef.current!], x, y, vx: 0, vy: 0 } }));
@@ -443,6 +470,7 @@ function GraphSVG({ pos, setPos, posRef, dragRef, pan, setPan, zoom, setZoom, se
  }
  }}
  onTouchEnd={e => {
+   if (e.touches.length < 2) pinchStartRef.current = null;
    dragRef.current = null;
    if (!didPanRef.current && !(e.target as Element).closest('g')) {
      onNodeClick(null);
