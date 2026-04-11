@@ -1397,6 +1397,8 @@ function App() {
   useEffect(() => {
  if (!mockExamRunning || mockExamProblems.length >= 50) return;
 
+ setMockExamIsLoading(true);
+
  (async () => {
  try {
  const storedDifficulties = localStorage.getItem("mockExamDifficulties");
@@ -3886,13 +3888,13 @@ function App() {
  borderRadius: "8px",
  border: "1px solid rgba(59, 130, 246, 0.3)"
  }}>
- <div style={{ fontSize: "14px", color: "#e2e8f0" }}>
+ <div style={{ fontSize: "14px", color: "#e2e8f0", display: "flex", alignItems: "center", gap: "8px" }}>
  문제 {mockExamCurrentIndex + 1} / {mockExamProblems.length}
  {mockExamIsLoading && (
- <span style={{ marginLeft: "8px", color: "var(--accent)", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "6px" }}>
- <span style={{ display: "inline-block", animation: "spin 1s linear infinite" }}>⏳</span>
- 문제 로딩 중...
- </span>
+   <>
+     <span className="loading-icon" style={{ fontSize: "18px" }}>⏳</span>
+     <span style={{ color: "#FF9900", fontSize: "12px", fontWeight: "600" }}>로딩 중...</span>
+   </>
  )}
  </div>
  <div style={{
@@ -4180,6 +4182,7 @@ function App() {
      onClick={() => {
        // 결과 화면: state에 이미 문제가 있으므로 바로 재시작
        if (mockExamProblems.length > 0) {
+         setMockExamIsLoading(true);
          setMockExamAnswers(new Array(mockExamProblems.length).fill(null));
          setMockExamStartTime(Date.now());
          setMockExamTimeRemaining(130 * 60);
