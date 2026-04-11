@@ -60,7 +60,19 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
     .lang-select:hover{border-color:#FF9900;}
     .lang-select:focus{outline:none;border-color:#FF9900;box-shadow:0 0 10px rgba(255,153,0,.2);}
     .lang-select option{background:#0F1629;color:#D1D5DB;}
+    .nav-dday{display:flex;align-items:center;}
+    .nav-streak{display:flex;align-items:center;}
     @media(min-width:768px){.nav-links{display:flex;}}
+    @media(max-width:480px){
+      .nav-inner{padding:0 .75rem;height:4rem;}
+      .nav-logo span{font-size:1rem;}
+      .logo-icon{width:1.75rem;height:1.75rem;}
+      .nav-actions{gap:.5rem;}
+      .lang-select{font-size:.75rem;padding:.375rem .5rem;}
+      .btn-login{font-size:.75rem;padding:.5rem .75rem;}
+      .nav-dday{display:none;}
+      .nav-streak{display:none;}
+    }
   `;
 
   return (
@@ -187,9 +199,8 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
                 {dday && (
                   <button
                     onClick={onDdayClick}
+                    className="nav-dday"
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
                       gap: '.5rem',
                       background: 'none',
                       border: 'none',
@@ -205,7 +216,7 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
                   </button>
                 )}
                 {streak !== undefined && streak > 0 && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+                  <div className="nav-streak" style={{ gap: '.5rem' }}>
                     <span>{streak}일차</span>
                   </div>
                 )}

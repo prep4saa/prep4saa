@@ -677,6 +677,12 @@ const Footer: React.FC = () => {
     .footer-links button:focus{outline:2px solid rgba(255,153,0,0.35);outline-offset:2px;}
     .footer-bottom{border-top:1px solid #2A344A;padding-top:.9rem;}
     .footer-legal{font-size:.78rem;color:#94A3B8;text-align:center;line-height:1.6;}
+    @media(max-width:480px){
+      .footer-inner{padding:0 1rem;}
+      .footer-links{gap:.5rem;}
+      .footer-links button{font-size:.75rem;padding:.45rem .75rem;}
+      .footer-legal{font-size:.72rem;}
+    }
   `;
 
   return (
@@ -694,7 +700,7 @@ const Footer: React.FC = () => {
                 </div>
                 <span style={{ color: '#fff', fontWeight: 700, fontSize: '1.125rem' }}>{copy.brand}</span>
               </div>
-              <p className="footer-brand">{copy.description}</p>
+              <p>{copy.description}</p>
             </div>
             <div className="footer-links">
               <button type="button" onClick={() => setActivePolicy('terms')}>{copy.labels.terms}</button>
