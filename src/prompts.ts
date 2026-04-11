@@ -15,11 +15,13 @@ export const SAA_PROBLEM_PROMPT_MEDIUM = `⚠️ **CRITICAL: 응답은 2000~3500
 새로운 문제를 **동일한 수준**으로 만들어주세요.
 
 ## 📋 생성 시 필수 규칙:
-1. **options (선택지)**: 매우 중요! 각 선택지는 **서비스명 + 핵심 특징, 2-3줄 이내**로 작성
+1. **options (선택지)**: 매우 중요! 각 선택지는 **서비스명 + 핵심 특징, 1-2줄 이내**로 작성
    - 실제 AWS 시험 덤프 스타일로 간결하게
    - 예: "자동 교체 기능이 있는 AWS KMS 키(SSE-KMS)를 사용한 서버 측 암호화를 활성화합니다."
    - 예: "S3 버킷에 대한 S3 객체 잠금을 거버넌스 모드로 활성화합니다."
    - 서비스 이름을 명확히 쓰고, 불필요한 흐름 설명은 생략
+   - **[보통 난이도 함정답 원칙]**: 함정답은 완전히 다른 서비스 → 틀린 이유가 명확함
+     예) 정답: S3 객체 잠금 / 함정: CloudTrail 활성화, RDS 백업, CloudWatch 경보
 2. **goal (핵심 목표)**: 이 문제가 테스트하는 핵심 목표를 한 문장으로 명확히
 3. **keywords (핵심 키워드)**: 문제에서 가장 중요한 AWS 개념 최대 4개 (4개 이하로 제한)
 4. **easyMode 설명**: 초등학교 5학년도 이해하는 비유법 사용
@@ -288,7 +290,10 @@ export const SAA_PROBLEM_PROMPT_HARD = `⚠️ **CRITICAL: 응답은 2000~3500 �
 
 **새로운 문제 조건**:
 - 시나리오: 1-2문장으로 간결하게, 핵심 요구사항을 시나리오 안에 자연스럽게 포함
-- 선택지: 서비스명 + 핵심 특징, 2-3줄 이내 덤프 스타일
+- 선택지: 서비스명 + 핵심 특징, **1-2줄 이내** 덤프 스타일
+- **[어려움 함정답 원칙]**: 함정답은 비슷한 서비스지만 용도/설정이 다름
+  예) 정답: SSE-KMS / 함정A: SSE-S3(키 관리 불가), 함정B: 클라이언트 측 암호화(운영 복잡), 함정C: Macie(탐지만 됨, 암호화 아님)
+  → 서비스 카테고리는 같지만 요구사항의 한 측면에서 실패
 - 정답: 모든 요구사항 완벽 충족
 - 함정: 각각 다른 1개 요구사항 미충족
 
@@ -300,10 +305,10 @@ JSON 형식으로 응답 (마크다운 없이 순수 JSON, 모든 값은 한 줄
   "question": "1-2문장 간결한 시나리오 (핵심 요구사항이 문장 안에 자연스럽게 포함)",
   "constraint": ["핵심 요구사항1", "핵심 요구사항2"],
   "options": {
-    "A": "서비스명과 핵심 특징을 간결하게 서술 (덤프 스타일)",
-    "B": "서비스명과 핵심 특징을 간결하게 서술",
-    "C": "서비스명과 핵심 특징을 간결하게 서술",
-    "D": "서비스명과 핵심 특징을 간결하게 서술"
+    "A": "서비스명 + 핵심 설정/특징 (1-2줄, 덤프 스타일)",
+    "B": "서비스명 + 핵심 설정/특징 (1-2줄, 덤프 스타일)",
+    "C": "서비스명 + 핵심 설정/특징 (1-2줄, 덤프 스타일)",
+    "D": "서비스명 + 핵심 설정/특징 (1-2줄, 덤프 스타일)"
   },
   "answer": "C",
   "keywords": ["키워드1", "키워드2", "키워드3"],
@@ -361,12 +366,13 @@ export const SAA_PROBLEM_PROMPT_CHALLENGE = `⚠️ **CRITICAL: 응답은 2000~3
 - D: 기술은 최고 (Global Table) 하지만 비용 초과 + 불필요한 복잡성
 
 **새로운 문제 조건**:
-- 시나리오: 온프레미스 ↔ AWS, 멀티 리전, 규제/컴플라이언스, 마이그레이션 등 실무 시나리오
-- 구체적 수치: 데이터량, 트래픽, 비용, 가용성, 규제 요구사항
-- 제약: 기술(4개) + 비즈니스(2개) + 운영(2개) = 최소 3개 조합
-- 선택지: 서비스명 + 핵심 특징, 2-3줄 이내 덤프 스타일
+- 시나리오: 온프레미스 ↔ AWS, 멀티 리전, 규제/컴플라이언스, 마이그레이션 등 실무 시나리오, 1-2문장
+- 선택지: 서비스명 + 핵심 특징, **1-2줄 이내** 덤프 스타일
+- **[챌린지 함정답 원칙]**: 함정답은 정답과 거의 동일한 서비스를 쓰지만 세부 옵션·모드·설정이 다름
+  예) 정답: S3 객체 잠금 컴플라이언스 모드 / 함정A: S3 객체 잠금 거버넌스 모드(관리자가 삭제 가능), 함정B: S3 버전 관리만 활성화(잠금 없음), 함정C: Glacier Vault Lock(S3가 아님)
+  → 보기만 봐서는 거의 구별 불가 수준, 서비스 세부 동작 차이를 알아야 정답 가능
 - 정답: 모든 요구사항 완벽 충족
-- 함정: A/B/D 각각 다른 요구사항 미충족
+- 함정: A/B/D 각각 세부 설정/모드/동작 방식이 달라 1개 요구사항 미충족
 
 **주어진 서비스:** \${SERVICE_NAMES}
 **난이도:** \${DIFFICULTY}
@@ -376,10 +382,10 @@ JSON 형식으로 응답 (마크다운 없이 순수 JSON, 모든 값은 한 줄
   "question": "1-2문장 간결한 시나리오 (핵심 요구사항이 문장 안에 자연스럽게 포함)",
   "constraint": ["핵심 요구사항1", "핵심 요구사항2", "핵심 요구사항3"],
   "options": {
-    "A": "서비스명과 핵심 특징을 간결하게 서술 (덤프 스타일)",
-    "B": "서비스명과 핵심 특징을 간결하게 서술",
-    "C": "서비스명과 핵심 특징을 간결하게 서술",
-    "D": "서비스명과 핵심 특징을 간결하게 서술"
+    "A": "서비스명 + 핵심 설정/모드/특징 (1-2줄, 덤프 스타일, 정답과 미묘하게 다름)",
+    "B": "서비스명 + 핵심 설정/모드/특징 (1-2줄, 덤프 스타일)",
+    "C": "서비스명 + 핵심 설정/모드/특징 (1-2줄, 덤프 스타일, 정답)",
+    "D": "서비스명 + 핵심 설정/모드/특징 (1-2줄, 덤프 스타일, 정답과 미묘하게 다름)"
   },
   "answer": "C",
   "keywords": ["키워드1", "키워드2", "키워드3"],
@@ -487,9 +493,10 @@ Key Points:
 **New Problem Conditions:**
 1. Scenario: 1-2 sentences, concise — use a different industry each time (manufacturer, bank, SaaS, healthcare, e-commerce, media, gaming, government, insurance, logistics, startup, edtech, etc.). Key requirements included naturally in the scenario, NOT listed separately as constraints.
 2. Options A-D (exam dump style):
-   - Each option: service name + key characteristic, within 2-3 lines
+   - Each option: service name + key characteristic, **1-2 lines max**
    - No architecture flow descriptions — brief and direct like real exam dumps
    - Example: "Enable server-side encryption using AWS KMS managed keys (SSE-KMS) with automatic key rotation."
+   - **[Medium trick answer rule]**: Trick answers use completely different services — the wrong reason is obvious
    - 1 correct answer: meets all requirements
    - 3 trick answers: each missing 1 different requirement
 3. Answer and detailed explanation:
@@ -616,9 +623,10 @@ D. プロビジョニング容量モードでテーブルを作成し、複数�
 **新しい問題の条件:**
 1. シナリオ: 1~2文で簡潔に — 毎回異なる業種(製造業、金融、SaaS、医療、Eコマース、メディア、ゲーム、公共機関、保険、物流、スタートアップ、教育など)。制約条件は別途列挙せず、シナリオ文の中に自然に含める。
 2. 選択肢A~D (試験ダンプスタイル):
-   - サービス名 + 核心的な特徴、2~3行以内
+   - サービス名 + 核心的な特徴、**1~2行以内**
    - アーキテクチャフローの説明は最小限、実際の試験ダンプのように簡潔に
    - 例: 「自動キーローテーション機能付きのAWS KMS管理キー(SSE-KMS)を使用したサーバー側暗号化を有効にします。」
+   - **[普通のトリック選択肢原則]**: トリック選択肢は全く異なるサービス → 間違いの理由が明確
    - 1つの正解: すべての要件を満たす
    - 3つのトリック選択肢: それぞれ異なる1つの要件を満たさない
 3. 答えと詳細説明:
@@ -675,7 +683,10 @@ The following shows a "Hard" difficulty-level example. Analyze complex constrain
 
 **New Problem Requirements:**
 - Scenario: 1-2 sentences, concise — key requirements naturally embedded in the scenario text
-- Options: Exam dump style — service name + key characteristic, within 2-3 lines, no architecture flow
+- Options: Exam dump style — service name + key characteristic, **1-2 lines max**
+- **[Hard trick answer rule]**: Trick answers use similar services but wrong configuration/purpose
+  e.g., Correct: SSE-KMS / Trap A: SSE-S3 (no key control), Trap B: client-side encryption (operational overhead), Trap C: Macie (detection only, not encryption)
+  → Same category of service, but fails on one specific requirement
 - Correct answer: Satisfies all requirements perfectly
 - Trap answers: Each fails 1 different requirement
 
@@ -687,9 +698,9 @@ Response in JSON format (pure JSON, all values on single line, no markdown):
   "question": "1-2 sentence concise scenario (key requirements naturally embedded)",
   "constraint": ["key requirement 1", "key requirement 2", "key requirement 3"],
   "options": {
-    "A": "Service name + key characteristic, concise dump style",
-    "B": "Service name + key characteristic, concise dump style",
-    "C": "Service name + key characteristic, concise dump style",
+    "A": "Service name + key setting/characteristic (1-2 lines, dump style)",
+    "B": "Service name + key setting/characteristic (1-2 lines, dump style)",
+    "C": "Service name + key setting/characteristic (1-2 lines, dump style)",
     "D": "Service name + key characteristic, concise dump style"
   },
   "answer": "C",
@@ -743,9 +754,12 @@ Monthly 10TB transaction data, 99.99% availability, HIPAA compliance"
 
 **New Problem Requirements:**
 - Scenario: 1-2 sentences, concise — key requirements (compliance, cost, operational constraints) naturally embedded
-- Options: Exam dump style — service name + key characteristic, within 2-3 lines, no verbose architecture descriptions
+- Options: Exam dump style — service name + key characteristic, **1-2 lines max**
+- **[Challenge trick answer rule]**: Trick answers use the SAME services as the correct answer but with subtle differences in mode/option/behavior — nearly indistinguishable without deep knowledge
+  e.g., Correct: S3 Object Lock in Compliance mode / Trap A: S3 Object Lock in Governance mode (admin can delete), Trap B: S3 Versioning only (no lock), Trap C: Glacier Vault Lock (not S3)
+  → Must know exact service behavior differences to identify the correct answer
 - Correct answer: All requirements satisfied + persuasive
-- Trap answers: A/B/D each misses a different requirement
+- Trap answers: A/B/D each uses nearly correct service/config but fails due to subtle mode/setting difference
 
 **Given Services:** \${SERVICE_NAMES}
 **Difficulty:** \${DIFFICULTY}
@@ -755,10 +769,10 @@ Response in JSON format (pure JSON, all values on single line, no markdown):
   "question": "1-2 sentence concise scenario (compliance, cost, and operational requirements naturally embedded)",
   "constraint": ["key requirement 1", "key requirement 2", "key requirement 3"],
   "options": {
-    "A": "Service name + key characteristic, concise dump style",
-    "B": "Service name + key characteristic, concise dump style",
-    "C": "Service name + key characteristic, concise dump style",
-    "D": "Service name + key characteristic, concise dump style"
+    "A": "Service name + key mode/setting/characteristic (1-2 lines, subtly different from correct answer)",
+    "B": "Service name + key mode/setting/characteristic (1-2 lines, dump style)",
+    "C": "Service name + key mode/setting/characteristic (1-2 lines, correct answer)",
+    "D": "Service name + key mode/setting/characteristic (1-2 lines, subtly different from correct answer)"
   },
   "answer": "C",
   "keywords": ["keyword1", "keyword2", "keyword3"],
@@ -806,9 +820,11 @@ export const SAA_PROBLEM_PROMPT_JA_HARD = `⚠️ **重要：レスポンスは2
 - D: 最高パフォーマンスだが2倍コスト + 不必要な機能
 
 **新しい問題の要件:**
-- シナリオ: 3~4個の具体的な数値 (データ量、トラフィック、保持期間、コスト)
-- 制約条件: 技術 + ビジネス + 運用 (3タイプ)
-- 選択肢: 各1-3行でサービス名 + 設定値を明記
+- シナリオ: 1~2文で簡潔に、核心要件をシナリオ文の中に自然に含める
+- 選択肢: 試験ダンプスタイル — サービス名 + 核心的な特徴、**1~2行以内**
+- **[難しいトリック選択肢原則]**: トリック選択肢は似たサービスだが設定/用途が異なる
+  例) 正解: SSE-KMS / トリックA: SSE-S3(キー管理不可)、トリックB: クライアント側暗号化(運用複雑)、トリックC: Macie(検出のみ、暗号化ではない)
+  → 同じカテゴリのサービスだが、1つの要件で失敗する
 - 正解: すべての制約を完璧に満たす
 - トリック選択肢: 各々異なる1つの制約を欠落
 
@@ -817,13 +833,13 @@ export const SAA_PROBLEM_PROMPT_JA_HARD = `⚠️ **重要：レスポンスは2
 
 JSON形式で応答 (マークダウンなし、純粋なJSON、すべての値は1行):
 {
-  "question": "複雑なシナリオ(具体的な数値含む)",
-  "constraint": ["技術的制約", "ビジネス制約", "運用的制約"],
+  "question": "1~2文の簡潔なシナリオ (核心要件が自然に含まれる)",
+  "constraint": ["核心要件1", "核心要件2", "核心要件3"],
   "options": {
-    "A": "選択肢 A: 具体的なAWSサービス組み合わせとデータフロー 1-3行で詳述 (例: Amazon EC2 Auto Scaling使用... RDS Multi-AZ... CloudFront使用... S3に転送)",
-    "B": "選択肢 B: 異なるサービス組み合わせ 1-3行で詳述 (コスト・パフォーマンス詳記)",
-    "C": "選択肢 C: 別のサービス組み合わせ 1-3行で詳述 (すべての制約満たす)",
-    "D": "選択肢 D: 最後のサービス組み合わせ 1-3行で詳述"
+    "A": "サービス名 + 核心的な設定/特徴 (1~2行、ダンプスタイル)",
+    "B": "サービス名 + 核心的な設定/特徴 (1~2行、ダンプスタイル)",
+    "C": "サービス名 + 核心的な設定/特徴 (1~2行、ダンプスタイル)",
+    "D": "サービス名 + 核心的な設定/特徴 (1~2行、ダンプスタイル)"
   },
   "answer": "C",
   "keywords": ["キーワード1", "キーワード2", "キーワード3"],
@@ -876,9 +892,12 @@ export const SAA_PROBLEM_PROMPT_JA_CHALLENGE = `⚠️ **重要：レスポン�
 
 **新しい問題の要件:**
 - シナリオ: 1~2文で簡潔に、核心要件(コンプライアンス、コスト、運用制約)をシナリオ文の中に自然に含める
-- 選択肢: 試験ダンプスタイル — サービス名 + 核心的な特徴、2~3行以内、冗長なアーキテクチャ説明は不要
+- 選択肢: 試験ダンプスタイル — サービス名 + 核心的な特徴、**1~2行以内**
+- **[チャレンジのトリック選択肢原則]**: トリック選択肢は正解と同じサービスを使うが、モード/オプション/動作が微妙に異なる — 深い知識なしには区別不可能なレベル
+  例) 正解: S3オブジェクトロック コンプライアンスモード / トリックA: S3オブジェクトロック ガバナンスモード(管理者が削除可能)、トリックB: S3バージョニングのみ(ロックなし)、トリックC: Glacier Vault Lock(S3ではない)
+  → サービスの正確な動作の違いを知らなければ正解を選べないレベル
 - 正解: すべての要件を満たす + 説得力高い
-- トリック選択肢: A/B/D 各々異なる要件が欠落
+- トリック選択肢: A/B/D 各々同じサービスだが微妙なモード/設定の違いで要件を満たさない
 
 **与えられたサービス:** \${SERVICE_NAMES}
 **難易度:** \${DIFFICULTY}
@@ -888,10 +907,10 @@ JSON形式で応答 (マークダウンなし、純粋なJSON、すべての値�
   "question": "1~2文の簡潔なシナリオ (核心要件が文の中に自然に含まれる)",
   "constraint": ["核心要件1", "核心要件2", "核心要件3"],
   "options": {
-    "A": "サービス名 + 核心的な特徴、簡潔なダンプスタイル",
-    "B": "サービス名 + 核心的な特徴、簡潔なダンプスタイル",
-    "C": "サービス名 + 核心的な特徴、簡潔なダンプスタイル",
-    "D": "サービス名 + 核心的な特徴、簡潔なダンプスタイル"
+    "A": "サービス名 + 核心的なモード/設定/特徴 (1~2行、正解と微妙に異なる)",
+    "B": "サービス名 + 核心的なモード/設定/特徴 (1~2行、ダンプスタイル)",
+    "C": "サービス名 + 核心的なモード/設定/特徴 (1~2行、正解)",
+    "D": "サービス名 + 核心的なモード/設定/特徴 (1~2行、正解と微妙に異なる)"
   },
   "answer": "C",
   "keywords": ["キーワード1", "キーワード2", "キーワード3"],
