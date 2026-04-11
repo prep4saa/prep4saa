@@ -1434,22 +1434,22 @@ function App() {
 
  if (!mockExamRunning) break;
 
- // 배치만큼 문제 추가 (캐시된 문제 또는 생성)
+ // 배치만큼 문제 추가 (캐시된 문제 또는 생성) - 배치 내 병렬 처리
  const startIdx = newProblems.length;
+ const batchPromises: Promise<any>[] = [];
  for (let i = 0; i < batch.count && startIdx + i < 50; i++) {
  if (startIdx + i < allProblems.length) {
- // 캐시된 문제 사용
- newProblems.push(allProblems[startIdx + i]);
+ batchPromises.push(Promise.resolve(allProblems[startIdx + i]));
  } else {
- // 추가 생성 (필요시)
  const difficulty = difficulties[startIdx + i] as "medium" | "hard" | "challenge";
  const domain = domains[startIdx + i] as "security" | "resilience" | "performance" | "cost-optimization";
  const conceptService = conceptServices[startIdx + i];
  const serviceList = conceptService ? [conceptService] : [];
- const problem = await generateSAAProblem(serviceList, difficulty, mockExamLocale, domain);
- newProblems.push(problem);
+ batchPromises.push(generateSAAProblem(serviceList, difficulty, mockExamLocale, domain));
  }
  }
+ const batchResults = await Promise.all(batchPromises);
+ newProblems.push(...batchResults);
 
  // 상태 업데이트
  setMockExamProblems(newProblems);
