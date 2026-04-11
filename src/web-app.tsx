@@ -4189,7 +4189,12 @@ function App() {
  ) : mockExamDateChecking ? (
  // Firebase 날짜 확인 중 - 로딩
  <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
-   <div style={{ fontSize: "14px", color: "#6B7280" }}>...</div>
+   <div style={{
+     fontSize: "32px",
+     animation: "spin 1s linear infinite",
+     display: "inline-block",
+   }}>⏳</div>
+   <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
  </div>
  ) : mockExamAlreadyTaken ? (
  // 오늘 이미 본 경우
