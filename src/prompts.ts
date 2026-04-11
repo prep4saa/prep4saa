@@ -190,12 +190,6 @@ D. 프로비저닝된 용량 모드에서 테이블을 생성하고 Global Table
 
 **새로운 문제의 생성 원칙:**
 
-### 0. constraint 필드 작성 규칙
-- **짧은 키워드/구 형태**로 작성 (한 문장 이내)
-- 나쁜 예: "사용자에게 제공되는 애플리케이션의 엔드투엔드 지연 시간을 100ms 미만으로 유지해야 합니다."
-- 좋은 예: "엔드투엔드 지연 시간 100ms 미만"
-- 좋은 예: "운영 오버헤드 최소화", "비용 최적화", "다중 AZ 고가용성", "HIPAA 규제 준수"
-
 ### 1. 시나리오 (1-2문장, 간결)
 - 매 문제마다 다른 업종 사용 (제조업체, 금융사, SaaS, 의료기관, 이커머스, 미디어, 게임사, 공공기관, 보험사, 물류, 스타트업, 교육 등)
 - 핵심 요구사항만 1-2문장으로 명시 — 제약조건은 별도 나열하지 않고 시나리오 안에 자연스럽게 포함
@@ -231,7 +225,6 @@ D. 프로비저닝된 용량 모드에서 테이블을 생성하고 Global Table
 JSON 형식으로 응답해주세요 (마크다운 없이 순수 JSON만, 모든 값은 한 줄):
 {
   "question": "1-2문장의 간결한 시나리오 (핵심 요구사항과 제약조건이 자연스럽게 포함)",
-  "constraint": ["핵심 요구사항1", "핵심 요구사항2"],
   "options": {
     "A": "Amazon RDS Multi-AZ 배포를 사용하여 자동 장애 조치를 구성합니다.",
     "B": "AWS KMS 관리형 키(SSE-KMS)를 사용하여 S3 버킷의 서버 측 암호화를 활성화합니다.",
@@ -296,7 +289,6 @@ export const SAA_PROBLEM_PROMPT_HARD = `⚠️ **CRITICAL: 응답은 2000~3500 �
 
 **새로운 문제 조건**:
 - 시나리오: 1-2문장으로 간결하게, 핵심 요구사항을 시나리오 안에 자연스럽게 포함
-- **constraint**: 짧은 키워드/구 형태 (예: "지연 시간 100ms 미만", "비용 최적화", "운영 오버헤드 최소화")
 - 선택지: 서비스명 + 핵심 특징, **1-2줄 이내** 덤프 스타일
 - **[어려움 함정답 원칙]**: 함정답은 비슷한 서비스지만 용도/설정이 다름
   예) 정답: SSE-KMS / 함정A: SSE-S3(키 관리 불가), 함정B: 클라이언트 측 암호화(운영 복잡), 함정C: Macie(탐지만 됨, 암호화 아님)
@@ -310,7 +302,6 @@ export const SAA_PROBLEM_PROMPT_HARD = `⚠️ **CRITICAL: 응답은 2000~3500 �
 JSON 형식으로 응답 (마크다운 없이 순수 JSON, 모든 값은 한 줄):
 {
   "question": "1-2문장 간결한 시나리오 (핵심 요구사항이 문장 안에 자연스럽게 포함)",
-  "constraint": ["핵심 요구사항1", "핵심 요구사항2"],
   "options": {
     "A": "서비스명 + 핵심 설정/특징 (1-2줄, 덤프 스타일)",
     "B": "서비스명 + 핵심 설정/특징 (1-2줄, 덤프 스타일)",
@@ -374,7 +365,6 @@ export const SAA_PROBLEM_PROMPT_CHALLENGE = `⚠️ **CRITICAL: 응답은 2000~3
 
 **새로운 문제 조건**:
 - 시나리오: 온프레미스 ↔ AWS, 멀티 리전, 규제/컴플라이언스, 마이그레이션 등 실무 시나리오, 1-2문장
-- **constraint**: 짧은 키워드/구 형태 (예: "HIPAA 규제 준수", "99.99% 가용성", "기존 인력 운영 가능")
 - 선택지: 서비스명 + 핵심 특징, **1-2줄 이내** 덤프 스타일
 - **[챌린지 함정답 원칙]**: 함정답은 정답과 거의 동일한 서비스를 쓰지만 세부 옵션·모드·설정이 다름
   예) 정답: S3 객체 잠금 컴플라이언스 모드 / 함정A: S3 객체 잠금 거버넌스 모드(관리자가 삭제 가능), 함정B: S3 버전 관리만 활성화(잠금 없음), 함정C: Glacier Vault Lock(S3가 아님)
@@ -388,7 +378,6 @@ export const SAA_PROBLEM_PROMPT_CHALLENGE = `⚠️ **CRITICAL: 응답은 2000~3
 JSON 형식으로 응답 (마크다운 없이 순수 JSON, 모든 값은 한 줄):
 {
   "question": "1-2문장 간결한 시나리오 (핵심 요구사항이 문장 안에 자연스럽게 포함)",
-  "constraint": ["핵심 요구사항1", "핵심 요구사항2", "핵심 요구사항3"],
   "options": {
     "A": "서비스명 + 핵심 설정/모드/특징 (1-2줄, 덤프 스타일, 정답과 미묘하게 다름)",
     "B": "서비스명 + 핵심 설정/모드/특징 (1-2줄, 덤프 스타일)",
@@ -500,10 +489,7 @@ Key Points:
 
 **New Problem Conditions:**
 1. Scenario: 1-2 sentences, concise — use a different industry each time (manufacturer, bank, SaaS, healthcare, e-commerce, media, gaming, government, insurance, logistics, startup, edtech, etc.). Key requirements included naturally in the scenario, NOT listed separately as constraints.
-2. **constraint field**: Short keyword/phrase format only — NOT full sentences.
-   - Bad: "The end-to-end latency of the application provided to users must be maintained below 100ms."
-   - Good: "end-to-end latency under 100ms", "cost optimization", "minimize operational overhead", "Multi-AZ high availability"
-3. Options A-D (exam dump style):
+2. Options A-D (exam dump style):
    - Each option: service name + key characteristic, **1-2 lines max**
    - No architecture flow descriptions — brief and direct like real exam dumps
    - Example: "Enable server-side encryption using AWS KMS managed keys (SSE-KMS) with automatic key rotation."
@@ -520,7 +506,6 @@ Key Points:
 Respond in JSON format (pure JSON, all values on single line, no markdown):
 {
   "question": "1-2 sentence concise scenario (key requirements naturally embedded in the sentence)",
-  "constraint": ["key requirement 1", "key requirement 2"],
   "options": {
     "A": "Service name + key characteristic, concise dump style",
     "B": "Service name + key characteristic, concise dump style",
@@ -633,10 +618,7 @@ D. プロビジョニング容量モードでテーブルを作成し、複数�
 
 **新しい問題の条件:**
 1. シナリオ: 1~2文で簡潔に — 毎回異なる業種(製造業、金融、SaaS、医療、Eコマース、メディア、ゲーム、公共機関、保険、物流、スタートアップ、教育など)。制約条件は別途列挙せず、シナリオ文の中に自然に含める。
-2. **constraintフィールド**: 短いキーワード/フレーズ形式のみ — 完全な文章は不可。
-   - 悪い例: 「ユーザーに提供されるアプリケーションのエンドツーエンドのレイテンシーを100ms未満に維持する必要があります。」
-   - 良い例: 「エンドツーエンドレイテンシー100ms未満」「コスト最適化」「運用オーバーヘッド最小化」「マルチAZ高可用性」
-3. 選択肢A~D (試験ダンプスタイル):
+2. 選択肢A~D (試験ダンプスタイル):
    - サービス名 + 核心的な特徴、**1~2行以内**
    - アーキテクチャフローの説明は最小限、実際の試験ダンプのように簡潔に
    - 例: 「自動キーローテーション機能付きのAWS KMS管理キー(SSE-KMS)を使用したサーバー側暗号化を有効にします。」
@@ -653,7 +635,6 @@ D. プロビジョニング容量モードでテーブルを作成し、複数�
 JSON形式で応答してください:
 {
   "question": "1~2文の簡潔なシナリオ (核心要件が文の中に自然に含まれる)",
-  "constraint": ["核心要件1", "核心要件2"],
   "options": {
     "A": "サービス名 + 核心的な特徴、簡潔なダンプスタイル",
     "B": "サービス名 + 核心的な特徴、簡潔なダンプスタイル",
@@ -697,7 +678,6 @@ The following shows a "Hard" difficulty-level example. Analyze complex constrain
 
 **New Problem Requirements:**
 - Scenario: 1-2 sentences, concise — key requirements naturally embedded in the scenario text
-- **constraint field**: Short keyword/phrase only — NOT full sentences (e.g., "latency under 100ms", "cost optimization", "zero packet loss")
 - Options: Exam dump style — service name + key characteristic, **1-2 lines max**
 - **[Hard trick answer rule]**: Trick answers use similar services but wrong configuration/purpose
   e.g., Correct: SSE-KMS / Trap A: SSE-S3 (no key control), Trap B: client-side encryption (operational overhead), Trap C: Macie (detection only, not encryption)
@@ -711,7 +691,6 @@ The following shows a "Hard" difficulty-level example. Analyze complex constrain
 Response in JSON format (pure JSON, all values on single line, no markdown):
 {
   "question": "1-2 sentence concise scenario (key requirements naturally embedded)",
-  "constraint": ["key requirement 1", "key requirement 2", "key requirement 3"],
   "options": {
     "A": "Service name + key setting/characteristic (1-2 lines, dump style)",
     "B": "Service name + key setting/characteristic (1-2 lines, dump style)",
@@ -769,7 +748,6 @@ Monthly 10TB transaction data, 99.99% availability, HIPAA compliance"
 
 **New Problem Requirements:**
 - Scenario: 1-2 sentences, concise — key requirements (compliance, cost, operational constraints) naturally embedded
-- **constraint field**: Short keyword/phrase only — NOT full sentences (e.g., "HIPAA compliance", "99.99% availability", "manageable by existing staff")
 - Options: Exam dump style — service name + key characteristic, **1-2 lines max**
 - **[Challenge trick answer rule]**: Trick answers use the SAME services as the correct answer but with subtle differences in mode/option/behavior — nearly indistinguishable without deep knowledge
   e.g., Correct: S3 Object Lock in Compliance mode / Trap A: S3 Object Lock in Governance mode (admin can delete), Trap B: S3 Versioning only (no lock), Trap C: Glacier Vault Lock (not S3)
@@ -783,7 +761,6 @@ Monthly 10TB transaction data, 99.99% availability, HIPAA compliance"
 Response in JSON format (pure JSON, all values on single line, no markdown):
 {
   "question": "1-2 sentence concise scenario (compliance, cost, and operational requirements naturally embedded)",
-  "constraint": ["key requirement 1", "key requirement 2", "key requirement 3"],
   "options": {
     "A": "Service name + key mode/setting/characteristic (1-2 lines, subtly different from correct answer)",
     "B": "Service name + key mode/setting/characteristic (1-2 lines, dump style)",
@@ -837,7 +814,6 @@ export const SAA_PROBLEM_PROMPT_JA_HARD = `⚠️ **重要：レスポンスは2
 
 **新しい問題の要件:**
 - シナリオ: 1~2文で簡潔に、核心要件をシナリオ文の中に自然に含める
-- **constraintフィールド**: 短いキーワード/フレーズのみ — 完全な文章不可 (例: 「レイテンシー100ms未満」「コスト最適化」「ゼロパケットロス」)
 - 選択肢: 試験ダンプスタイル — サービス名 + 核心的な特徴、**1~2行以内**
 - **[難しいトリック選択肢原則]**: トリック選択肢は似たサービスだが設定/用途が異なる
   例) 正解: SSE-KMS / トリックA: SSE-S3(キー管理不可)、トリックB: クライアント側暗号化(運用複雑)、トリックC: Macie(検出のみ、暗号化ではない)
@@ -851,7 +827,6 @@ export const SAA_PROBLEM_PROMPT_JA_HARD = `⚠️ **重要：レスポンスは2
 JSON形式で応答 (マークダウンなし、純粋なJSON、すべての値は1行):
 {
   "question": "1~2文の簡潔なシナリオ (核心要件が自然に含まれる)",
-  "constraint": ["核心要件1", "核心要件2", "核心要件3"],
   "options": {
     "A": "サービス名 + 核心的な設定/特徴 (1~2行、ダンプスタイル)",
     "B": "サービス名 + 核心的な設定/特徴 (1~2行、ダンプスタイル)",
@@ -909,7 +884,6 @@ export const SAA_PROBLEM_PROMPT_JA_CHALLENGE = `⚠️ **重要：レスポン�
 
 **新しい問題の要件:**
 - シナリオ: 1~2文で簡潔に、核心要件(コンプライアンス、コスト、運用制約)をシナリオ文の中に自然に含める
-- **constraintフィールド**: 短いキーワード/フレーズのみ — 完全な文章不可 (例: 「HIPAA規制準拠」「99.99%可用性」「既存スタッフで管理可能」)
 - 選択肢: 試験ダンプスタイル — サービス名 + 核心的な特徴、**1~2行以内**
 - **[チャレンジのトリック選択肢原則]**: トリック選択肢は正解と同じサービスを使うが、モード/オプション/動作が微妙に異なる — 深い知識なしには区別不可能なレベル
   例) 正解: S3オブジェクトロック コンプライアンスモード / トリックA: S3オブジェクトロック ガバナンスモード(管理者が削除可能)、トリックB: S3バージョニングのみ(ロックなし)、トリックC: Glacier Vault Lock(S3ではない)
@@ -923,7 +897,6 @@ export const SAA_PROBLEM_PROMPT_JA_CHALLENGE = `⚠️ **重要：レスポン�
 JSON形式で応答 (マークダウンなし、純粋なJSON、すべての値は1行):
 {
   "question": "1~2文の簡潔なシナリオ (核心要件が文の中に自然に含まれる)",
-  "constraint": ["核心要件1", "核心要件2", "核心要件3"],
   "options": {
     "A": "サービス名 + 核心的なモード/設定/特徴 (1~2行、正解と微妙に異なる)",
     "B": "サービス名 + 核心的なモード/設定/特徴 (1~2行、ダンプスタイル)",

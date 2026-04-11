@@ -113,7 +113,6 @@ export interface Concept {
 
 export interface Problem {
   question: string;
-  constraint: string[];
   options: {
     A: string;
     B: string;
