@@ -15,9 +15,11 @@ export const SAA_PROBLEM_PROMPT_MEDIUM = `⚠️ **CRITICAL: 응답은 2000~3500
 새로운 문제를 **동일한 수준**으로 만들어주세요.
 
 ## 📋 생성 시 필수 규칙:
-1. **options (선택지)**: 매우 중요! 각 선택지는 **1-3줄의 구체적인 서술형**으로 작성
-   - 실제 아키텍처처럼 구체적으로 서비스 흐름을 설명
-   - 예: "Application Load Balancer로 트래픽을 분산하여 다중 AZ의 Auto Scaling EC2 인스턴스로 라우팅합니다. 데이터는 다중 AZ Amazon RDS 인스턴스에 저장되고, CloudWatch로 실시간 모니터링하며 성능 메트릭을 분석합니다."
+1. **options (선택지)**: 매우 중요! 각 선택지는 **서비스명 + 핵심 특징, 2-3줄 이내**로 작성
+   - 실제 AWS 시험 덤프 스타일로 간결하게
+   - 예: "자동 교체 기능이 있는 AWS KMS 키(SSE-KMS)를 사용한 서버 측 암호화를 활성화합니다."
+   - 예: "S3 버킷에 대한 S3 객체 잠금을 거버넌스 모드로 활성화합니다."
+   - 서비스 이름을 명확히 쓰고, 불필요한 흐름 설명은 생략
 2. **goal (핵심 목표)**: 이 문제가 테스트하는 핵심 목표를 한 문장으로 명확히
 3. **keywords (핵심 키워드)**: 문제에서 가장 중요한 AWS 개념 최대 4개 (4개 이하로 제한)
 4. **easyMode 설명**: 초등학교 5학년도 이해하는 비유법 사용
@@ -186,28 +188,15 @@ D. 프로비저닝된 용량 모드에서 테이블을 생성하고 Global Table
 
 **새로운 문제의 생성 원칙:**
 
-### 1. 시나리오 (2-4문장, 매우 상세함)
-- 실제 기업 상황 반영 — 매 문제마다 다른 업종 사용:
-  (제조업체, 금융사, SaaS 회사, 의료기관, 유통/이커머스, 미디어 스트리밍, 게임사, 정부/공공기관, 보험사, 물류회사, 스타트업, 교육 플랫폼 등 다양하게 선택)
-- 구체적 수치 포함 — 매 문제마다 다른 수치 조합 사용 (아래 풀에서 골고루 선택):
-  - 데이터량: 50GB, 200GB, 2TB, 10TB, 50TB, 500TB 등
-  - 트래픽: 초당 100건, 분당 5만건, 일 1000만 요청, 동시 접속 50만명 등
-  - 보관 기간: 30일, 90일, 1년, 3년, 5년, 7년, 10년 등
-  - 가용성: 99%, 99.9%, 99.95%, 99.99% 등
-  - 응답시간: 50ms, 200ms, 1초, 5분, 24시간 이내 등
-  - 비용: 예산 30% 절감, 월 $10,000 이하 등
-- 비즈니스 맥락 명확 (규제 준수, 예산 제약, 팀 경험 부족, 성능 요구사항, 보안 요건 등)
-- 아키텍처/데이터 흐름이 명확하게 설명되어야 함
+### 1. 시나리오 (1-2문장, 간결)
+- 매 문제마다 다른 업종 사용 (제조업체, 금융사, SaaS, 의료기관, 이커머스, 미디어, 게임사, 공공기관, 보험사, 물류, 스타트업, 교육 등)
+- 핵심 요구사항만 1-2문장으로 명시 — 제약조건은 별도 나열하지 않고 시나리오 안에 자연스럽게 포함
+- 수치는 꼭 필요한 경우만 포함 (매번 다르게: 보관기간 1년/3년/7년, 가용성 99.9%/99.99%, 비용 절감 30% 등)
 
-### 2. 제약 조건 (2~3개, 명시적)
-- 기술적 제약: 성능, 보안, 가용성, 네트워킹 등
-- 비즈니스 제약: 비용 최적화, 운영 오버헤드 최소화, 규제 준수 등
-- 각 제약을 **명시적으로 마크하기** (정답과 함정답 구분에 중요)
-
-### 3. 선택지 A~D (각 1~3줄 - 전문적 서술형)
-- 각 선택지는 구체적인 AWS 서비스 구성과 아키텍처 흐름을 상세히 설명
-- 각 선택지마다 어떤 서비스들이 어떻게 연결되는지 명확히 서술
-- **선택지의 수치(숫자)는 꼭 필요한 경우에만 사용** - 불필요한 TB, GB, RPS, %, 초, 개월 등 숫자는 생략하고 서비스 흐름 위주로 서술
+### 2. 선택지 A~D (덤프 스타일, 2-3줄 이내)
+- **서비스명 + 핵심 특징** 위주로 간결하게 작성
+- 아키텍처 흐름 설명은 최소화, 서비스 선택의 핵심 이유만 포함
+- 수치는 생략, 불필요한 문장 연결 제거
 - 1개 정답: 모든 제약조건 완벽 충족
 - 3개 함정답:
   * 1개: 거의 맞지만 1가지 제약만 미충족 (가장 실수하기 쉬운 오답)
@@ -233,13 +222,13 @@ D. 프로비저닝된 용량 모드에서 테이블을 생성하고 Global Table
 
 JSON 형식으로 응답해주세요 (마크다운 없이 순수 JSON만, 모든 값은 한 줄):
 {
-  "question": "구체적 시나리오와 제약조건을 포함한 2-4문장 질문",
-  "constraint": ["제약1", "제약2", "제약3"],
+  "question": "1-2문장의 간결한 시나리오 (핵심 요구사항과 제약조건이 자연스럽게 포함)",
+  "constraint": ["핵심 요구사항1", "핵심 요구사항2"],
   "options": {
-    "A": "Application Load Balancer로 사용자 트래픽을 분산하여 다중 AZ의 Auto Scaling EC2 인스턴스로 라우팅합니다. 데이터는 다중 AZ Amazon RDS MySQL 인스턴스에 저장되고, CloudWatch로 모니터링합니다. 하지만 읽기 성능 최적화는 제공하지 않습니다.",
-    "B": "Amazon CloudFront 엣지 로케이션에서 정적 콘텐츠를 캐싱하고, API Gateway를 통해 Lambda 함수로 동적 요청을 처리합니다. DynamoDB는 자동 스케일링으로 성능을 확보하며, DynamoDB 글로벌 테이블로 다중 리전 읽기 복제본을 구성합니다.",
-    "C": "온프레미스 데이터베이스를 Amazon VPN으로 AWS VPC와 연결하여 현재 시스템을 유지합니다. AWS Site-to-Site VPN을 통해 안전하게 통신하지만, 클라우드 네이티브 확장성과 AWS 관리형 서비스의 이점을 활용하지 못합니다.",
-    "D": "Amazon S3에 데이터를 업로드하고, 스토리지 라이프사이클 정책으로 90일 후 Glacier로 자동 이동시킵니다. 비용은 최소화되지만, 빈번한 액세스 요구사항을 충족하지 못합니다."
+    "A": "Amazon RDS Multi-AZ 배포를 사용하여 자동 장애 조치를 구성합니다.",
+    "B": "AWS KMS 관리형 키(SSE-KMS)를 사용하여 S3 버킷의 서버 측 암호화를 활성화합니다.",
+    "C": "Amazon S3 객체 잠금을 컴플라이언스 모드로 활성화하고 보존 기간을 설정합니다.",
+    "D": "AWS Backup을 사용하여 중앙 집중식 백업 정책을 생성하고 보존 기간을 구성합니다."
   },
   "answer": "B",
   "keywords": ["핵심 개념1", "핵심 개념2", "핵심 개념3"],
@@ -298,24 +287,23 @@ export const SAA_PROBLEM_PROMPT_HARD = `⚠️ **CRITICAL: 응답은 2000~3500 �
 - D: 성능은 최고이지만 비용 2배 + 불필요한 기능
 
 **새로운 문제 조건**:
-- 시나리오: 구체적 수치 3~4개 (데이터량, 트래픽, 보관 기간, 비용)
-- 제약: 기술 + 비즈니스 + 운영 3가지
-- 선택지: 각 1~3줄, 서비스명 + 설정값 명시 + 구체적 아키텍처 서술
-- 정답: 모든 제약 완벽 충족
-- 함정: 각각 다른 1개 제약 미충족
+- 시나리오: 1-2문장으로 간결하게, 핵심 요구사항을 시나리오 안에 자연스럽게 포함
+- 선택지: 서비스명 + 핵심 특징, 2-3줄 이내 덤프 스타일
+- 정답: 모든 요구사항 완벽 충족
+- 함정: 각각 다른 1개 요구사항 미충족
 
 **주어진 서비스:** \${SERVICE_NAMES}
 **난이도:** \${DIFFICULTY}
 
 JSON 형식으로 응답 (마크다운 없이 순수 JSON, 모든 값은 한 줄):
 {
-  "question": "복합 시나리오 (구체적 수치 포함)",
-  "constraint": ["기술 제약", "비즈니스 제약", "운영 제약"],
+  "question": "1-2문장 간결한 시나리오 (핵심 요구사항이 문장 안에 자연스럽게 포함)",
+  "constraint": ["핵심 요구사항1", "핵심 요구사항2"],
   "options": {
-    "A": "선택지 A: 구체적 AWS 서비스 조합과 데이터 흐름을 1-3줄로 서술 (예: Amazon EC2 Auto Scaling으로... RDS Multi-AZ로... CloudFront로... S3로 전달)",
-    "B": "선택지 B: 다른 서비스 조합을 1-3줄로 서술 (구체적 설정값 포함)",
-    "C": "선택지 C: 또 다른 서비스 조합을 1-3줄로 서술 (성능/비용/가용성 명시)",
-    "D": "선택지 D: 마지막 서비스 조합을 1-3줄로 서술"
+    "A": "서비스명과 핵심 특징을 간결하게 서술 (덤프 스타일)",
+    "B": "서비스명과 핵심 특징을 간결하게 서술",
+    "C": "서비스명과 핵심 특징을 간결하게 서술",
+    "D": "서비스명과 핵심 특징을 간결하게 서술"
   },
   "answer": "C",
   "keywords": ["키워드1", "키워드2", "키워드3"],
@@ -376,22 +364,22 @@ export const SAA_PROBLEM_PROMPT_CHALLENGE = `⚠️ **CRITICAL: 응답은 2000~3
 - 시나리오: 온프레미스 ↔ AWS, 멀티 리전, 규제/컴플라이언스, 마이그레이션 등 실무 시나리오
 - 구체적 수치: 데이터량, 트래픽, 비용, 가용성, 규제 요구사항
 - 제약: 기술(4개) + 비즈니스(2개) + 운영(2개) = 최소 3개 조합
-- 선택지: 각 1-3줄, 아키텍처 명시, 보안/비용/성능 모두 포함 + 구체적 서비스 조합 서술
-- 정답: 모든 제약 완벽 + 이유 설득력 높음
-- 함정: A/B/D 각각 다른 부분 미충족 + 거의 맞음
+- 선택지: 서비스명 + 핵심 특징, 2-3줄 이내 덤프 스타일
+- 정답: 모든 요구사항 완벽 충족
+- 함정: A/B/D 각각 다른 요구사항 미충족
 
 **주어진 서비스:** \${SERVICE_NAMES}
 **난이도:** \${DIFFICULTY}
 
 JSON 형식으로 응답 (마크다운 없이 순수 JSON, 모든 값은 한 줄):
 {
-  "question": "실무 수준 복합 시나리오 (구체적 수치 포함)",
-  "constraint": ["기술 제약 1", "기술 제약 2", "비즈니스 제약", "운영 제약"],
+  "question": "1-2문장 간결한 시나리오 (핵심 요구사항이 문장 안에 자연스럽게 포함)",
+  "constraint": ["핵심 요구사항1", "핵심 요구사항2", "핵심 요구사항3"],
   "options": {
-    "A": "선택지 A: AWS Direct Connect로 온프레미스와 연결하여... Multi-AZ RDS로... Auto Scaling EC2로... S3로 데이터 전송. 보안: VPC Endpoint, 암호화. 운영: 기존 DBA 팀으로 관리 가능하나 보안 감사 도구 부족",
-    "B": "선택지 B: 완전히 다른 아키텍처로 1-3줄 서술. 각 제약 충족 여부 명시 (기술/비용/규제/운영)",
-    "C": "선택지 C: 또 다른 아키텍처로 1-3줄 서술. 모든 제약을 어떻게 충족하는지 명시",
-    "D": "선택지 D: 마지막 아키텍처 옵션으로 1-3줄 서술. 기술 우수하지만 비용/운영 복잡성 증가"
+    "A": "서비스명과 핵심 특징을 간결하게 서술 (덤프 스타일)",
+    "B": "서비스명과 핵심 특징을 간결하게 서술",
+    "C": "서비스명과 핵심 특징을 간결하게 서술",
+    "D": "서비스명과 핵심 특징을 간결하게 서술"
   },
   "answer": "C",
   "keywords": ["키워드1", "키워드2", "키워드3"],
@@ -497,30 +485,29 @@ Key Points:
 ## Now generate a new problem.
 
 **New Problem Conditions:**
-1. Scenario: Real business situation — use a different industry each time (e.g., manufacturer, bank, SaaS, healthcare, e-commerce, media streaming, gaming, government, insurance, logistics, startup, edtech, etc.) with varied specific metrics each time (choose from: data volume: 50GB/2TB/500TB; traffic: 100 req/sec / 50M req/day / 500K concurrent users; retention: 30 days/1 year/7 years/10 years; availability: 99%/99.9%/99.99%; latency: 50ms/200ms/5min; cost: 30% reduction/$10K/month budget — do not repeat the same combination)
-2. Constraints: 2-3 combined requirements (e.g., "cost optimization + minimal operational overhead", "high availability + low latency")
-3. Options A-D:
-   - Each option 1-3 lines (include specific AWS service configurations)
-   - Use specific numbers (TB, GB, RPS, %, etc.) in options only when necessary — avoid unnecessary numbers and focus on service flow
-   - 1 correct answer: meets all constraints
-   - 3 trick answers: almost correct but missing 1 constraint
-4. Answer and detailed explanation:
-   - Why the correct answer meets all constraints
-   - Which constraint each trick answer fails to meet
-   - AWS documentation-based explanation
+1. Scenario: 1-2 sentences, concise — use a different industry each time (manufacturer, bank, SaaS, healthcare, e-commerce, media, gaming, government, insurance, logistics, startup, edtech, etc.). Key requirements included naturally in the scenario, NOT listed separately as constraints.
+2. Options A-D (exam dump style):
+   - Each option: service name + key characteristic, within 2-3 lines
+   - No architecture flow descriptions — brief and direct like real exam dumps
+   - Example: "Enable server-side encryption using AWS KMS managed keys (SSE-KMS) with automatic key rotation."
+   - 1 correct answer: meets all requirements
+   - 3 trick answers: each missing 1 different requirement
+3. Answer and detailed explanation:
+   - Why the correct answer meets all requirements
+   - Which requirement each trick answer fails to meet
 
 **Given services:** \${SERVICE_NAMES}
 **Difficulty:** \${DIFFICULTY}
 
 Respond in JSON format (pure JSON, all values on single line, no markdown):
 {
-  "question": "Scenario... (2-4 sentences)",
-  "constraint": ["constraint1", "constraint2", "constraint3"],
+  "question": "1-2 sentence concise scenario (key requirements naturally embedded in the sentence)",
+  "constraint": ["key requirement 1", "key requirement 2"],
   "options": {
-    "A": "Option A: Specific AWS service combination and data flow described in 3-4 lines (e.g., Deploy Amazon EC2 with... send to Amazon Kinesis... transform with Lambda... deliver to S3)",
-    "B": "Option B: Different service combination described in 3-4 lines with specific configurations",
-    "C": "Option C: Another service combination described in 3-4 lines with performance/cost/availability details",
-    "D": "Option D: Last service combination described in 3-4 lines"
+    "A": "Service name + key characteristic, concise dump style",
+    "B": "Service name + key characteristic, concise dump style",
+    "C": "Service name + key characteristic, concise dump style",
+    "D": "Service name + key characteristic, concise dump style"
   },
   "answer": "B",
   "keywords": ["keyword1", "keyword2", "keyword3"],
@@ -627,30 +614,29 @@ D. プロビジョニング容量モードでテーブルを作成し、複数�
 ## 新しい問題を生成してください。
 
 **新しい問題の条件:**
-1. シナリオ: 毎回異なる業種を使用(製造業、金融、SaaS、医療、Eコマース、メディア配信、ゲーム、公共機関、保険、物流、スタートアップ、教育など)、具体的な数値も毎回異なる組み合わせで使用(データ量: 50GB/2TB/500TB、トラフィック: 毎秒100件/日5000万件/同時50万人、保持期間: 30日/1年/7年/10年、可用性: 99%/99.9%/99.99%、応答時間: 50ms/200ms/5分 — 同じ組み合わせを繰り返さないこと)
-2. 制約条件: 2~3の複合要件(例えば「コスト最適化+最小運用オーバーヘッド」「高可用性+低遅延」)
-3. 選択肢A~D:
-   - 各選択肢1~3行(具体的なAWSサービス設定を含む)
-   - 選択肢の数値(TB、GB、RPS、%など)は必要な場合のみ使用 — 不要な数値は省略し、サービスフロー中心で記述
-   - 1つの正解: すべての制約を満たす
-   - 3つのトリック選択肢: ほぼ正しいが1つの制約を満たさない
-4. 答えと詳細説明:
-   - なぜ正解がすべての制約を満たすのか
-   - 各トリック選択肢がどの制約を満たさないか明示
-   - AWSドキュメント基づきの説明
+1. シナリオ: 1~2文で簡潔に — 毎回異なる業種(製造業、金融、SaaS、医療、Eコマース、メディア、ゲーム、公共機関、保険、物流、スタートアップ、教育など)。制約条件は別途列挙せず、シナリオ文の中に自然に含める。
+2. 選択肢A~D (試験ダンプスタイル):
+   - サービス名 + 核心的な特徴、2~3行以内
+   - アーキテクチャフローの説明は最小限、実際の試験ダンプのように簡潔に
+   - 例: 「自動キーローテーション機能付きのAWS KMS管理キー(SSE-KMS)を使用したサーバー側暗号化を有効にします。」
+   - 1つの正解: すべての要件を満たす
+   - 3つのトリック選択肢: それぞれ異なる1つの要件を満たさない
+3. 答えと詳細説明:
+   - なぜ正解がすべての要件を満たすのか
+   - 各トリック選択肢がどの要件を満たさないか明示
 
 **与えられたサービス:** \${SERVICE_NAMES}
 **難易度:** \${DIFFICULTY}
 
 JSON形式で応答してください:
 {
-  "question": "シナリオ... (2~4文)",
-  "constraint": ["制約1", "制約2", "制約3"],
+  "question": "1~2文の簡潔なシナリオ (核心要件が文の中に自然に含まれる)",
+  "constraint": ["核心要件1", "核心要件2"],
   "options": {
-    "A": "選択肢 A (1~3行、必要時のみ数値使用)",
-    "B": "選択肢 B (1~3行、必要時のみ数値使用)",
-    "C": "選択肢 C (1~3行、必要時のみ数値使用)",
-    "D": "選択肢 D (1~3行、必要時のみ数値使用)"
+    "A": "サービス名 + 核心的な特徴、簡潔なダンプスタイル",
+    "B": "サービス名 + 核心的な特徴、簡潔なダンプスタイル",
+    "C": "サービス名 + 核心的な特徴、簡潔なダンプスタイル",
+    "D": "サービス名 + 核心的な特徴、簡潔なダンプスタイル"
   },
   "answer": "B",
   "explanation": {
@@ -688,24 +674,23 @@ The following shows a "Hard" difficulty-level example. Analyze complex constrain
 - D: Highest performance but 2x cost + unnecessary features
 
 **New Problem Requirements:**
-- Scenario: 3-4 specific numbers (data volume, traffic, retention, cost)
-- Constraints: Technical + Business + Operational (3 types)
-- Options: Each 1-3 lines with service names + config values + specific architecture description
-- Correct answer: Satisfies all constraints perfectly
-- Trap answers: Each fails 1 different constraint
+- Scenario: 1-2 sentences, concise — key requirements naturally embedded in the scenario text
+- Options: Exam dump style — service name + key characteristic, within 2-3 lines, no architecture flow
+- Correct answer: Satisfies all requirements perfectly
+- Trap answers: Each fails 1 different requirement
 
 **Given Services:** \${SERVICE_NAMES}
 **Difficulty:** \${DIFFICULTY}
 
 Response in JSON format (pure JSON, all values on single line, no markdown):
 {
-  "question": "Complex scenario (specific numbers included)",
-  "constraint": ["Technical constraint", "Business constraint", "Operational constraint"],
+  "question": "1-2 sentence concise scenario (key requirements naturally embedded)",
+  "constraint": ["key requirement 1", "key requirement 2", "key requirement 3"],
   "options": {
-    "A": "Option A: Specific AWS service combination with architecture described in 1-3 lines (e.g., Deploy Auto Scaling EC2 with Multi-AZ RDS, use CloudFront for... store in S3 with...)",
-    "B": "Option B: Different service combination described in 1-3 lines with cost and performance details",
-    "C": "Option C: Another service combination described in 1-3 lines meeting all constraints",
-    "D": "Option D: Alternative service combination described in 1-3 lines (possible but excessive or over-budget)"
+    "A": "Service name + key characteristic, concise dump style",
+    "B": "Service name + key characteristic, concise dump style",
+    "C": "Service name + key characteristic, concise dump style",
+    "D": "Service name + key characteristic, concise dump style"
   },
   "answer": "C",
   "keywords": ["keyword1", "keyword2", "keyword3"],
@@ -757,25 +742,23 @@ Monthly 10TB transaction data, 99.99% availability, HIPAA compliance"
 - D: Highest tech (Global Table) but cost exceeds budget + unnecessary complexity
 
 **New Problem Requirements:**
-- Scenario: On-premises ↔ AWS, multi-region, compliance, migration context with 4+ specific numbers
-- Specific numbers: Data volume, traffic, cost, availability, compliance requirements
-- Constraints: Technical (4) + Business (2) + Operational (2) = minimum 3 combined
-- Options: Each 1-3 lines with architecture, security, and performance details + specific service descriptions
-- Correct answer: All constraints satisfied + highly persuasive reasoning
-- Trap answers: A/B/D each misses different aspects + almost correct
+- Scenario: 1-2 sentences, concise — key requirements (compliance, cost, operational constraints) naturally embedded
+- Options: Exam dump style — service name + key characteristic, within 2-3 lines, no verbose architecture descriptions
+- Correct answer: All requirements satisfied + persuasive
+- Trap answers: A/B/D each misses a different requirement
 
 **Given Services:** \${SERVICE_NAMES}
 **Difficulty:** \${DIFFICULTY}
 
 Response in JSON format (pure JSON, all values on single line, no markdown):
 {
-  "question": "Production-grade complex scenario (on-premises migration, multi-region, compliance with specific numbers)",
-  "constraint": ["Technical constraint 1", "Technical constraint 2", "Business constraint", "Operational constraint"],
+  "question": "1-2 sentence concise scenario (compliance, cost, and operational requirements naturally embedded)",
+  "constraint": ["key requirement 1", "key requirement 2", "key requirement 3"],
   "options": {
-    "A": "Option A: Use AWS Direct Connect to connect on-premises... Multi-AZ RDS for... Auto Scaling EC2 for... S3 for data storage. Security: VPC Endpoint, encryption. Operational: Existing team can manage but missing security audit tool",
-    "B": "Option B: Alternative architecture with 1-3 lines describing services, security, and operational complexity. Specify which constraint it fails to meet",
-    "C": "Option C: Another architecture option with 1-3 lines describing complete solution that meets all 4 constraints with details on security/compliance",
-    "D": "Option D: Final option with 1-3 lines. Technically superior but over-budget or unnecessarily complex. Specify the specific constraint it violates"
+    "A": "Service name + key characteristic, concise dump style",
+    "B": "Service name + key characteristic, concise dump style",
+    "C": "Service name + key characteristic, concise dump style",
+    "D": "Service name + key characteristic, concise dump style"
   },
   "answer": "C",
   "keywords": ["keyword1", "keyword2", "keyword3"],
@@ -892,25 +875,23 @@ export const SAA_PROBLEM_PROMPT_JA_CHALLENGE = `⚠️ **重要：レスポン�
 - D: 最高技術 (グローバルテーブル) だが予算超過 + 不必要な複雑性
 
 **新しい問題の要件:**
-- シナリオ: オンプレミス ↔ AWS、マルチリージョン、コンプライアンス、移行コンテキスト (4個以上の具体的な数値含む)
-- 具体的な数値: データ量、トラフィック、コスト、可用性、コンプライアンス要件
-- 制約条件: 技術(4個) + ビジネス(2個) + 運用(2個) = 最小3個組み合わせ
-- 選択肢: 各1-3行でアーキテクチャ、セキュリティ、パフォーマンス詳細含む + 具体的なサービス組み合わせ記述
-- 正解: すべての制約を満たす + 説得力高い
-- トリック選択肢: A/B/D 各々異なる部分欠落 + ほぼ正しい
+- シナリオ: 1~2文で簡潔に、核心要件(コンプライアンス、コスト、運用制約)をシナリオ文の中に自然に含める
+- 選択肢: 試験ダンプスタイル — サービス名 + 核心的な特徴、2~3行以内、冗長なアーキテクチャ説明は不要
+- 正解: すべての要件を満たす + 説得力高い
+- トリック選択肢: A/B/D 各々異なる要件が欠落
 
 **与えられたサービス:** \${SERVICE_NAMES}
 **難易度:** \${DIFFICULTY}
 
 JSON形式で応答 (マークダウンなし、純粋なJSON、すべての値は1行):
 {
-  "question": "実務レベル複合シナリオ(オンプレミス移行、マルチリージョン、規制対応、4個以上の数値含む)",
-  "constraint": ["技術的制約 1", "技術的制約 2", "ビジネス制約", "運用的制約"],
+  "question": "1~2文の簡潔なシナリオ (核心要件が文の中に自然に含まれる)",
+  "constraint": ["核心要件1", "核心要件2", "核心要件3"],
   "options": {
-    "A": "選択肢 A: AWS Direct Connectでオンプレミス接続... マルチAZ RDSで... Auto Scaling EC2で... S3にデータ転送. セキュリティ: VPCエンドポイント、暗号化. 運用: 既存DBAで管理可能だが監査機能不足",
-    "B": "選択肢 B: 別のアーキテクチャ 1-3行で詳述 (各制約充足状況明記)",
-    "C": "選択肢 C: 別のアーキテクチャ 1-3行で詳述 (すべての制約をどのように充足するか明記)",
-    "D": "選択肢 D: 最後のアーキテクチャ 1-3行で詳述 (技術は優れてもコスト/運用複雑)"
+    "A": "サービス名 + 核心的な特徴、簡潔なダンプスタイル",
+    "B": "サービス名 + 核心的な特徴、簡潔なダンプスタイル",
+    "C": "サービス名 + 核心的な特徴、簡潔なダンプスタイル",
+    "D": "サービス名 + 核心的な特徴、簡潔なダンプスタイル"
   },
   "answer": "C",
   "keywords": ["キーワード1", "キーワード2", "キーワード3"],
