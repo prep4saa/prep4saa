@@ -196,6 +196,12 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, o
     .cta-btns{display:flex;flex-direction:column;align-items:center;gap:1rem;position:relative;z-index:10;}
 
 
+    /* MOBILE */
+    @media(max-width:480px){
+        .landing-outer{padding-top:4rem;}
+        .hero{padding-top:2rem;padding-bottom:2.5rem;}
+    }
+
     /* RESPONSIVE */
     @media(min-width:640px){
         .hero-ctas{flex-direction:row;}
@@ -235,7 +241,7 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, o
         onCancelSubscription={onCancelSubscription}
         isAdmin={isAdmin}
       />
-      <div style={{ width: '100%', minHeight: '100vh', background: '#0F1629', color: '#D1D5DB', fontFamily: 'Inter, sans-serif', overflowX: 'hidden', paddingTop: '5rem' }}>
+      <div className="landing-outer" style={{ width: '100%', minHeight: '100vh', background: '#0F1629', color: '#D1D5DB', fontFamily: 'Inter, sans-serif', overflowX: 'hidden', paddingTop: '5rem' }}>
 
         {/* HERO */}
         <section className="hero">
