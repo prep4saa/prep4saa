@@ -187,9 +187,16 @@ D. 프로비저닝된 용량 모드에서 테이블을 생성하고 Global Table
 **새로운 문제의 생성 원칙:**
 
 ### 1. 시나리오 (2-4문장, 매우 상세함)
-- 실제 기업 상황 반영 (예: "제조업체", "금융사", "SaaS 회사")
-- 구체적 수치 포함 (예: "월 100TB", "초당 5000 요청", "3년 보관", "일일 10TB", "99.9% 가용성", "24시간 이내 복구" 등 문제마다 다양하게 변경)
-- 비즈니스 맥락 명확 (규제, 예산, 팀 경험 부족, 성능 요구사항 등)
+- 실제 기업 상황 반영 — 매 문제마다 다른 업종 사용:
+  (제조업체, 금융사, SaaS 회사, 의료기관, 유통/이커머스, 미디어 스트리밍, 게임사, 정부/공공기관, 보험사, 물류회사, 스타트업, 교육 플랫폼 등 다양하게 선택)
+- 구체적 수치 포함 — 매 문제마다 다른 수치 조합 사용 (아래 풀에서 골고루 선택):
+  - 데이터량: 50GB, 200GB, 2TB, 10TB, 50TB, 500TB 등
+  - 트래픽: 초당 100건, 분당 5만건, 일 1000만 요청, 동시 접속 50만명 등
+  - 보관 기간: 30일, 90일, 1년, 3년, 5년, 7년, 10년 등
+  - 가용성: 99%, 99.9%, 99.95%, 99.99% 등
+  - 응답시간: 50ms, 200ms, 1초, 5분, 24시간 이내 등
+  - 비용: 예산 30% 절감, 월 $10,000 이하 등
+- 비즈니스 맥락 명확 (규제 준수, 예산 제약, 팀 경험 부족, 성능 요구사항, 보안 요건 등)
 - 아키텍처/데이터 흐름이 명확하게 설명되어야 함
 
 ### 2. 제약 조건 (2~3개, 명시적)
@@ -490,7 +497,7 @@ Key Points:
 ## Now generate a new problem.
 
 **New Problem Conditions:**
-1. Scenario: Real business situation with specific metrics (e.g., "100TB monthly data", "5000 requests/sec", "3-year retention", "99.9% availability", "recover within 24 hours" — vary the numbers each time, do not reuse the same examples)
+1. Scenario: Real business situation — use a different industry each time (e.g., manufacturer, bank, SaaS, healthcare, e-commerce, media streaming, gaming, government, insurance, logistics, startup, edtech, etc.) with varied specific metrics each time (choose from: data volume: 50GB/2TB/500TB; traffic: 100 req/sec / 50M req/day / 500K concurrent users; retention: 30 days/1 year/7 years/10 years; availability: 99%/99.9%/99.99%; latency: 50ms/200ms/5min; cost: 30% reduction/$10K/month budget — do not repeat the same combination)
 2. Constraints: 2-3 combined requirements (e.g., "cost optimization + minimal operational overhead", "high availability + low latency")
 3. Options A-D:
    - Each option 1-3 lines (include specific AWS service configurations)
@@ -620,7 +627,7 @@ D. プロビジョニング容量モードでテーブルを作成し、複数�
 ## 新しい問題を生成してください。
 
 **新しい問題の条件:**
-1. シナリオ: 実際のビジネス状況に反映、具体的な数値を含む(例えば「月100TBデータ」「毎秒5000リクエスト」「3年保持」「99.9%可用性」「24時間以内復旧」など — 毎回異なる数値を使用すること)
+1. シナリオ: 毎回異なる業種を使用(製造業、金融、SaaS、医療、Eコマース、メディア配信、ゲーム、公共機関、保険、物流、スタートアップ、教育など)、具体的な数値も毎回異なる組み合わせで使用(データ量: 50GB/2TB/500TB、トラフィック: 毎秒100件/日5000万件/同時50万人、保持期間: 30日/1年/7年/10年、可用性: 99%/99.9%/99.99%、応答時間: 50ms/200ms/5分 — 同じ組み合わせを繰り返さないこと)
 2. 制約条件: 2~3の複合要件(例えば「コスト最適化+最小運用オーバーヘッド」「高可用性+低遅延」)
 3. 選択肢A~D:
    - 各選択肢1~3行(具体的なAWSサービス設定を含む)
