@@ -870,10 +870,10 @@ function App() {
  if (user) {
  (async () => {
  try {
- const stats = await getUserQuizStats(user.uid);
- if (stats && stats.totalAttempts !== undefined) {
- setDailyCount(stats.totalAttempts);
- }
+ await getUserQuizStats(user.uid);
+ // 일일 문제 생성 횟수는 Firebase dailyStats에서 정확히 읽어옴
+ const { count: todayCount } = await canGenerateProblemToday(user.uid, userStatus);
+ setDailyCount(todayCount);
  } catch (error) {
  // 에러 처리 생략
  }
@@ -1242,9 +1242,10 @@ function App() {
  const stats = await getUserQuizStats(user.uid);
  setQuizStats(stats);
 
- // Quiz 탭에서는 일일 카운트만 업데이트
- if (tab === "quiz" && stats && stats.totalAttempts !== undefined) {
- setDailyCount(stats.totalAttempts);
+ // Quiz 탭에서는 일일 문제 생성 횟수를 Firebase dailyStats에서 정확히 읽어옴
+ if (tab === "quiz") {
+ const { count: todayCount } = await canGenerateProblemToday(user.uid, userStatus);
+ setDailyCount(todayCount);
  }
 
  if (tab === "status") {
