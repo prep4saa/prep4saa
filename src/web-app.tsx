@@ -620,6 +620,7 @@ function App() {
   const [mockExamTimeRemaining, setMockExamTimeRemaining] = useState(130 * 60); // 130분 (초)
   const [mockExamIsLoading, setMockExamIsLoading] = useState(false); // 문제 로딩 중 표시
   const [mockExamAlreadyTaken, setMockExamAlreadyTaken] = useState(false); // 오늘 이미 본 여부
+  const [mockExamDateChecking, setMockExamDateChecking] = useState(true); // Firebase 날짜 확인 중
   const [mockExamNextAvailableTime, setMockExamNextAvailableTime] = useState<string>(""); // 다시 볼 수 있는 시간
   const [mockExamPdfCreatedAt, setMockExamPdfCreatedAt] = useState<number | null>(null); // PDF 생성 시간
   const [currentUtcTime, setCurrentUtcTime] = useState<string>(""); // 현재 UTC 시간 (실시간)
@@ -1292,25 +1293,30 @@ function App() {
 
  // Firebase에서 유저별 모의시험 날짜 확인
  (async () => {
-   const today = new Date().toISOString().split("T")[0];
-   const user = auth.currentUser;
-   let lastMockExamDate: string | null = null;
+   setMockExamDateChecking(true);
+   try {
+     const today = new Date().toISOString().split("T")[0];
+     const user = auth.currentUser;
+     let lastMockExamDate: string | null = null;
 
-   if (user) {
-     lastMockExamDate = await getUserMockExamDate(user.uid);
-   }
+     if (user) {
+       lastMockExamDate = await getUserMockExamDate(user.uid);
+     }
 
-   if (lastMockExamDate === today) {
-     setMockExamAlreadyTaken(true);
-     const tomorrow = new Date(today);
-     tomorrow.setDate(tomorrow.getDate() + 1);
-     const remainingMs = tomorrow.getTime() - Date.now();
-     const hours = Math.floor(remainingMs / (1000 * 60 * 60));
-     const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
-     setMockExamNextAvailableTime(`${hours}시간 ${minutes}분`);
-   } else {
-     setMockExamAlreadyTaken(false);
-     setMockExamNextAvailableTime("");
+     if (lastMockExamDate === today) {
+       setMockExamAlreadyTaken(true);
+       const tomorrow = new Date(today);
+       tomorrow.setDate(tomorrow.getDate() + 1);
+       const remainingMs = tomorrow.getTime() - Date.now();
+       const hours = Math.floor(remainingMs / (1000 * 60 * 60));
+       const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+       setMockExamNextAvailableTime(`${hours}시간 ${minutes}분`);
+     } else {
+       setMockExamAlreadyTaken(false);
+       setMockExamNextAvailableTime("");
+     }
+   } finally {
+     setMockExamDateChecking(false);
    }
  })();
   }, [tab, userEmail, isAdmin, isAuthChecked]);
@@ -4180,8 +4186,8 @@ function App() {
  </div>
  </div>
  </>
- ) : !isAuthChecked ? (
- // Firebase 인증 확인 중 - 로딩
+ ) : mockExamDateChecking ? (
+ // Firebase 날짜 확인 중 - 로딩
  <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
    <div style={{ fontSize: "14px", color: "#6B7280" }}>...</div>
  </div>
