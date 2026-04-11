@@ -188,7 +188,7 @@ D. 프로비저닝된 용량 모드에서 테이블을 생성하고 Global Table
 
 ### 1. 시나리오 (2-4문장, 매우 상세함)
 - 실제 기업 상황 반영 (예: "제조업체", "금융사", "SaaS 회사")
-- 구체적 수치 포함 (예: "월 100TB", "초당 5000 요청", "6개월 보관", "일일 10TB")
+- 구체적 수치 포함 (예: "월 100TB", "초당 5000 요청", "3년 보관", "일일 10TB", "99.9% 가용성", "24시간 이내 복구" 등 문제마다 다양하게 변경)
 - 비즈니스 맥락 명확 (규제, 예산, 팀 경험 부족, 성능 요구사항 등)
 - 아키텍처/데이터 흐름이 명확하게 설명되어야 함
 
@@ -490,7 +490,7 @@ Key Points:
 ## Now generate a new problem.
 
 **New Problem Conditions:**
-1. Scenario: Real business situation with specific metrics (e.g., "100TB monthly data", "5000 requests/sec", "6-month retention")
+1. Scenario: Real business situation with specific metrics (e.g., "100TB monthly data", "5000 requests/sec", "3-year retention", "99.9% availability", "recover within 24 hours" — vary the numbers each time, do not reuse the same examples)
 2. Constraints: 2-3 combined requirements (e.g., "cost optimization + minimal operational overhead", "high availability + low latency")
 3. Options A-D:
    - Each option 1-3 lines (include specific AWS service configurations)
@@ -620,7 +620,7 @@ D. プロビジョニング容量モードでテーブルを作成し、複数�
 ## 新しい問題を生成してください。
 
 **新しい問題の条件:**
-1. シナリオ: 実際のビジネス状況に反映、具体的な数値を含む(例えば「月100TBデータ」「毎秒5000リクエスト」「6ヶ月保持」)
+1. シナリオ: 実際のビジネス状況に反映、具体的な数値を含む(例えば「月100TBデータ」「毎秒5000リクエスト」「3年保持」「99.9%可用性」「24時間以内復旧」など — 毎回異なる数値を使用すること)
 2. 制約条件: 2~3の複合要件(例えば「コスト最適化+最小運用オーバーヘッド」「高可用性+低遅延」)
 3. 選択肢A~D:
    - 各選択肢1~3行(具体的なAWSサービス設定を含む)
