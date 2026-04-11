@@ -197,9 +197,10 @@ D. 프로비저닝된 용량 모드에서 테이블을 생성하고 Global Table
 - 비즈니스 제약: 비용 최적화, 운영 오버헤드 최소화, 규제 준수 등
 - 각 제약을 **명시적으로 마크하기** (정답과 함정답 구분에 중요)
 
-### 3. 선택지 A~D (각 3~4줄 - 전문적 서술형)
+### 3. 선택지 A~D (각 1~3줄 - 전문적 서술형)
 - 각 선택지는 구체적인 AWS 서비스 구성과 아키텍처 흐름을 상세히 설명
 - 각 선택지마다 어떤 서비스들이 어떻게 연결되는지 명확히 서술
+- **선택지의 수치(숫자)는 꼭 필요한 경우에만 사용** - 불필요한 TB, GB, RPS, %, 초, 개월 등 숫자는 생략하고 서비스 흐름 위주로 서술
 - 1개 정답: 모든 제약조건 완벽 충족
 - 3개 함정답:
   * 1개: 거의 맞지만 1가지 제약만 미충족 (가장 실수하기 쉬운 오답)
@@ -292,7 +293,7 @@ export const SAA_PROBLEM_PROMPT_HARD = `⚠️ **CRITICAL: 응답은 2000~3500 �
 **새로운 문제 조건**:
 - 시나리오: 구체적 수치 3~4개 (데이터량, 트래픽, 보관 기간, 비용)
 - 제약: 기술 + 비즈니스 + 운영 3가지
-- 선택지: 각 3~4줄, 서비스명 + 설정값 명시 + 구체적 아키텍처 서술
+- 선택지: 각 1~3줄, 서비스명 + 설정값 명시 + 구체적 아키텍처 서술
 - 정답: 모든 제약 완벽 충족
 - 함정: 각각 다른 1개 제약 미충족
 
@@ -492,7 +493,8 @@ Key Points:
 1. Scenario: Real business situation with specific metrics (e.g., "100TB monthly data", "5000 requests/sec", "6-month retention")
 2. Constraints: 2-3 combined requirements (e.g., "cost optimization + minimal operational overhead", "high availability + low latency")
 3. Options A-D:
-   - Each option 3-4 lines (include specific AWS service configurations)
+   - Each option 1-3 lines (include specific AWS service configurations)
+   - Use specific numbers (TB, GB, RPS, %, etc.) in options only when necessary — avoid unnecessary numbers and focus on service flow
    - 1 correct answer: meets all constraints
    - 3 trick answers: almost correct but missing 1 constraint
 4. Answer and detailed explanation:
@@ -621,7 +623,8 @@ D. プロビジョニング容量モードでテーブルを作成し、複数�
 1. シナリオ: 実際のビジネス状況に反映、具体的な数値を含む(例えば「月100TBデータ」「毎秒5000リクエスト」「6ヶ月保持」)
 2. 制約条件: 2~3の複合要件(例えば「コスト最適化+最小運用オーバーヘッド」「高可用性+低遅延」)
 3. 選択肢A~D:
-   - 各選択肢3~4行(具体的なAWSサービス設定を含む)
+   - 各選択肢1~3行(具体的なAWSサービス設定を含む)
+   - 選択肢の数値(TB、GB、RPS、%など)は必要な場合のみ使用 — 不要な数値は省略し、サービスフロー中心で記述
    - 1つの正解: すべての制約を満たす
    - 3つのトリック選択肢: ほぼ正しいが1つの制約を満たさない
 4. 答えと詳細説明:
@@ -637,10 +640,10 @@ JSON形式で応答してください:
   "question": "シナリオ... (2~4文)",
   "constraint": ["制約1", "制約2", "制約3"],
   "options": {
-    "A": "選択肢 A (3~4行)",
-    "B": "選択肢 B (3~4行)",
-    "C": "選択肢 C (3~4行)",
-    "D": "選択肢 D (3~4行)"
+    "A": "選択肢 A (1~3行、必要時のみ数値使用)",
+    "B": "選択肢 B (1~3行、必要時のみ数値使用)",
+    "C": "選択肢 C (1~3行、必要時のみ数値使用)",
+    "D": "選択肢 D (1~3行、必要時のみ数値使用)"
   },
   "answer": "B",
   "explanation": {
