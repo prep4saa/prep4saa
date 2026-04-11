@@ -283,8 +283,16 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
         {/* 로그인/계정 */}
         {userEmail ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem', marginTop: '.25rem' }}>
-            {dday && <span style={{ color: '#D1D5DB', fontSize: '.875rem' }}>{dday}</span>}
-            {streak !== undefined && streak > 0 && <span style={{ color: '#D1D5DB', fontSize: '.875rem' }}>{streak}일차</span>}
+            {dday && (
+              <button
+                className="mobile-menu-btn"
+                onClick={() => { onDdayClick?.(); setShowMobileMenu(false); }}
+                style={{ color: '#FF9900', fontWeight: 600 }}
+              >
+                {dday} 📅
+              </button>
+            )}
+            {streak !== undefined && streak > 0 && <span style={{ color: '#D1D5DB', fontSize: '.875rem', padding: '.75rem 0' }}>{streak}일차</span>}
             <button className="mobile-menu-btn" style={{ color: '#fca5a5' }} onClick={() => { onLogout?.(); setShowMobileMenu(false); }}>로그아웃</button>
             {userStatus === 'paid' && (
               <button className="mobile-menu-btn" style={{ color: '#fca5a5' }} onClick={() => { onCancelSubscription?.(); setShowMobileMenu(false); }}>구독 취소</button>
