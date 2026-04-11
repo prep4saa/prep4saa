@@ -1145,8 +1145,9 @@ function App() {
  setShowEasyMode(false);
 
  try {
- //  보안: Firebase 서버에서 권한 확인 (sessionStorage 우회 방지)
+ //  보안: Firebase 서버에서 권한 확인 (sessionStorage 우회 방지, 운영자는 제한 없음)
  if (userEmail && auth.currentUser?.uid) {
+ if (!isAdmin) {
  const { canGenerate, count, limit } = await canGenerateProblemToday(
  auth.currentUser.uid,
  userStatus
@@ -1155,6 +1156,7 @@ function App() {
  if (!canGenerate) {
  setError(getQuotaMessage(userStatus, limit, count));
  return;
+ }
  }
 
  // 문제 생성 후 Firebase에 기록
