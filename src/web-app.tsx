@@ -2198,7 +2198,7 @@ function App() {
  disabled={slots.length === 0 || loading || (!isAdmin && dailyCount >= getDailyLimit())}
  onClick={handleGenerateProblem}
  title={!isAdmin && dailyCount >= getDailyLimit() ? getQuotaMessage(userStatus, getDailyLimit(), dailyCount) : ""}>
- {loading && <span className="loading-icon">●●●</span>}
+ {loading && <span className="loading-icon">⏳</span>}
  {loading ? t("btnGenerating") : t("btnGenerate")}
  <br />
  <span style={{ fontSize: "11px", opacity: 0.7, display: "block", marginTop: "4px" }}>
@@ -3856,7 +3856,7 @@ function App() {
  문제 {mockExamCurrentIndex + 1} / {mockExamProblems.length}
  {mockExamIsLoading && (
  <span style={{ marginLeft: "8px", color: "var(--accent)", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "6px" }}>
- <span style={{ display: "inline-block", animation: "spin 1s linear infinite" }}></span>
+ <span style={{ display: "inline-block", animation: "spin 1s linear infinite" }}>⏳</span>
  문제 로딩 중...
  </span>
  )}
