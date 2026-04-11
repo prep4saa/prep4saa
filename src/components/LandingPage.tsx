@@ -275,7 +275,7 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, o
                   <div className="dot-red"></div>
                   <div className="dot-yellow"></div>
                   <div className="dot-green"></div>
-                  <span className="mock-url">awsarchive.com/exam/daily-mock</span>
+                  <span className="mock-url">prep4saa.com</span>
                 </div>
                 <div className="mock-body">
                   <div className="mock-header">
