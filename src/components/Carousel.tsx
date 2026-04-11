@@ -58,7 +58,7 @@ export default function Carousel({ slides, autoSlide = true, autoSlideInterval =
     <div style={{
       width: '100%',
       background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(21, 30, 50, 0.8))',
-      padding: '40px 20px',
+      padding: '40px 0',
       borderRadius: '16px',
       overflow: 'hidden'
     }}>

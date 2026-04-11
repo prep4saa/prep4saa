@@ -357,7 +357,7 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, o
 
         {/* CAROUSEL - 훓어보기 */}
         <section id="preview" style={{ padding: '6rem 0', background: '#0F1629' }}>
-          <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1.5rem' }}>
+          <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0' }}>
             <Carousel
               title={t.carouselTitle}
               slides={[
