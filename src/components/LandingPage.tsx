@@ -83,7 +83,7 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, o
     .btn-primary:hover{background:#E68A00;box-shadow:0 0 20px rgba(255,153,0,.5);}
 
     /* HERO */
-    .hero{position:relative;padding-top:8rem;padding-bottom:5rem;overflow:hidden;}
+    .hero{position:relative;padding-top:3rem;padding-bottom:3rem;overflow:hidden;}
     .hero-grid{position:absolute;inset:0;opacity:.3;pointer-events:none;}
     .hero-glow{position:absolute;top:0;right:0;width:50%;height:100%;background:linear-gradient(to left,rgba(255,153,0,.05),transparent);pointer-events:none;}
     .hero-inner{max-width:80rem;margin:0 auto;padding:0 1.5rem;position:relative;z-index:10;}
@@ -219,7 +219,7 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, o
         h1{font-size:3.75rem;}
         .mock-card{margin-top:0;margin-left:2.5rem;}
         .cta-h{font-size:3rem;}
-        .hero{padding-top:12rem;padding-bottom:8rem;}
+        .hero{padding-top:5rem;padding-bottom:5rem;}
     }
   `;
 
