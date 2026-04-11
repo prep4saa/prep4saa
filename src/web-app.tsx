@@ -1235,27 +1235,35 @@ function App() {
  (async () => {
  const user = getCurrentUser();
  if (user) {
- try {
- // 만료된 결과 자동 삭제
+ // 만료된 결과 자동 삭제 (백그라운드, 실패해도 무관)
  if (tab === "status") {
- await deleteExpiredResults(user.uid);
+ deleteExpiredResults(user.uid).catch(() => {});
  }
 
+ // 통계 로드
+ try {
  const stats = await getUserQuizStats(user.uid);
  setQuizStats(stats);
+ } catch (error) {
+ // 통계 로드 실패 무시
+ }
 
- // Quiz 탭에서는 일일 문제 생성 횟수를 Firebase dailyStats에서 정확히 읽어옴
+ // Quiz 탭: 일일 횟수
  if (tab === "quiz") {
+ try {
  const { count: todayCount } = await canGenerateProblemToday(user.uid, userStatus);
  setDailyCount(todayCount);
+ } catch (error) {}
  }
 
+ // 현황 탭: 세션 로드 (독립적으로 실행)
  if (tab === "status") {
+ try {
  const sessions = await getUserProblemSessions(user.uid);
  setProblemSessions(sessions);
- }
  } catch (error) {
- // 에러 처리만 수행 (로깅 제거)
+ setProblemSessions([]);
+ }
  }
  } else {
  setQuizStats(null);
@@ -2275,6 +2283,7 @@ function App() {
  // 로그인된 사용자면 결과 저장
  const user = getCurrentUser();
  if (user && problem) {
+ try {
  await recordQuizResult(
  user.uid,
  problem,
@@ -2283,6 +2292,10 @@ function App() {
  sessionId,
  slots // 선택된 서비스 목록 전달
  );
+ // 세션 목록 즉시 갱신 (현황 탭 PDF 다운로드 반영)
+ const sessions = await getUserProblemSessions(user.uid);
+ setProblemSessions(sessions);
+ } catch (error) {}
  }
  }}
  style={{
