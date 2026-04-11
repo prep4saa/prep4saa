@@ -2218,11 +2218,6 @@ function App() {
  <div className="problem-content">
  <div className="problem-section" style={{ marginBottom: "16px" }}>
  <p style={{ color: "#D1D5DB", lineHeight: "1.6", marginBottom: "8px" }}>{problem.question}</p>
- {isSubmitted && (
- <div style={{ fontSize: "12px", color: "#64748b", marginTop: "8px" }}>
- <strong>{t("labelConstraints")}</strong> {problem.constraint.join(" + ")}
- </div>
- )}
  </div>
 
  <div className="options" style={{ marginBottom: "16px" }}>
@@ -4287,9 +4282,9 @@ function App() {
  problems = [];
  // 난이도 분배: 보통 20개, 어려움 20개, 챌린지 10개
  const difficulties = [
- ...Array(20).fill("medium"),
- ...Array(20).fill("hard"),
- ...Array(10).fill("challenge")
+ ...Array(40).fill("medium"),
+ ...Array(5).fill("hard"),
+ ...Array(5).fill("challenge")
  ];
  // 순서 섞기 (shuffle)
  for (let i = difficulties.length - 1; i > 0; i--) {
