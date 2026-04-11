@@ -26,6 +26,7 @@ interface NavigatorProps {
 export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleChange, onLoginClick, showLoginButton = true, onLogoClick, isAdmin = false, currentTab, dday, streak, userEmail, onDdayClick, userStatus, onLogout, onCancelSubscription }: NavigatorProps) {
   const [locale, setLocale] = useState<Locale>(currentLocale);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   // currentLocale prop이 변경되면 내부 locale 상태 업데이트
   useEffect(() => {
@@ -62,16 +63,30 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
     .lang-select option{background:#0F1629;color:#D1D5DB;}
     .nav-dday{display:flex;align-items:center;}
     .nav-streak{display:flex;align-items:center;}
+    .hamburger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:.5rem;}
+    .hamburger span{display:block;width:22px;height:2px;background:#D1D5DB;border-radius:2px;transition:all .3s;}
+    .mobile-menu{display:none;position:fixed;top:5rem;left:0;right:0;background:rgba(15,22,41,.97);border-bottom:1px solid #2A344A;z-index:9998;padding:1rem 1.5rem;flex-direction:column;gap:.75rem;}
+    .mobile-menu.open{display:flex;}
+    .mobile-menu-btn{background:none;border:none;color:#D1D5DB;font-size:.95rem;font-weight:500;cursor:pointer;padding:.75rem 0;text-align:left;border-bottom:1px solid rgba(255,255,255,0.05);width:100%;}
+    .mobile-menu-btn:last-child{border-bottom:none;}
+    .mobile-menu-btn.active{color:#FF9900;}
+    .mobile-menu-divider{height:1px;background:rgba(255,255,255,0.1);margin:.25rem 0;}
+    .mobile-lang-select{background:#151E32;border:1px solid #2A344A;color:#D1D5DB;font-size:.875rem;padding:.625rem .75rem;border-radius:.375rem;cursor:pointer;width:100%;}
+    .mobile-login-btn{background:#FF9900;color:#0F1629;font-weight:600;font-size:.875rem;padding:.75rem;border-radius:.375rem;border:none;cursor:pointer;width:100%;margin-top:.25rem;}
     @media(min-width:768px){.nav-links{display:flex;}}
+    @media(max-width:767px){
+      .hamburger{display:flex;}
+      .nav-actions .lang-select{display:none;}
+      .nav-actions .btn-login{display:none;}
+      .nav-dday{display:none;}
+      .nav-streak{display:none;}
+    }
     @media(max-width:480px){
       .nav-inner{padding:0 .75rem;height:4rem;}
       .nav-logo span{font-size:1rem;}
       .logo-icon{width:1.75rem;height:1.75rem;}
       .nav-actions{gap:.5rem;}
-      .lang-select{font-size:.75rem;padding:.375rem .5rem;}
-      .btn-login{font-size:.75rem;padding:.5rem .75rem;}
-      .nav-dday{display:none;}
-      .nav-streak{display:none;}
+      .mobile-menu{top:4rem;}
     }
   `;
 
@@ -112,6 +127,13 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
               </>
             )}
           </div>
+          {/* 햄버거 버튼 (모바일 전용) */}
+          <button className="hamburger" onClick={() => setShowMobileMenu(!showMobileMenu)} aria-label="메뉴">
+            <span style={{ transform: showMobileMenu ? 'rotate(45deg) translate(5px, 5px)' : 'none' }}></span>
+            <span style={{ opacity: showMobileMenu ? 0 : 1 }}></span>
+            <span style={{ transform: showMobileMenu ? 'rotate(-45deg) translate(5px, -5px)' : 'none' }}></span>
+          </button>
+
           <div className="nav-actions">
             {userEmail && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: '#D1D5DB', fontSize: '.875rem', position: 'relative' }}>
@@ -237,6 +259,42 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
           </div>
         </div>
       </nav>
+
+      {/* 모바일 메뉴 드롭다운 */}
+      <div className={`mobile-menu${showMobileMenu ? ' open' : ''}`}>
+        {/* 탭 메뉴 */}
+        <button className={`mobile-menu-btn${currentTab === 'quiz' ? ' active' : ''}`} onClick={() => { onTabChange('quiz'); setShowMobileMenu(false); }}>{t.tabQuiz}</button>
+        <button className={`mobile-menu-btn${currentTab === 'concept' ? ' active' : ''}`} onClick={() => { onTabChange('concept'); setShowMobileMenu(false); }}>{t.tabConcept}</button>
+        <button className={`mobile-menu-btn${currentTab === 'status' ? ' active' : ''}`} onClick={() => { onTabChange('status'); setShowMobileMenu(false); }}>{t.tabStatus}</button>
+        <button className={`mobile-menu-btn${currentTab === 'mockExam' ? ' active' : ''}`} onClick={() => { onTabChange('mockExam'); setShowMobileMenu(false); }}>{t.tabMockExam}</button>
+        {isAdmin && <>
+          <button className={`mobile-menu-btn${currentTab === 'admin' ? ' active' : ''}`} onClick={() => { onTabChange('admin'); setShowMobileMenu(false); }}>Admin</button>
+          <button className={`mobile-menu-btn${currentTab === 'users' ? ' active' : ''}`} onClick={() => { onTabChange('users'); setShowMobileMenu(false); }}>Users</button>
+        </>}
+
+        <div className="mobile-menu-divider" />
+
+        {/* 언어 선택 */}
+        <select value={locale} onChange={(e) => { handleLanguageChange(e.target.value as Locale); }} className="mobile-lang-select">
+          <option value="ko">한국어</option>
+          <option value="en">English</option>
+          <option value="ja">日本語</option>
+        </select>
+
+        {/* 로그인/계정 */}
+        {userEmail ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem', marginTop: '.25rem' }}>
+            {dday && <span style={{ color: '#D1D5DB', fontSize: '.875rem' }}>{dday}</span>}
+            {streak !== undefined && streak > 0 && <span style={{ color: '#D1D5DB', fontSize: '.875rem' }}>{streak}일차</span>}
+            <button className="mobile-menu-btn" style={{ color: '#fca5a5' }} onClick={() => { onLogout?.(); setShowMobileMenu(false); }}>로그아웃</button>
+            {userStatus === 'paid' && (
+              <button className="mobile-menu-btn" style={{ color: '#fca5a5' }} onClick={() => { onCancelSubscription?.(); setShowMobileMenu(false); }}>구독 취소</button>
+            )}
+          </div>
+        ) : showLoginButton ? (
+          <button className="mobile-login-btn" onClick={() => { onLoginClick?.(); setShowMobileMenu(false); }}>{t.landingNavLogin}</button>
+        ) : null}
+      </div>
     </>
   );
 }

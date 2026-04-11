@@ -1643,11 +1643,12 @@ function App() {
  <div style={{
  position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
  background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center",
- zIndex: 1001
+ zIndex: 1001, padding: "16px"
  }}>
- <div style={{
+ <style>{`@media(max-width:480px){.login-modal-box{padding:24px 20px!important;max-height:88vh;overflow-y:auto;}}`}</style>
+ <div className="login-modal-box" style={{
  background: "#0F1629", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "16px",
- padding: "48px 40px", maxWidth: "500px", width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.5)"
+ padding: "48px 40px", maxWidth: "500px", width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.5)"
  }} onClick={e => e.stopPropagation()}>
  <h2 style={{ color: "#fff", marginBottom: "12px", fontSize: "24px", fontWeight: "bold", textAlign: "center" }}>
  {isSignUp ? " " + t("btnSignUp") : " " + t("btnLogIn")}
