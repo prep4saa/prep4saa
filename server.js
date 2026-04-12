@@ -446,6 +446,32 @@ app.post('/api/admin/user/sessions', (req, res) => {
   }
 });
 
+// Admin Console: 서버 명령어 실행 (admin 전용)
+app.post('/api/admin/console', (req, res) => {
+  const { exec } = require('child_process');
+  try {
+    const { command } = req.body;
+    if (!command || typeof command !== 'string') {
+      return res.status(400).json({ error: 'command is required' });
+    }
+    // 명령어 길이 제한
+    if (command.length > 500) {
+      return res.status(400).json({ error: 'command too long' });
+    }
+
+    exec(command, { timeout: 15000, maxBuffer: 1024 * 512 }, (error, stdout, stderr) => {
+      res.json({
+        stdout: stdout || '',
+        stderr: stderr || '',
+        exitCode: error ? (error.code ?? 1) : 0,
+        timestamp: new Date().toISOString()
+      });
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', port: PORT });

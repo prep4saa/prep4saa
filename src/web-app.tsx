@@ -553,6 +553,94 @@ function GraphSVG({ pos, setPos, posRef, dragRef, pan, setPan, zoom, setZoom, se
   );
 }
 
+function ConsolePanel({ backendUrl, userEmail }: { backendUrl: string; userEmail: string }) {
+  const [input, setInput] = React.useState("");
+  const [history, setHistory] = React.useState<{ cmd: string; stdout: string; stderr: string; exitCode: number; ts: string }[]>([]);
+  const [running, setRunning] = React.useState(false);
+  const [cmdHistory, setCmdHistory] = React.useState<string[]>([]);
+  const [cmdHistoryIdx, setCmdHistoryIdx] = React.useState(-1);
+  const outputRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (outputRef.current) outputRef.current.scrollTop = outputRef.current.scrollHeight;
+  }, [history]);
+
+  const runCommand = async () => {
+    const cmd = input.trim();
+    if (!cmd || running) return;
+    setRunning(true);
+    setCmdHistory(prev => [cmd, ...prev.slice(0, 49)]);
+    setCmdHistoryIdx(-1);
+    setInput("");
+    try {
+      const res = await fetch(`${backendUrl}/api/admin/console`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: userEmail, command: cmd }),
+      });
+      const data = await res.json();
+      setHistory(prev => [...prev, { cmd, stdout: data.stdout || "", stderr: data.stderr || data.error || "", exitCode: data.exitCode ?? 0, ts: data.timestamp || new Date().toISOString() }]);
+    } catch (e: any) {
+      setHistory(prev => [...prev, { cmd, stdout: "", stderr: e.message, exitCode: 1, ts: new Date().toISOString() }]);
+    }
+    setRunning(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") { runCommand(); return; }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const idx = Math.min(cmdHistoryIdx + 1, cmdHistory.length - 1);
+      setCmdHistoryIdx(idx);
+      setInput(cmdHistory[idx] || "");
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const idx = Math.max(cmdHistoryIdx - 1, -1);
+      setCmdHistoryIdx(idx);
+      setInput(idx === -1 ? "" : cmdHistory[idx]);
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#0d1117", borderRadius: "8px", overflow: "hidden", fontFamily: "monospace" }}>
+      <div style={{ padding: "10px 16px", background: "#161b22", borderBottom: "1px solid #30363d", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ color: "#58a6ff", fontWeight: 700, fontSize: "14px" }}>⚡ 서버 콘솔</span>
+        <button onClick={() => setHistory([])} style={{ background: "none", border: "1px solid #30363d", color: "#8b949e", fontSize: "11px", padding: "2px 8px", borderRadius: "4px", cursor: "pointer" }}>지우기</button>
+      </div>
+      <div ref={outputRef} style={{ flex: 1, overflowY: "auto", padding: "12px 16px", fontSize: "13px", lineHeight: "1.6" }}>
+        {history.length === 0 && (
+          <div style={{ color: "#484f58" }}>명령어를 입력하세요. (↑↓ 히스토리)</div>
+        )}
+        {history.map((entry, i) => (
+          <div key={i} style={{ marginBottom: "12px" }}>
+            <div style={{ color: "#58a6ff" }}>$ {entry.cmd}</div>
+            {entry.stdout && <pre style={{ margin: "2px 0", color: "#e6edf3", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{entry.stdout}</pre>}
+            {entry.stderr && <pre style={{ margin: "2px 0", color: "#f85149", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{entry.stderr}</pre>}
+            <div style={{ color: "#484f58", fontSize: "11px" }}>exit {entry.exitCode} · {new Date(entry.ts).toLocaleTimeString()}</div>
+          </div>
+        ))}
+        {running && <div style={{ color: "#f0883e" }}>실행 중...</div>}
+      </div>
+      <div style={{ padding: "10px 16px", borderTop: "1px solid #30363d", display: "flex", gap: "8px" }}>
+        <span style={{ color: "#3fb950", alignSelf: "center" }}>$</span>
+        <input
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          disabled={running}
+          placeholder="명령어 입력..."
+          autoFocus
+          style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "#e6edf3", fontSize: "13px", fontFamily: "monospace" }}
+        />
+        <button onClick={runCommand} disabled={running || !input.trim()} style={{ background: "#238636", border: "none", color: "#fff", padding: "4px 14px", borderRadius: "4px", cursor: "pointer", fontSize: "13px", opacity: running || !input.trim() ? 0.5 : 1 }}>
+          실행
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const { locale, setLocale, t } = useLocale();
   const { theme, toggleTheme } = useTheme();
@@ -600,7 +688,7 @@ function App() {
  setShowHero(false);
   };
 
-  const [tab, setTab] = useState<"quiz" | "concept" | "status" | "mockExam" | "posts" | "admin" | "users">("quiz");
+  const [tab, setTab] = useState<"quiz" | "concept" | "status" | "mockExam" | "posts" | "admin" | "users" | "console">("quiz");
   const [selected, setSelected] = useState<string | null>(null);
   const [slots, setSlots] = useState<string[]>([]);
   const [catFilter, setCatFilter] = useState<string | null>(null);
@@ -3419,6 +3507,11 @@ function App() {
  Production will require authentication.
  </div>
  </div>
+ )}
+
+ {/* Console Panel - 관리자만 접근 가능 */}
+ {tab === "console" && isAdmin && (
+   <ConsolePanel backendUrl={(import.meta as any).env.VITE_BACKEND_URL || "http://localhost:5000"} userEmail={userEmail || ""} />
  )}
 
  {/* Users Panel - 관리자만 접근 가능 */}

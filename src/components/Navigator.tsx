@@ -6,7 +6,7 @@ import { ja } from '../locales/ja';
 type Locale = 'ko' | 'en' | 'ja';
 
 interface NavigatorProps {
-  onTabChange: (tab: "quiz" | "concept" | "status" | "mockExam" | "admin" | "users") => void;
+  onTabChange: (tab: "quiz" | "concept" | "status" | "mockExam" | "admin" | "users" | "console") => void;
   currentLocale?: Locale;
   onLocaleChange?: (locale: Locale) => void;
   onLoginClick?: () => void;
@@ -123,6 +123,9 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
                 </button>
                 <button onClick={() => onTabChange('users')} style={{ background: 'none', border: 'none', color: currentTab === 'users' ? '#FF9900' : '#D1D5DB', fontSize: '.875rem', fontWeight: 500, cursor: 'pointer', transition: 'color .15s' }}>
                   Users
+                </button>
+                <button onClick={() => onTabChange('console')} style={{ background: 'none', border: 'none', color: currentTab === 'console' ? '#FF9900' : '#D1D5DB', fontSize: '.875rem', fontWeight: 500, cursor: 'pointer', transition: 'color .15s' }}>
+                  콘솔
                 </button>
               </>
             )}
