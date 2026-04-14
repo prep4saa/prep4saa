@@ -2477,7 +2477,10 @@ function App() {
      const currentUser = getCurrentUser();
      if (currentUser) {
        try {
-         const backendBaseUrl = env?.VITE_API_BASE_URL || 'http://localhost:5000';
+         const backendBaseUrl =
+           env?.VITE_API_BASE_URL ||
+           env?.VITE_BACKEND_URL ||
+           'http://localhost:5000';
          const response = await fetch(`${backendBaseUrl}/api/lemonsqueezy/cancel-subscription`, {
            method: 'POST',
            headers: { 'Content-Type': 'application/json' },
