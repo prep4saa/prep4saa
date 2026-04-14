@@ -1,74 +1,155 @@
-﻿const crypto = require('crypto');
+const crypto = require('crypto');
 const { initializeApp, cert, getApps } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
 
+function getHeader(headers, name) {
+  if (!headers) {
+    return null;
+  }
+
+  const target = name.toLowerCase();
+  for (const [key, value] of Object.entries(headers)) {
+    if (key && key.toLowerCase() === target) {
+      return Array.isArray(value) ? value[0] : value;
+    }
+  }
+
+  return null;
+}
+
+function getRawBody(event) {
+  if (!event || event.body == null) {
+    return '';
+  }
+
+  if (event.isBase64Encoded) {
+    return Buffer.from(event.body, 'base64').toString('utf8');
+  }
+
+  return typeof event.body === 'string' ? event.body : JSON.stringify(event.body);
+}
+
+const initStartedAt = Date.now();
 if (!getApps().length) {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  const serviceAccountRaw = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (!serviceAccountRaw) {
+    throw new Error('FIREBASE_SERVICE_ACCOUNT is not configured');
+  }
+
+  const serviceAccount = JSON.parse(serviceAccountRaw);
   initializeApp({ credential: cert(serviceAccount) });
+  console.log(`Firebase admin initialized in ${Date.now() - initStartedAt}ms`);
+} else {
+  console.log('Firebase admin reused from warm container');
 }
 
 const db = getFirestore();
 const auth = getAuth();
 
-async function resolveUserRef(customData, attributes) {
+async function resolveUserRef(customData, attributes, requestId) {
   const userId = customData.user_id;
-  const email = customData.email || attributes.user_email || attributes.customer_email;
 
   if (userId) {
+    console.log(`[${requestId}] Resolving user by user_id: ${userId}`);
     return { userRef: db.collection('users').doc(userId), userKey: userId };
   }
 
-  if (email) {
-    const userRecord = await auth.getUserByEmail(email);
-    return { userRef: db.collection('users').doc(userRecord.uid), userKey: email };
-  }
-
+  console.warn(`[${requestId}] No user_id in webhook custom_data`);
   return { userRef: null, userKey: null };
 }
 
-exports.handler = async (event) => {
-  console.log('🧾 Webhook received:', event.httpMethod);
+exports.handler = async (event, context) => {
+  context.callbackWaitsForEmptyEventLoop = false;
+
+  const requestId = context.awsRequestId || event?.requestContext?.requestId || 'unknown-request';
+  const method = event?.requestContext?.http?.method || event?.httpMethod || 'unknown-method';
+  const rawBody = getRawBody(event);
+  const headers = event?.headers || {};
+
+  console.log(`[${requestId}] Webhook received`, {
+    method,
+    path: event?.path || event?.rawPath || 'unknown-path',
+    hasBody: Boolean(rawBody),
+    bodyLength: rawBody.length,
+    headerKeys: Object.keys(headers),
+  });
 
   try {
-    const signature = event.headers['X-Signature'] || event.headers['x-signature'] || event.headers['X-Lemon-Squeezy-Signature'] || event.headers['x-lemon-squeezy-signature'];
+    const signature =
+      getHeader(headers, 'x-signature') ||
+      getHeader(headers, 'x-lemon-squeezy-signature');
     const secret = process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
-    const body = event.body;
 
     if (!signature || !secret) {
-      console.error('Missing signature or secret');
+      console.error(`[${requestId}] Missing signature or secret`, {
+        hasSignature: Boolean(signature),
+        hasSecret: Boolean(secret),
+      });
       return { statusCode: 401, body: 'Unauthorized' };
     }
 
-    const digest = crypto.createHmac('sha256', secret).update(body).digest('hex');
+    const verifyStartedAt = Date.now();
+    const digest = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+    console.log(`[${requestId}] Signature verification completed in ${Date.now() - verifyStartedAt}ms`);
+
     if (signature !== digest) {
-      console.error('Invalid signature');
+      console.error(`[${requestId}] Invalid signature`, { signature, digest });
       return { statusCode: 401, body: 'Invalid signature' };
     }
 
-    const payload = JSON.parse(body);
+    const parseStartedAt = Date.now();
+    const payload = JSON.parse(rawBody);
+    console.log(`[${requestId}] Payload parsed in ${Date.now() - parseStartedAt}ms`);
+
     const eventName = payload.meta?.event_name;
     const data = payload.data || {};
     const attributes = data.attributes || {};
     const customData = payload.meta?.custom_data || attributes.custom_data || {};
 
-    console.log('Event:', eventName);
+    console.log(`[${requestId}] Event: ${eventName}`);
+    console.log(
+      `[${requestId}] Customer email: ${customData.email || attributes.user_email || attributes.customer_email || 'n/a'}`
+    );
+    console.log(`[${requestId}] Custom data keys: ${Object.keys(customData).join(', ') || 'none'}`);
 
     const paidEvents = ['order_created', 'subscription_created', 'subscription_payment_success'];
-    const cancelEvents = ['subscription_cancelled', 'subscription_expired'];
+    const cancelledEvents = ['subscription_cancelled'];
+    const expiredEvents = ['subscription_expired'];
 
-    if (!paidEvents.includes(eventName) && !cancelEvents.includes(eventName)) {
+    if (
+      !paidEvents.includes(eventName) &&
+      !cancelledEvents.includes(eventName) &&
+      !expiredEvents.includes(eventName)
+    ) {
+      console.log(`[${requestId}] Ignored event: ${eventName}`);
       return { statusCode: 200, body: 'Ignored' };
     }
 
-    const resolved = await resolveUserRef(customData, attributes);
+    const resolveStartedAt = Date.now();
+    console.log(`[${requestId}] About to resolve user with customData:`, customData);
+    const resolved = await resolveUserRef(customData, attributes, requestId);
+    console.log(`[${requestId}] User resolution finished in ${Date.now() - resolveStartedAt}ms`, { resolved });
+
     if (!resolved.userRef) {
-      console.error('No user_id or email found in payload');
+      console.error(`[${requestId}] No user reference resolved from webhook payload`, { resolved });
       return { statusCode: 400, body: 'No user found' };
     }
+    console.log(`[${requestId}] User ref found: ${resolved.userKey}`);
 
     if (paidEvents.includes(eventName)) {
-      const isPaid = attributes.status === 'active' || attributes.status === 'on_trial' || eventName === 'order_created';
+      const isPaid =
+        attributes.status === 'active' ||
+        attributes.status === 'on_trial' ||
+        eventName === 'order_created';
+
+      const updateStartedAt = Date.now();
+      console.log(`[${requestId}] Writing paid state`, {
+        userKey: resolved.userKey,
+        subscriptionId: data.id,
+        status: attributes.status,
+        customerId: attributes.customer_id,
+      });
 
       await resolved.userRef.set(
         {
@@ -86,12 +167,23 @@ exports.handler = async (event) => {
         { merge: true }
       );
 
-      console.log(`isPaid=${isPaid} set for ${resolved.userKey}`);
+      console.log(`[${requestId}] Paid state saved in ${Date.now() - updateStartedAt}ms for ${resolved.userKey}`);
       return { statusCode: 200, body: 'OK' };
     }
 
-    if (cancelEvents.includes(eventName)) {
-      const isPaid = attributes.status === 'active' || attributes.status === 'on_trial' || attributes.status === 'cancelled';
+    if (cancelledEvents.includes(eventName)) {
+      const isPaid =
+        attributes.status === 'active' ||
+        attributes.status === 'on_trial' ||
+        attributes.status === 'cancelled';
+
+      const updateStartedAt = Date.now();
+      console.log(`[${requestId}] Writing cancel state`, {
+        userKey: resolved.userKey,
+        subscriptionId: data.id,
+        status: attributes.status,
+        endsAt: attributes.ends_at,
+      });
 
       await resolved.userRef.set(
         {
@@ -107,13 +199,44 @@ exports.handler = async (event) => {
         { merge: true }
       );
 
-      console.log(`Subscription cancelled for ${resolved.userKey}`);
+      console.log(
+        `[${requestId}] Cancel state saved in ${Date.now() - updateStartedAt}ms for ${resolved.userKey}`
+      );
+      return { statusCode: 200, body: 'OK' };
+    }
+
+    if (expiredEvents.includes(eventName)) {
+      const updateStartedAt = Date.now();
+      console.log(`[${requestId}] Writing expired state`, {
+        userKey: resolved.userKey,
+        subscriptionId: data.id,
+        status: attributes.status,
+        endsAt: attributes.ends_at,
+      });
+
+      await resolved.userRef.set(
+        {
+          isPaid: false,
+          userStatus: 'loggedIn',
+          subscriptionStatus: attributes.status || 'expired',
+          subscriptionExpiredAt: new Date().toISOString(),
+          subscriptionEndsAt: attributes.ends_at || null,
+          subscriptionRenewsAt: attributes.renews_at || null,
+          lemonSqueezySubscriptionId: data.id,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+
+      console.log(
+        `[${requestId}] Expired state saved in ${Date.now() - updateStartedAt}ms for ${resolved.userKey}`
+      );
       return { statusCode: 200, body: 'OK' };
     }
 
     return { statusCode: 200, body: 'Ignored' };
   } catch (error) {
-    console.error('Error:', error.message);
-    return { statusCode: 500, body: error.message };
+    console.error(`[${requestId}] Error:`, error?.stack || error?.message || error);
+    return { statusCode: 500, body: error.message || 'Internal Server Error' };
   }
 };
