@@ -307,7 +307,8 @@ export async function signInWithGoogle(): Promise<User> {
     const userCredential = await signInWithPopup(auth, provider);
     return userCredential.user;
   } catch (error: any) {
-    throw new Error(getErrorMessage(error.code));
+    const code = error?.code || "unknown";
+    throw new Error(`${code}: ${getErrorMessage(code)}`);
   }
 }
 
