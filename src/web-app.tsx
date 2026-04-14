@@ -1978,6 +1978,14 @@ function App() {
  if (currentUser && !currentUser.emailVerified) {
  // 이메일이 아직 검증되지 않음 - 로그아웃 처리
  await signOut();
+ // UI 상태 초기화
+ setUserEmail(null);
+ setUserStatusLocal("guest");
+ localStorage.removeItem("userStatus");
+ localStorage.removeItem("userName");
+ localStorage.removeItem("problemCountDate");
+ localStorage.removeItem("examStartDate");
+ setShowLoginModal(false);
  setLoginError(t("emailVerificationPending"));
  setEmailVerificationUserEmail(email);
  setShowEmailVerificationModal(true);
