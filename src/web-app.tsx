@@ -961,6 +961,13 @@ function App() {
   useEffect(() => {
  const unsubscribe = onAuthStateChange(async (user) => {
  if (user?.email) {
+ // ✅ 사용자 정보를 먼저 Firestore에 저장 (emailVerified 상관없이)
+ try {
+ await saveUserInfoToFirebase(user.uid, user.email);
+ } catch (error) {
+ console.warn('[onAuthStateChange] Error saving user info:', error);
+ }
+
  // ✅ 이메일 검증 상태 확인 - 검증되지 않으면 로그인 불가
  if (!user.emailVerified) {
  console.log('[onAuthStateChange] Email not verified:', user.email);
@@ -975,13 +982,6 @@ function App() {
  setUserEmail(user.email);
  setShowLanding(false);
  setIsPasswordLoginLinked(isPasswordLinked(user));
-
- // 사용자 정보를 Firestore에 저장
- try {
- await saveUserInfoToFirebase(user.uid, user.email);
- } catch (error) {
- // 에러 처리
- }
 
  // Firestore에서 결제 상태 로드
  try {
