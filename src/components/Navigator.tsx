@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { ko } from '../locales/ko';
 import { en } from '../locales/en';
 import { ja } from '../locales/ja';
@@ -125,7 +125,7 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
                   Users
                 </button>
                 <button onClick={() => onTabChange('console')} style={{ background: 'none', border: 'none', color: currentTab === 'console' ? '#FF9900' : '#D1D5DB', fontSize: '.875rem', fontWeight: 500, cursor: 'pointer', transition: 'color .15s' }}>
-                  콘솔
+                  {t.tabConsole}
                 </button>
               </>
             )}
@@ -187,7 +187,7 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
                       onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
                     >
-                      로그아웃
+                      {t.logoutBtn}
                     </button>
                     {userStatus === 'paid' && (
                       <button
@@ -209,7 +209,7 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
                         onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
                         onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
                       >
-                        구독 취소
+                        {t.cancelSubscriptionBtn}
                       </button>
                     )}
                   </div>
@@ -235,7 +235,7 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
                 )}
                 {streak !== undefined && streak > 0 && (
                   <div className="nav-streak" style={{ gap: '.5rem' }}>
-                    <span>{streak}일차</span>
+                    <span>{streak}{t.streakDaysLabel}</span>
                   </div>
                 )}
               </div>
@@ -295,10 +295,10 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
                 {dday} 📅
               </button>
             )}
-            {streak !== undefined && streak > 0 && <span style={{ color: '#D1D5DB', fontSize: '.875rem', padding: '.75rem 0' }}>{streak}일차</span>}
-            <button className="mobile-menu-btn" style={{ color: '#fca5a5' }} onClick={() => { onLogout?.(); setShowMobileMenu(false); }}>로그아웃</button>
+            {streak !== undefined && streak > 0 && <span style={{ color: '#D1D5DB', fontSize: '.875rem', padding: '.75rem 0' }}>{streak}{t.streakDaysLabel}</span>}
+            <button className="mobile-menu-btn" style={{ color: '#fca5a5' }} onClick={() => { onLogout?.(); setShowMobileMenu(false); }}>{t.logoutBtn}</button>
             {userStatus === 'paid' && (
-              <button className="mobile-menu-btn" style={{ color: '#fca5a5' }} onClick={() => { onCancelSubscription?.(); setShowMobileMenu(false); }}>구독 취소</button>
+              <button className="mobile-menu-btn" style={{ color: '#fca5a5' }} onClick={() => { onCancelSubscription?.(); setShowMobileMenu(false); }}>{t.cancelSubscriptionBtn}</button>
             )}
           </div>
         ) : showLoginButton ? (
@@ -308,3 +308,4 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
     </>
   );
 }
+

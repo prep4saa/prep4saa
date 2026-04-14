@@ -92,9 +92,11 @@ export const ja: Strings = {
   msgLoginTip: "ログイン後、1日2回の無料試行が利用できます",
   googleLoginBtn: "Googleでログイン",
   logoutBtn: "ログアウト",
+  cancelSubscriptionBtn: "サブスクリプションをキャンセル",
   userStatusGuest: "ゲスト",
   userStatusLoggedIn: "ログイン",
   userStatusPaid: "プレミアム",
+  streakDaysLabel: "日目",
 
   // Login modal
   verifyEmailTitle: "メールを認証",
@@ -401,4 +403,35 @@ export const ja: Strings = {
   carouselProgressDesc: "弱いサービス、正確度、総問題数をひと目で確認できます。学習の進捗を体系的に追跡します。",
   mockExamLoadingProblems: "問題を読み込み中...",
   mockExamHoursRemaining: "時間残り",
+
+  // Console Challenge
+  tabConsole: "CLIラボ",
+  consoleDone: "完了",
+  consoleHintShow: "ヒントを見る ▼",
+  consoleHintHide: "ヒントを隠す ▲",
+  consoleExplShow: "説明を見る ▼",
+  consoleExplHide: "説明を隠す ▲",
+  consoleNextChallenge: "次のチャレンジ ▶",
+  consoleEmptyHint: "AWSCLIコマンドを入力してチャレンジを解決してください。(↑↓ 履歴、Enterで実行)",
+  consoleChallengeComplete: "🎉 チャレンジ完了!",
+  consolePlaceholderSolved: "チャレンジ完了！上から次のチャレンジを選んでください。",
+  consolePlaceholderInput: "AWSCLIコマンドを入力...",
+  consoleClear: "クリア",
+  consoleRun: "実行",
+  consoleShowAnswer: "答えを見る",
+  consoleHideAnswer: "答えを隠す",
+  consoleWrongAnswer: "不正解です。もう一度確認してください。ヒント: ",
+
+  // CLI Lab - Scenario Console
+  cliLabSelectTypeMsg: "上のボタンを選択してください",
+  cliLabInputHint: "コマンドを入力して送信ボタンをクリックしてください。",
+  cliLabInputPlaceholder: "AWS CLIコマンドを入力...",
+  cliLabSubmitBtn: "送信",
+  cliLabShowAnswerBtn: "答えを見る",
+  cliLabHideAnswerBtn: "答えを隠す",
+  cliLabAnswerLabel: "正答コマンド:",
+  cliLabSuccessMsg: "✓ 正解です！",
+  cliLabErrorMsg: "✗ 不正解です。もう一度試してください。",
+  cliLabCompleteMsg: "✓ シナリオ完了！別のシナリオを選択するか、説明を読んでください。",
+  cliLabStepLabel: "ステップ",
 };

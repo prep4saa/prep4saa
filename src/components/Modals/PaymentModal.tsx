@@ -5,12 +5,14 @@ interface PaymentModalProps {
   onClose: () => void;
   onSuccess?: () => void;
   userEmail?: string;
+  userId?: string;
 }
 
-const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, onSuccess, userEmail }) => {
+const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, onSuccess, userEmail, userId }) => {
   const { locale } = useLocale();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // userEmail이 있으면 그걸 사용, 없으면 빈 값 (사용자 입력 필요)
   const [email, setEmail] = useState(userEmail || '');
   const [isComingSoon] = useState(false); // Lemon Squeezy 모드 활성화
 
@@ -81,7 +83,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, onSuccess, userEma
     const productId = env?.VITE_LEMON_SQUEEZY_PRODUCT_ID;
 
     if (storeId && productId) {
-      const checkoutUrl = `https://${storeId}.lemonsqueezy.com/checkout/buy/${productId}?checkout[email]=${encodeURIComponent(email)}`;
+      // custom_data에 userId와 email 전달 (webhook에서 받을 데이터)
+      const customData = {
+        user_id: userId || '',
+        email: email
+      };
+
+      const checkoutUrl = `https://${storeId}.lemonsqueezy.com/checkout/buy/${productId}?checkout[email]=${encodeURIComponent(email)}&checkout[custom][user_id]=${encodeURIComponent(userId || '')}&checkout[custom][email]=${encodeURIComponent(email)}`;
       window.location.href = checkoutUrl;
     } else {
       setError(currentLabels.errorMessage);

@@ -10,7 +10,7 @@ type Locale = 'ko' | 'en' | 'ja';
 
 interface LandingPageProps {
   onGetStarted: () => void;
-  onTabChange: (tab: "quiz" | "concept" | "status" | "mockExam" | "admin" | "users") => void;
+  onTabChange: (tab: "quiz" | "concept" | "status" | "mockExam" | "admin" | "users" | "console") => void;
   onLoginClick?: () => void;
   onProClick?: () => void;
   userEmail?: string | null;

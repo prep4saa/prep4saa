@@ -2,7 +2,17 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const { Resend } = require('resend');
+const crypto = require('crypto');
+const admin = require('firebase-admin');
 require('dotenv').config();
+
+// Firebase Admin SDK 초기화
+const serviceAccount = require('./firebase-key.json');
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: process.env.FIREBASE_DATABASE_URL
+});
+const db = admin.firestore();
 
 const app = express();
 const PORT = 5000;
@@ -519,6 +529,121 @@ app.post('/api/lemonsqueezy/checkout', async (req, res) => {
   } catch (error) {
     console.error('❌ Checkout error:', error);
     res.status(500).json({ error: { message: error.message } });
+  }
+});
+
+/**
+ * ✅ Lemon Squeezy Webhook Handler
+ * Webhook 서명 검증 후 구독 정보 Firebase에 저장
+ */
+app.post('/api/webhooks/lemon-squeezy', async (req, res) => {
+  try {
+    const signature = req.headers['x-signature'] || req.headers['x-lemon-squeezy-signature'];
+    const body = JSON.stringify(req.body);
+    const webhookSecret = process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
+
+    // 1️⃣ Webhook 서명 검증 (보안)
+    if (!webhookSecret) {
+      console.warn('⚠️  LEMON_SQUEEZY_WEBHOOK_SECRET not configured');
+      // 개발 모드: 서명 검증 생략
+    } else {
+      const expectedSignature = crypto
+        .createHmac('sha256', webhookSecret)
+        .update(body)
+        .digest('hex');
+
+      if (signature !== expectedSignature) {
+        console.error('❌ Invalid webhook signature');
+        return res.status(401).json({ error: 'Invalid signature' });
+      }
+    }
+
+    const event = req.body.meta?.event_name;
+    const data = req.body.data;
+
+    console.log(`📨 Lemon Squeezy Webhook: ${event}`);
+
+    // 2️⃣ 구독 생성/업데이트 이벤트
+    if (event === 'subscription_created' || event === 'subscription_updated') {
+      const subscription = data.attributes;
+      const customData = subscription.custom_data || {};
+      const userId = customData.user_id;
+      const email = customData.email;
+
+      if (!userId) {
+        console.warn('⚠️  No user_id in webhook data');
+        return res.json({ received: true });
+      }
+
+      try {
+        // Firebase에 구독 정보 저장
+        const userRef = db.collection('users').doc(userId);
+
+        const updateData = {
+          isPaid: subscription.status === 'active' || subscription.status === 'on_trial',
+          lemonSqueezySubscriptionId: data.id,
+          lemonSqueezyCustomerId: subscription.customer_id,
+          subscriptionStatus: subscription.status,
+          subscriptionCreatedAt: subscription.created_at,
+          subscriptionUpdatedAt: subscription.updated_at,
+          subscriptionRenewsAt: subscription.renews_at,
+          updatedAt: new Date().toISOString()
+        };
+
+        await userRef.set(updateData, { merge: true });
+
+        console.log(`✅ Firebase updated for user ${userId}:`, {
+          isPaid: updateData.isPaid,
+          status: subscription.status,
+          subscriptionId: data.id
+        });
+
+        res.json({ received: true });
+
+      } catch (error) {
+        console.error('❌ Firebase update error:', error);
+        res.status(500).json({ error: 'Firebase update failed' });
+      }
+    }
+
+    // 3️⃣ 구독 취소 이벤트
+    else if (event === 'subscription_cancelled') {
+      const subscription = data.attributes;
+      const customData = subscription.custom_data || {};
+      const userId = customData.user_id;
+
+      if (!userId) {
+        console.warn('⚠️  No user_id in webhook data');
+        return res.json({ received: true });
+      }
+
+      try {
+        const userRef = db.collection('users').doc(userId);
+
+        await userRef.set({
+          isPaid: false,
+          subscriptionStatus: 'cancelled',
+          subscriptionCancelledAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+
+        console.log(`✅ Subscription cancelled for user ${userId}`);
+        res.json({ received: true });
+
+      } catch (error) {
+        console.error('❌ Firebase update error:', error);
+        res.status(500).json({ error: 'Firebase update failed' });
+      }
+    }
+
+    else {
+      console.log(`📋 Unhandled event: ${event}`);
+      res.json({ received: true });
+    }
+
+  } catch (error) {
+    console.error('❌ Webhook error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 

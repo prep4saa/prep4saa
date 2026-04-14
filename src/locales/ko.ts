@@ -90,9 +90,11 @@ export const ko = {
   msgLoginTip: "로그인하면 2회 무료 이용 가능",
   googleLoginBtn: "Google로 로그인",
   logoutBtn: "로그아웃",
+  cancelSubscriptionBtn: "구독 취소",
   userStatusGuest: "게스트",
   userStatusLoggedIn: "로그인",
   userStatusPaid: "프리미엄",
+  streakDaysLabel: "일차",
 
   // 로그인 모달
   verifyEmailTitle: "이메일 인증",
@@ -399,6 +401,42 @@ export const ko = {
   carouselProgressDesc: "약한 서비스, 정확도, 총 문제 수 등을 한눈에 확인하세요. 자신의 학습 진도를 체계적으로 추적합니다.",
   mockExamLoadingProblems: "문제 로딩 중...",
   mockExamHoursRemaining: "시간 남음",
+
+  // Console Challenge
+  tabConsole: "CLI 실습",
+  consoleDone: "완료",
+  consoleHintShow: "힌트 보기 ▼",
+  consoleHintHide: "힌트 숨기기 ▲",
+  consoleExplShow: "설명 보기 ▼",
+  consoleExplHide: "설명 숨기기 ▲",
+  consoleNextChallenge: "다음 챌린지 ▶",
+  consoleEmptyHint: "AWS CLI 명령어를 입력해서 챌린지를 해결하세요. (↑↓ 히스토리, Enter로 실행)",
+  consoleChallengeComplete: "🎉 챌린지 완료!",
+  consolePlaceholderSolved: "챌린지 완료! 위에서 다음 챌린지를 선택하세요.",
+  consolePlaceholderInput: "AWS CLI 명령어 입력...",
+  consoleClear: "지우기",
+  consoleRun: "실행",
+  consoleShowAnswer: "답 보기",
+  consoleHideAnswer: "답 숨기기",
+  consoleWrongAnswer: "틀렸습니다. 다시 확인하세요. 힌트: ",
+  consoleSelectScenario: "번호를 선택하면 시나리오가 시작됩니다",
+  consoleAnswerLabel: "정답: ",
+  consoleExplanationLabel: "해설",
+  consoleNextBtn: "다음 →",
+  consoleNextStep: "다음 스텝으로 이동 중...",
+
+  // CLI Lab - Scenario Console
+  cliLabSelectTypeMsg: "위의 버튼을 선택하세요",
+  cliLabInputHint: "명령어를 입력하고 제출 버튼을 누르세요.",
+  cliLabInputPlaceholder: "AWS CLI 명령어 입력...",
+  cliLabSubmitBtn: "제출",
+  cliLabShowAnswerBtn: "답 보기",
+  cliLabHideAnswerBtn: "답 숨기기",
+  cliLabAnswerLabel: "정답 명령어:",
+  cliLabSuccessMsg: "✓ 정답입니다!",
+  cliLabErrorMsg: "✗ 틀렸습니다. 다시 시도하세요.",
+  cliLabCompleteMsg: "✓ 시나리오 완료! 다른 시나리오를 선택하거나 설명을 읽어보세요.",
+  cliLabStepLabel: "Step",
 };
 
 export type Strings = Record<keyof typeof ko, string>;

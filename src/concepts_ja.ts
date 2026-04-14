@@ -1,374 +1,2127 @@
-export const CONCEPTS_JA = {
+export type Concept = {
+  title: string;
+  subtitle: string;
+  easy: string;
+  points: Array<{
+    label: string;
+    text: string;
+    easy: string;
+  }>;
+};
+
+export const CONCEPTS_JA: Record<string, Concept> = {
   ec2: {
     title: "Amazon EC2",
     subtitle: "Elastic Compute Cloud",
-    easy: "EC2はインターネット上の自分のコンピューター! 必要な時だけ借りて料金を払う仕組み。常に使うなら事前に予約すると最大72%安く使える。",
+    easy: "EC2はインターネット上の私のパソコン！自宅のPCのようにオン・オフできますが、AWSのデータセンターにあります。使った分だけ料金を払います。常時使うなら事前に予約して最大72%節約できます。",
     points: [
-      { label: "インスタンス購入オプション", text: "On-Demand(柔軟), Reserved(1~3年契約 最大72%割引), Spot(最大90%割引、いつでも終了可能), Dedicated Host(物理サーバー専用)", easy: "On-Demandは当日レンタル(高い), Reservedは1年長期契約(安い), Spotは空き車の超特価でいつでも返却可能。" },
-      { label: "AMI", text: "Amazon Machine Image. インスタンスのOS・ソフトウェアテンプレート。カスタムAMIで高速デプロイ可能。リージョン間でコピー可能", easy: "クッキー型のようなもの! 1つの型(AMI)を作ったら、同じ形のクッキー(サーバー)をいくつでも素早く量産できる。" },
-      { label: "Placement Group", text: "Cluster(同じAZ、低レイテンシ), Spread(異なるハードウェア、障害の分離), Partition(大規模分散システム)", easy: "教室の座席配置のようなもの! Clusterはチームメンバー固まって座る(素早い通信), Spreadはわざと離れて座る(一人が欠席しても他のチーム影響なし)。" },
-      { label: "ストレージ", text: "EBS(永続ブロック), Instance Store(一時的・高速), EFS(共有ファイルシステム)", easy: "EBSは個人ロッカー(オフでも保持), Instance Storeは机の上のメモ(オフで消える), EFSは共用キャビネット(みんなで使える)。" },
-      { label: "試験ポイント", text: "Spot Instance中断時に2分警告。ReservedはスコープAZまたはリージョン。HibernateでRAM保持状態で停止可能", easy: "Spotはカラオケの空き部屋 — 他の客が予約したら2分以内に出ないといけない! HibernateはノートPC省電力モード — オフにして再度オンにしても作業が同じままだ。" }
+      {
+        label: "インスタンス購入オプション",
+        text: "オンデマンド（柔軟）、リザーブド（1〜3年契約で最大72%節約）、スポット（最大90%節約、いつでも終了可能）、デディケーテッドホスト（物理サーバー専有）",
+        easy: "レンタカーみたいなもの！オンデマンドは当日レンタル（高い）、リザーブドは1年契約（安い）、スポットは超割引だけどいつでも取り上げられる。"
+      },
+      {
+        label: "AMI",
+        text: "Amazon Machine Image。インスタンスのOS・ソフトウェアのテンプレート。カスタムAMIで素早くデプロイ。リージョン間でコピー可能",
+        easy: "クッキーの型抜き！型（AMI）を一度作れば、同じクッキー（サーバー）を好きなだけ素早く量産できる。"
+      },
+      {
+        label: "プレイスメントグループ",
+        text: "クラスター（同一AZ、低レイテンシー）、スプレッド（異なるハードウェア、障害分離）、パーティション（大規模分散システム）",
+        easy: "教室の座席配置みたいなもの！クラスターは隣に座る（通信が速い）、スプレッドは離れて座る（一人が欠席しても他チームに影響しない）。"
+      },
+      {
+        label: "ストレージ",
+        text: "EBS（永続ブロック）、インスタンスストア（一時的、高速）、EFS（共有ファイルシステム）",
+        easy: "EBSは個人ロッカー（電源オフでも残る）、インスタンスストアは机のメモ（電源オフで消える）、EFSは共有キャビネット（複数人で使う）。"
+      },
+      {
+        label: "試験ポイント",
+        text: "スポットインスタンス終了：2分前警告。リザーブドはAZまたはリージョンスコープ。ハイバネートは停止中もRAMを保持",
+        easy: "スポットは空きカラオケルーム — 他の人が予約したら2分で退出！ハイバネートはノートPCのスリープモード — 再開したら全部そのまま。"
+      }
     ]
   },
   lambda: {
     title: "AWS Lambda",
     subtitle: "サーバーレス関数実行",
-    easy: "Lambdaは小走りで仕事をする人! ファイルをアップロードした時だけ走ってきて仕事を処理して消える。常にオンにする必要がないのでコスト削減!",
+    easy: "Lambdaはお使いの人！ファイルがアップロードされたときだけ起動して処理し、消えます。常時稼働させる必要がないのでコストはほぼゼロ！",
     points: [
-      { label: "実行制限", text: "最大実行時間15分、メモリ128MB~10GB、/tmp ストレージ512MB~10GB、同時実行デフォルト1000個", easy: "Lambdaは短距離走選手。15分以内に終わらせるべし。時間がかかればECS使用。" },
-      { label: "トリガー", text: "API Gateway, S3, DynamoDB Streams, SQS, SNS, EventBridge, ALB, Cognito等", easy: "アラームのようなもの! 『ファイルアップロードされた』『メッセージきた』といった信号が来たら自動で起動して仕事をする。" },
-      { label: "Concurrency", text: "Reserved Concurrency(同時実行最大制限), Provisioned Concurrency(コールドスタート防止·事前ウォーミング)", easy: "Reservedは『小走り人材最大10名まで』という上限設定、Providedは事前に待機させておく。" },
-      { label: "デプロイ", text: "Zip ファイルまたはContainer Image(最大10GB)。Lambda Layerで共通ライブラリ共有", easy: "Zipはお弁当を持参、Container Imageはレストラン丸ごと宅配。Layerは共用工具庫。" },
-      { label: "試験ポイント", text: "VPC内デプロイ時ENI作成→コールドスタート増加。15分超過作業はECS/Fargate使用。SQS はバッチ処理可能", easy: "LambdaをVPC内に入れるとコールドスタートが長くなる。15分超える仕事はECSに任せて!" }
+      {
+        label: "実行制限",
+        text: "最大実行時間15分、メモリ128MB〜10GB、/tmpストレージ512MB〜10GB、デフォルト同時実行数1000",
+        easy: "Lambdaは短距離走者。15分以内に終わらせなければなりません。長いタスクにはECSを使って。"
+      },
+      {
+        label: "トリガー",
+        text: "API Gateway、S3、DynamoDB Streams、SQS、SNS、EventBridge、ALB、Cognitoなど",
+        easy: "目覚まし時計みたいなもの！「ファイルアップロード」「メッセージ到着」などの信号が来ると自動で起動して動きます。"
+      },
+      {
+        label: "同時実行",
+        text: "リザーブドコンカレンシー（最大同時実行数を制限）、プロビジョニングコンカレンシー（コールドスタート防止、事前ウォームアップ）",
+        easy: "リザーブドは「お使いの人は最大10人まで」という制限設定、プロビジョニングはあらかじめ待機させておくこと。"
+      },
+      {
+        label: "デプロイ",
+        text: "Zipファイルまたはコンテナイメージ（最大10GB）。Lambda Layerで共通ライブラリを共有",
+        easy: "Zipはお弁当箱に詰めて送る感じ、コンテナイメージはレストラン丸ごと配達。LayerはL共有ツール倉庫。"
+      },
+      {
+        label: "試験ポイント",
+        text: "VPC内にデプロイするとENIが作られコールドスタートが増加。15分超のジョブはECS/Fargate。SQSでバッチ処理可能",
+        easy: "LambdaをVPC内に入れるとコールドスタートが長くなる。15分超のジョブはECSに任せよう！"
+      }
     ]
   },
   s3: {
     title: "Amazon S3",
     subtitle: "Simple Storage Service",
-    easy: "S3はインターネットの巨大倉庫! 容量は無限で頻繁に取り出すならStandard、たまに取り出すならGlacierに入れると安い。",
+    easy: "S3は巨大なインターネット倉庫！写真・動画・ファイルなど何でも無制限に保存できます。よく使うものを入口近く（Standard）、ほとんど使わないものを倉庫の奥（Glacier）に置いてコスト節約。",
     points: [
-      { label: "ストレージクラス", text: "Standard → Standard-IA → One Zone-IA → Glacier Instant → Glacier Flexible → Deep Archive", easy: "よく使うもの居間に(Standard)、たまに使うもの倉庫に(IA)、ほぼ使わないもの冷凍倉庫に(Glacier)。" },
-      { label: "セキュリティ", text: "Bucket Policy(リソースベース), IAM Policy(ユーザーベース), ACL(レガシー), Presigned URL(一時アクセス), OAC", easy: "Bucket Policyは倉庫ドア規則、IAMは従業員ID、Presigned URLは一時訪問証。" },
-      { label: "機能", text: "Versioning, MFA Delete, Replication(CRR/SRR), Lifecycle(自動変換・削除)", easy: "Googleドキュメント版履歴みたいだ! 修正するたびに前バージョンが残るから、誤って削除しても復旧可能。" },
-      { label: "パフォーマンス", text: "接頭辞あたり秒間3,500 PUT / 5,500 GET。マルチパートアップロード(100MB以上推奨、5GB以上必須)", easy: "大荷物をいくつかの塊に分けて同時送信(マルチパート)。複数の箱で送ると高速化!" },
-      { label: "試験ポイント", text: "S3バケットはグローバルだがデータはリージョンに保存。CORS設定。静的ウェブサイトホスティング可能", easy: "S3バケット名は全世界で1つだけ。データは自分が選んだリージョンに保存される。" }
+      {
+        label: "ストレージクラス",
+        text: "Standard → Standard-IA → One Zone-IA → Glacier Instant → Glacier Flexible → Deep Archive（コスト順）",
+        easy: "家の整理整頓みたい！よく使うものはリビング（Standard）、たまに使うものは収納（IA）、ほとんど使わないものは凍った地下室（Glacier）。遠いほど不便だけど安い。"
+      },
+      {
+        label: "セキュリティ",
+        text: "バケットポリシー（リソースベース）、IAMポリシー（ユーザーベース）、ACL（レガシー）、Presigned URL（一時的アクセス）、OAC",
+        easy: "バケットポリシーは倉庫の入口ルール、IAMは従業員IDカード、Presigned URLは一時的な来訪者証。"
+      },
+      {
+        label: "機能",
+        text: "バージョニング、MFA削除、レプリケーション（CRR/SRR）、ライフサイクル（自動変換/削除）",
+        easy: "Googleドキュメントのバージョン履歴みたいなもの！以前のバージョンが保存されるので誤って削除しても復元できる。"
+      },
+      {
+        label: "パフォーマンス",
+        text: "プレフィックスあたり3,500 PUT / 5,500 GET/秒。マルチパートアップロード（100MB以上推奨、5GB以上必須）",
+        easy: "大きな荷物を分割して同時に送る（マルチパート）。複数の箱に分ければ速い！"
+      },
+      {
+        label: "試験ポイント",
+        text: "S3バケットはグローバルだがデータはリージョンに保存。CORS設定。静的Webサイトホスティング可能",
+        easy: "S3バケット名は世界で一意である必要あり。データは選択したリージョンに保存される。"
+      }
     ]
   },
   rds: {
     title: "Amazon RDS",
-    subtitle: "Relational Database Service",
-    easy: "RDSはExcelのように整理されたDB倉庫。AWSが管理してくれるので自動バックアップも。",
+    subtitle: "リレーショナルデータベースサービス",
+    easy: "RDSはExcelのように整理されたデータ倉庫！AWSが管理してくれるのでバックアップは自動。マルチAZは同じ内容を別の倉庫にも保存、リードレプリカは読み取り専用のコピーを複数作成。",
     points: [
-      { label: "Multi-AZ", text: "同期複製(Standby)。障害時に自動フェイルオーバー60~120秒。読み取り不可(待機用)。DNSレコード切り替え", easy: "応急対応用待機病院のようなもの! 主要病院が閉まったら1~2分で控え病院が自動で開く。" },
-      { label: "Read Replica", text: "非同期複製。読み取り分散用。別リージョン可能。独立DBへの昇格可能。最大5個", easy: "教科書の複写本のようなもの! 原本が忙しい時に複写本を複数人で分け合って読める。" },
-      { label: "バックアップ", text: "自動バックアップ(1~35日)、手動スナップショット(無制限保管)", easy: "自動バックアップは毎日自動で撮った写真、スナップショットは自分で撮って永遠に保管。" },
-      { label: "暗号化", text: "生成時にKMS暗号化設定。その後変更不可(スナップショット→コピー→暗号化復元が必要)", easy: "金庫を作る時だけロック選択可能。後から変えたければ中身を出して新しい金庫に入れ直し。" },
-      { label: "試験ポイント", text: "Multi-AZ ≠ 読み取り分散(それはRead Replica)。RDS Proxyで Lambda接続プーリング。ストレージ自動拡張", easy: "Multi-AZは『安全』(バックアップ)、Read Replicaは『速度』(分散)。試験に必ず出るよ!" }
+      {
+        label: "マルチAZ",
+        text: "同期レプリケーション（スタンバイ）。障害時に60〜120秒で自動フェイルオーバー。読み取りアクセス不可（スタンバイは待機中）。DNSレコードが変更される",
+        easy: "緊急バックアップ病院みたいなもの！メイン病院が閉まったら1〜2分でバックアップ病院が自動オープン。バックアップ病院は普段はただ待機中。"
+      },
+      {
+        label: "リードレプリカ",
+        text: "非同期レプリケーション。読み取り分散用。異なるリージョンに配置可能。独立したDBに昇格可能。最大5個",
+        easy: "教科書のコピーみたいなもの！原本が忙しいとき、複数のコピーで全員が一緒に読めます。"
+      },
+      {
+        label: "バックアップ",
+        text: "自動バックアップ（1〜35日）、手動スナップショット（無期限保持）",
+        easy: "自動バックアップは毎日自動で撮る写真、スナップショットは自分で撮って永遠に保存する写真。"
+      },
+      {
+        label: "暗号化",
+        text: "作成時にKMS暗号化を設定。後から変更不可（スナップショット→コピー→暗号化復元が必要）",
+        easy: "金庫を作るときにしかロックを選べない。後から変えるには中身を取り出して新しい金庫に入れ替えが必要。"
+      },
+      {
+        label: "試験ポイント",
+        text: "マルチAZ ≠ 読み取り分散（それはリードレプリカ）。Lambda接続プーリングにはRDS Proxy。ストレージ自動スケール",
+        easy: "マルチAZは「安全」（バックアップ）、リードレプリカは「速度」（分散）。試験に必ず出る！"
+      }
     ]
   },
   aurora: {
     title: "Amazon Aurora",
-    subtitle: "AWS最適化リレーショナルDB",
-    easy: "AuroraはRDSのスーパー版! 3つのAZに6個のコピーで保存。MySQLより5倍高速なのに価格はほぼ同じ!",
+    subtitle: "AWS最適化リレーショナルデータベース",
+    easy: "AuroraはRDSのスーパー版！3つのAZに6つのコピーを保存。MySQLより5倍速いが価格は同程度！",
     points: [
-      { label: "アーキテクチャ", text: "ストレージ自動10GB~128TB。3つのAZに6コピー。2個失敗しても書き込み可、3個失敗しても読み取り可", easy: "同じ本を3つの図書館に6冊ずつ分散。図書館2つが火事でも本は安全。" },
-      { label: "パフォーマンス", text: "MySQL比5倍、PostgreSQL比3倍高速。Aurora Parallel Query", easy: "通常のRDSが自転車ならAuroraはスポーツカー。MySQLコード変わらずに5倍高速!" },
-      { label: "機能", text: "Aurora Serverless v2: 自動スケーリング。Global Database: リージョン間1秒未満複製", easy: "Serverless v2は客数に応じてテーブル自動調整。Global DBは韓国→米国1秒以内に反映。" },
-      { label: "Aurora vs RDS", text: "Aurora: 高性能・高可用性が必要な場合。RDS: Oracle, SQL Server等特定エンジンが必要な場合", easy: "AuroraはAWS特別高性能エンジン、RDSは特定企業DBを使いたい時。" },
-      { label: "試験ポイント", text: "Aurora Replicaは同じストレージ共有(複製遅延なし)。Backtrackで時点戻し", easy: "Aurora Replicaは同じ倉庫を共有するので複製時間がほぼ0に近い。" }
+      {
+        label: "アーキテクチャ",
+        text: "ストレージが10GB〜128TBに自動拡張。3つのAZに6コピー。2つ障害でも書き込み可能、3つ障害でも読み取り可能",
+        easy: "3つの図書館に6冊ずつ同じ本を置くようなもの。2つの図書館が焼けても本は安全。"
+      },
+      {
+        label: "パフォーマンス",
+        text: "MySQLより5倍、PostgreSQLより3倍高速。Aurora Parallel Query",
+        easy: "普通のRDSが自転車ならAuroraはスポーツカー。MySQLのコードが5倍速く動く！"
+      },
+      {
+        label: "機能",
+        text: "Aurora Serverless v2：自動スケーリング。グローバルデータベース：1秒未満のクロスリージョンレプリケーション",
+        easy: "Serverless v2はお客さんの数に合わせてテーブルを自動調整。Global DBは韓国→米国を1秒未満で反映。"
+      },
+      {
+        label: "Auroraと RDSの比較",
+        text: "Aurora：高パフォーマンス/高可用性が必要な場合。RDS：OracleやSQL Serverなど特定エンジンが必要な場合",
+        easy: "AuroraはAWSの特製高性能エンジン、RDSは特定企業のデータベースが欲しいときに使う。"
+      },
+      {
+        label: "試験ポイント",
+        text: "Auroraレプリカは同じストレージを共有（レプリケーションラグなし）。Backtrackで特定時点に巻き戻し可能",
+        easy: "Auroraレプリカは同じ倉庫を共有するのでコピー時間がほぼゼロに近い。"
+      }
     ]
   },
   vpc: {
     title: "Amazon VPC",
     subtitle: "Virtual Private Cloud",
-    easy: "VPCはAWS内に柵を引いた自分の町! Publicは外部アクセス可能、Privateは内部のみ。",
+    easy: "VPCはAWS上の私の囲われた住宅地！パブリックサブネットはインターネットからアクセス可能、プライベートサブネットは内部からのみアクセス可能。",
     points: [
-      { label: "構成要素", text: "Subnet(Public/Private), Route Table, IGW, NAT Gateway, VPC Peering", easy: "公開区域(Public)は外部人出入り可能、非公開区域(Private)は住民のみ。NATは脇道。" },
-      { label: "セキュリティ", text: "Security Group: ステートフル、許可のみ。NACL: ステートレス、許可+拒否、サブネットレベル", easy: "SGは家の玄関(自動許可), NACLは町の警備員(両方確認)。SGは許可のみ、NACLは拒否も。" },
-      { label: "接続", text: "VPN, Direct Connect(専用線), Transit Gateway(複数VPC ハブ接続)", easy: "VPNは一般道路、Direct Connectは専用高速道路、Transit Gatewayはハブ交差点。" },
-      { label: "エンドポイント", text: "Gateway Endpoint: S3, DynamoDB(無料)。Interface Endpoint: その他(ENI、費用発生)", easy: "VPC内からS3アクセス時Gateway Endpointは無料出張所設置!" },
-      { label: "試験ポイント", text: "SGはステートフル、NACLはステートレス。NAT GatewayはPublic Subnetに位置", easy: "SGはスマート(自動許可), NACLはうるさい(両方設定)。NATは公開区域に設置すべし!" }
+      {
+        label: "コンポーネント",
+        text: "サブネット（パブリック/プライベート）、ルートテーブル、IGW、NATゲートウェイ、VPCピアリング",
+        easy: "パブリックエリアは外部からアクセス可能、プライベートエリアは住民専用。IGWは正門、NATは裏口。"
+      },
+      {
+        label: "セキュリティ",
+        text: "セキュリティグループ：ステートフル、許可のみ。NACL：ステートレス、許可+拒否、サブネットレベル",
+        easy: "SGは家の玄関ドア（自動許可）、NACLは住宅地の警備員（両方確認）。SGは許可のみ、NACLは拒否もできる。"
+      },
+      {
+        label: "接続性",
+        text: "VPN、Direct Connect（専用線）、Transit Gateway（複数VPCハブ接続）",
+        easy: "VPNは一般道路、Direct Connectは専用高速道路、Transit Gatewayはハブの交差点。"
+      },
+      {
+        label: "エンドポイント",
+        text: "ゲートウェイエンドポイント：S3、DynamoDB（無料）。インターフェースエンドポイント：その他（ENI、有料）",
+        easy: "VPC内からS3にアクセスするとき、ゲートウェイエンドポイントは無料の支社窓口みたいなもの！"
+      },
+      {
+        label: "試験ポイント",
+        text: "SGはステートフル、NACLはステートレス。NATゲートウェイはパブリックサブネットに配置",
+        easy: "SGはスマート（自動許可）、NACLは厳格（両方設定必須）。NATはパブリックエリアに設置！"
+      }
     ]
   },
   iam: {
     title: "AWS IAM",
     subtitle: "Identity and Access Management",
-    easy: "IAMは会社の出入証管理システム! 従業員ごとに出入証をあげて、チーム別に権限をまとめる。",
+    easy: "IAMは会社のIDカード管理システム！従業員ごとにIDを発行し、チームごとに権限をグループ管理。",
     points: [
-      { label: "構成要素", text: "User(個人), Group(集合), Role(一時権限委譲), Policy(JSON権限文書)", easy: "Userは従業員、Groupはチーム、Roleは一時出入証、Policyは規則書。" },
-      { label: "Policy種類", text: "Identity-based, Resource-based, Permission Boundary, SCP(Organizations)", easy: "Identity-basedは従業員出入証権限、Resource-basedは部屋ドア案内板、SCPは会社最高規定。" },
-      { label: "STS", text: "AssumeRoleで一時資格認証。クロスアカウントアクセス、EC2 Instance Profile、Web Identity Federation", easy: "STSは一時入場券発行所! 別アカウントや外部人に時間制限付き一時出入証発行。" },
-      { label: "ベストプラクティス", text: "ルートアカウント未使用、MFA、最小権限原則、Access Key交換、CloudTrail監査", easy: "ルートアカウントは社長判子 — 日常使用は厳禁。最小権限のみは最高!" },
-      { label: "試験ポイント", text: "Policy評価: 明示的Deny > SCP > Permission Boundary > Identity > Resource Policy", easy: "明示的拒否(Deny)があったら無条件ブロック! 別の許可があってもDeny1つで終わり。" }
+      {
+        label: "コンポーネント",
+        text: "ユーザー（個人）、グループ（集合）、ロール（一時的権限委任）、ポリシー（JSON権限ドキュメント）",
+        easy: "ユーザーは従業員、グループはチーム、ロールは一時IDカード、ポリシーはルールブック。"
+      },
+      {
+        label: "ポリシーの種類",
+        text: "IDベース、リソースベース、アクセス許可の境界、SCP（Organizations）",
+        easy: "IDベースは従業員IDの権限、リソースベースはドアの案内板、SCPは会社のトップレベルのルール。"
+      },
+      {
+        label: "STS",
+        text: "AssumeRoleで一時的な認証情報。クロスアカウントアクセス、EC2インスタンスプロファイル、ウェブアイデンティティフェデレーション",
+        easy: "STSは一時通行証の発行機！他のアカウントや外部の人に時間制限付きの一時通行証を発行します。"
+      },
+      {
+        label: "ベストプラクティス",
+        text: "ルートアカウントを使わない、MFA、最小権限の原則、アクセスキーのローテーション、CloudTrailで監査",
+        easy: "ルートアカウントはCEOの印鑑 — 毎日使えない。必要最小限の権限だけ付与！"
+      },
+      {
+        label: "試験ポイント",
+        text: "ポリシー評価：明示的拒否 > SCP > アクセス許可の境界 > ID > リソースポリシー",
+        easy: "明示的拒否があればどんな状況でもブロック！他に許可があっても一つの拒否で全てブロック。"
+      }
     ]
   },
   sqs: {
     title: "Amazon SQS",
     subtitle: "Simple Queue Service",
-    easy: "SQSは郵便ポスト! 手紙を入れておくと配達人が後で取り出して処理する。忙しくても手紙は安全に保管。",
+    easy: "SQSはメールボックス！手紙を入れておけば、配達員が後で取り出して処理します。忙しくても手紙は安全に保存！",
     points: [
-      { label: "タイプ", text: "Standard: 最小1回(重複可能)、順序未保証、高処理量。FIFO: 正確に1回、順序保証、300~3000 TPS", easy: "Standardは普通郵便(高速だが時々2回配達)、FIFOは書留郵便(遅いけど正確に1回)。" },
-      { label: "主要設定", text: "Visibility Timeout(デフォルト30秒)、Message Retention(1分~14日)、Max Size: 256KB", easy: "Visibility Timeoutは配達人が取り出した後、別の配達人が見えないように隠す時間。" },
-      { label: "DLQ", text: "Dead Letter Queue。処理失敗メッセージを分離。maxReceiveCount超過時に移動", easy: "配達失敗した手紙集めて置く特別ポスト。後で失敗理由確認可能。" },
-      { label: "Long Polling", text: "空のキュー ポーリング減らして費用削減。WaitTimeSeconds 1~20秒。Short Pollingより推奨", easy: "Short Pollingは1秒ごと確認、Long Pollingは『手紙来るまで最大20秒待て』。" },
-      { label: "試験ポイント", text: "SQS → Lambda バッチ処理。Fan-out: SNS → 複数SQS。FIFOは.fifo接尾辞必須", easy: "Fan-outはSNSが放送したら複数SQSが同時に受ける構造。" }
+      {
+        label: "種類",
+        text: "Standard：最低1回配信（重複あり）、順序保証なし、高スループット。FIFO：正確に1回、順序保証、300〜3000 TPS",
+        easy: "Standardは普通郵便（速いけど2回届くこともある）、FIFOは書留（遅いが確実に1回、順序保証）。"
+      },
+      {
+        label: "主要設定",
+        text: "可視性タイムアウト（デフォルト30秒）、メッセージ保持期間（1分〜14日）、最大サイズ：256KB",
+        easy: "可視性タイムアウトは配達員が取り出した後、他の人に見えないように隠す時間のこと。"
+      },
+      {
+        label: "DLQ",
+        text: "デッドレタースキュー。失敗メッセージを隔離。maxReceiveCount超過後に移動",
+        easy: "配達失敗した手紙専用のメールボックス。後でなぜ配達失敗したか確認できる。"
+      },
+      {
+        label: "ロングポーリング",
+        text: "空キューのポーリングを減らしてコスト節約。WaitTimeSeconds 1〜20秒。ショートポーリングより推奨",
+        easy: "ショートポーリングは1秒ごとに確認、ロングポーリングは「20秒以内に手紙が来るまで待つ」。"
+      },
+      {
+        label: "試験ポイント",
+        text: "SQS→Lambdaのバッチ処理。ファンアウト：SNS→複数SQS。FIFOは.fifoサフィックスが必要",
+        easy: "ファンアウトはSNSが一斉放送して複数のSQSが同時に受け取ること。"
+      }
     ]
   },
   cloudwatch: {
     title: "Amazon CloudWatch",
-    subtitle: "モニタリング & 観測サービス",
-    easy: "CloudWatchはAWSの監視カメラ+アラームシステム! サーバーの状態を監視していて、異常があれば報告!",
+    subtitle: "モニタリング・観測サービス",
+    easy: "CloudWatchはAWSのCCTV＋警報システム！サーバーの状態を監視して何か問題が起きたら通知！",
     points: [
-      { label: "メトリクス", text: "基本5分(無料)、詳細1分(有料)。カスタムメトリクス可能", easy: "基本監視カメラは5分ごと撮影(無料)、高画質は1分ごと(有料)。" },
-      { label: "ログ", text: "Log Group → Log Stream。Log Insightsでクエリ。Metric Filterでログ→メトリクス変換", easy: "Log Groupは日記帳、Log Streamは日付別ページ。Insightsで検索みたいに探せる。" },
-      { label: "アラーム", text: "OK/ALARM/INSUFFICIENT_DATA。アクション: SNS、EC2停止/終了、ASGスケーリング", easy: "CPU90%超えたらテキスト通知! 深刻ならサーバー自動増設(ASG)。" },
-      { label: "イベント/EventBridge", text: "AWSイベント検出 → 自動化。Cron/Rate スケジュール実行", easy: "『毎晩12時にバックアップ実行』みたいな自動化規則設定。" },
-      { label: "試験ポイント", text: "EC2メモリ/ディスクは基本メトリクスなし → CloudWatch Agent必要。クロスアカウント収集可能", easy: "EC2メモリ監視はAgent導入が必要! 試験によく出るよ。" }
+      {
+        label: "メトリクス",
+        text: "基本5分間隔（無料）、詳細1分間隔（有料）。カスタムメトリクス可能",
+        easy: "基本CCTVは5分ごとに写真撮影（無料）、HDは1分ごと（有料）。"
+      },
+      {
+        label: "ログ",
+        text: "ロググループ → ログストリーム。Log Insightsでクエリ。メトリクスフィルターでログ→メトリクス変換",
+        easy: "ロググループは日記帳、ログストリームは日付別のページ。InsightsはGoogle検索みたいに検索できる。"
+      },
+      {
+        label: "アラーム",
+        text: "OK/ALARM/INSUFFICIENT_DATA。アクション：SNS、EC2停止/終了、ASGスケーリング",
+        easy: "CPUが90%を超えたらメール通知！緊急の場合はサーバーを自動スケール（ASG）。"
+      },
+      {
+        label: "イベント/EventBridge",
+        text: "AWSイベント検出→自動化。Cron/Rateスケジュール実行",
+        easy: "「毎晩12時にバックアップ」のような自動化ルールを設定。"
+      },
+      {
+        label: "試験ポイント",
+        text: "EC2のメモリ/ディスクは基本メトリクスではない→CloudWatch Agentが必要。クロスアカウント収集可能",
+        easy: "EC2のメモリ監視にはエージェントのインストールが必要！試験に頻出。"
+      }
     ]
   },
   elb: {
-    title: "Elastic Load Balancer",
-    subtitle: "トラフィック分散サービス",
-    easy: "ELBはテーマパークの案内役! 人が殺到したら均等に分散する!",
+    title: "AWS Elastic Load Balancer",
+    subtitle: "ロードバランシングサービス",
+    easy: "ELBはトラフィックの交通整理員！複数のサーバーにお客さんのトラフィックを分散して、一台のサーバーに負荷が集中しないようにします。",
     points: [
-      { label: "ALB (L7)", text: "HTTP/HTTPS。パス/ヘッダー/クエリ ルーティング。Lambda·コンテナ対象。WebSocket。WAF統合", easy: "URLを見て案内するスマートな案内役。『/api』はAPIサーバーへ、『/images』は画像サーバーへ。" },
-      { label: "NLB (L4)", text: "TCP/UDP/TLS。超高性能(数百万RPS)。Static IP。極端な低遅延", easy: "内容見ずに高速配信する配達人。固定IPを与えられる。ゲームサーバー向け。" },
-      { label: "GWLB (L3)", text: "IPパケット。ファイアウォール/IDS/IPS前に配置。GENEVEプロトコル", easy: "すべてのトラフィックをセキュリティ検査台通すスペシャル案内役。" },
-      { label: "共通機能", text: "Cross-Zone, Sticky Session, Connection Draining, Health Check", easy: "Cross-Zoneは複数ビル従業員に均等分配。Sticky Sessionは同じ従業員配定。" },
-      { label: "試験ポイント", text: "ALBは固定IP없음(DNS)。NLBは固定IP。SSL/TLS終了可能", easy: "『固定IP必要』 → NLB! ALBはDNS名でのみアクセス。" }
+      {
+        label: "種類",
+        text: "ALB（アプリケーション、レイヤー7）、NLB（ネットワーク、レイヤー4）、CLB（クラシック、レイヤー4/7、レガシー）",
+        easy: "ALBはWebアプリ用（スマート）、NLBは超高速（シンプルだが速い）、CLBは旧バージョン。"
+      },
+      {
+        label: "ヘルスチェック",
+        text: "定期的にサーバーをテスト。異常インスタンスを除外。正常に戻ったら追加",
+        easy: "常にサーバーにping — レスポンスがなければトラフィックを送るのをやめる。"
+      },
+      {
+        label: "スティッキー性",
+        text: "Cookieベースのスティッキー性：同じお客さんが同じサーバーに接続。セッションデータに有用",
+        easy: "飲食店の常連客みたいに — 同じお客さんはいつもの席（サーバー）へ。"
+      },
+      {
+        label: "クロスゾーンLB",
+        text: "AZ間でトラフィックを均等分散。少しコストがかかるが可用性が向上",
+        easy: "複数ゾーン間でトラフィックをバランスして、一ゾーンの障害が痛手にならないように。"
+      },
+      {
+        label: "試験ポイント",
+        text: "ALBはマイクロサービス（ホスト名ルーティング）。NLBは極限スループット。ターゲットグループのヘルス",
+        easy: "ALBはスマートルーティング、NLBは猛烈な速さ、CLBは忘れていい！"
+      }
     ]
   },
   dynamodb: {
     title: "Amazon DynamoDB",
-    subtitle: "サーバーレスNoSQL DB",
-    easy: "DynamoDBは引き出し棚のようなもの! 何でも入れられて1秒間に数百万回の出し入れ可能!",
+    subtitle: "サーバーレスNoSQLデータベース",
+    easy: "DynamoDBは引き出しキャビネットみたいなもの！各引き出し（アイテム）に自由に何でも保存でき、毎秒数百万回の読み書きが可能！",
     points: [
-      { label: "容量モード", text: "On-Demand: 自動対応。Provisioned: RCU/WCU直接設定、より安価、Auto Scaling", easy: "On-Demandは客数に関係なく自動処理(高め)、Provisedは『今日客100人予想』と事前準備(安いが超過はエラー)。" },
-      { label: "インデックス", text: "GSI: 別パーティション+ソートキー、別容量。LSI: 同じパーティションキー、別ソートキー", easy: "GSIは全く新しい住所録、LSIは同じ住所録に別ソート基準追加。" },
-      { label: "DAX", text: "インメモリキャッシュ。マイクロ秒応答。API互換。読み取り10倍向上", easy: "引き出しの前の付箋! よく取り出すものは付箋から直に取ると10倍高速。" },
-      { label: "高度な機能", text: "DynamoDB Streams → Lambda。Global Tables: マルチリージョン アクティブ-アクティブ。TTL: 自動削除", easy: "Global Tablesは韓国→米国自動コピー。TTLは賞味期限設定。" },
-      { label: "試験ポイント", text: "パーティションキー設計核心(均等分散)。RCU=4KB/秒、WCU=1KB/秒。Transactions ACID対応", easy: "パーティションキーが片寄ったらHot Partition発生。様々な値をパーティションキーに!" }
+      {
+        label: "キャパシティモード",
+        text: "オンデマンド：トラフィックを自動処理、予測不能なワークロード。プロビジョニング：RCU/WCU設定、安い、自動スケーリング",
+        easy: "オンデマンドは何人お客が来ても自動対応（高い）、プロビジョニングは100人分を事前計画（安いが超えるとエラー）。"
+      },
+      {
+        label: "キー",
+        text: "パーティションキー（必須）、ソートキー（オプション）。合わせてユニークな識別子を構成",
+        easy: "パーティションキーはファイルキャビネットの引き出し、ソートキーは引き出し内のファイルの並び順。"
+      },
+      {
+        label: "インデックス",
+        text: "GSI（グローバルセカンダリインデックス）：異なるパーティション/ソートキー。LSI（ローカル）：同じパーティション、異なるソート",
+        easy: "GSIは全く新しいファイリングシステム、LSIは同じ引き出しを並べ替えること。"
+      },
+      {
+        label: "TTL",
+        text: "Time To Live。タイムスタンプ後に自動削除。ストレージコスト削減",
+        easy: "賞味期限みたいなもの — 古いアイテムを自動削除。"
+      },
+      {
+        label: "試験ポイント",
+        text: "DynamoDB StreamsはCDC（変更データキャプチャ）→Lambda。予測不能ならオンデマンド",
+        easy: "Streamsは変更をキャッチしてLambdaをトリガー。不明なパターンにはオンデマンド。"
+      }
     ]
   },
   kms: {
-    title: "AWS KMS",
-    subtitle: "Key Management Service",
-    easy: "KMSは暗号化キー管理所! キーを作って保管する。誰が使ったか記録も残る!",
+    title: "AWS Key Management Service",
+    subtitle: "暗号化キー管理",
+    easy: "KMSは鍵師サービス！暗号化キーを作成・管理します。顧客管理キーで機密データを暗号化。",
     points: [
-      { label: "キー種類", text: "AWS Managed Key(無料)、Customer Managed Key($1/月)、CloudHSM(専用ハードウェア)", easy: "AWS管理マスターキー(無料)、自分で作ったキー(月$1)、CloudHSMは金庫ハードウェア丸ごとレンタル。" },
-      { label: "Envelope Encryption", text: "DEKでデータ暗号化 → DEKをCMKで暗号化。大容量データ標準方式", easy: "二重封筒! データは一時キーで鍵をして、そのキーをマスターキーで鍵をする。" },
-      { label: "統合サービス", text: "S3(SSE-KMS), EBS, RDS, Secrets Manager, SSM Parameter Store", easy: "ほぼすべてのAWSサービスと統合。KMSキー選択したら自動暗号化。" },
-      { label: "キーポリシー", text: "KMSはリソースベースポリシー必須。IAM Policyだけでは不可。クロスアカウント時キーポリシー明記必要", easy: "KMSキーは特別 — IAM権限だけで使えない。キーポリシーに直接書く必要がある。" },
-      { label: "試験ポイント", text: "暗号化EBSスナップショット共有時CMKも共有。キー削除最小7日待機", easy: "暗号化スナップショット共有する時キーも一緒にあげるべし! キー削除は7日保留。" }
+      {
+        label: "キーの種類",
+        text: "AWS管理（無料）、カスタマー管理（使用ごとに料金）、AWS所有（制御不可）",
+        easy: "AWS管理=無料の家の鍵、カスタマー管理=あなたが鍵を管理、AWS所有=AWSの鍵。"
+      },
+      {
+        label: "キーローテーション",
+        text: "毎年自動ローテーション。必要に応じて手動ローテーション。後方互換性あり",
+        easy: "毎年オフィスの鍵を変えるみたいなもの — 古い鍵でも動く（後方互換）。"
+      },
+      {
+        label: "グラント",
+        text: "キーアクセスを一時的に委任。クロスアカウントアクセスに便利",
+        easy: "権限を変えずに一時的に鍵を誰かに貸し出すこと。"
+      },
+      {
+        label: "暗号化",
+        text: "保存データ（S3、RDS、EBS）と転送データ（TLS/HTTPS）を暗号化",
+        easy: "保存中もロック、転送中もロック。"
+      },
+      {
+        label: "試験ポイント",
+        text: "暗号化にはKMS。制御にはCMK（カスタマーマスターキー）。エンベロープ暗号化",
+        easy: "制御=CMK。エンベロープ=マスターキーでデータキーを暗号化。"
+      }
     ]
   },
   cloudfront: {
     title: "Amazon CloudFront",
-    subtitle: "グローバルCDN",
-    easy: "CloudFrontは全世界に物をあらかじめ置く配送システム! 近い倉庫から持ってきて高速化!",
+    subtitle: "コンテンツデリバリーネットワーク",
+    easy: "CloudFrontは世界中に配送拠点を持つようなもの！東京のユーザーは米国のサーバーではなく東京のサーバーからコンテンツを取得。格段に速い！",
     points: [
-      { label: "オリジン", text: "S3, ALB, EC2, HTTP サーバー。OACでS3をCloudFront専用に制限", easy: "オリジン倉庫から全世界のエッジ倉庫にコピー。OACはCloudFront専用南京錠。" },
-      { label: "キャッシング", text: "TTL(デフォルト24時間)。Cache Policy。Invalidationで即座に無効化", easy: "一度読み込むとキャッシュに保存。TTL中保存して時間経つと新たに取得。" },
-      { label: "セキュリティ", text: "HTTPS強制。WAF統合。Geo Restriction。Field Level Encryption", easy: "WAFでハッキング防御。Geo Restrictionで特定国家アクセス禁止。" },
-      { label: "エッジコンピューティング", text: "Lambda@Edge: CloudFrontイベントでLambda実行。CloudFront Functions: 軽量JS", easy: "エッジで直接コード実行! 言語自動翻訳、ログイン確認等をサーバーまで行かずに処理。" },
-      { label: "試験ポイント", text: "グローバルサービス(us-east-1でのみ認証書)。動的コンテンツも加速。Signed URL/Cookieで有料コンテンツ保護", easy: "CloudFront用SSL認証書は必ずus-east-1で! Signed URLは有料コンテンツ保護。" }
+      {
+        label: "エッジロケーション",
+        text: "世界450以上のエッジロケーション。静的コンテンツのキャッシュ。オリジン：S3、EC2、ALB、カスタム",
+        easy: "どこにでもあるコンビニみたいなもの — 一番近い店からコンテンツを提供。"
+      },
+      {
+        label: "キャッシュ",
+        text: "デフォルト24時間。TTL設定可能。ワイルドカード/パスでキャッシュ無効化",
+        easy: "速度のためにローカルにコンテンツをキャッシュ。コンテンツが変わったら更新。"
+      },
+      {
+        label: "セキュリティ",
+        text: "HTTPS/TLS。WAF統合。オリジンアクセスコントロール（OAC）。フィールドレベル暗号化",
+        easy: "転送中のデータを保護。攻撃を防止。機密フィールドを暗号化。"
+      },
+      {
+        label: "価格クラス",
+        text: "All：全エッジロケーション。100：高価なリージョンを除外。200：最も高価なリージョンを除外",
+        easy: "All=最高値、100=中程度、200=最安値。速度とコストのトレードオフ。"
+      },
+      {
+        label: "試験ポイント",
+        text: "CloudFront vs S3：CFはエッジキャッシュ、S3はストレージ。CF無効化=キャッシュ更新",
+        easy: "グローバルに速度が必要？CloudFront。ストレージが必要？S3。両方使えばいい！"
+      }
     ]
   },
   route53: {
     title: "Amazon Route 53",
-    subtitle: "DNS及びトラフィック ルーティング",
-    easy: "Route53はインターネット電話番号簿! www.naver.comを実際のIPアドレスに変える。",
+    subtitle: "ドメインネームシステム・トラフィックルーティング",
+    easy: "Route 53はインターネットの電話帳！www.example.comを実際のIPアドレスに瞬時に変換します。",
     points: [
-      { label: "ルーティングポリシー", text: "Simple, Weighted, Latency, Failover, Geolocation, Geoproximity, Multi-Value", easy: "WeightedはA/Bテスト、Latencyは一番高速サーバー、Failoverはバックアップサーバー。" },
-      { label: "ヘルスチェック", text: "エンドポイント監視。15個グローバル ヘルスチェッカー。Failover必須組合", easy: "30秒ごとにサーバーに『生きてる?』確認。応答なければ別サーバーに回す。" },
-      { label: "レコードタイプ", text: "A(IPv4), AAAA(IPv6), CNAME(ドメイン→ドメイン), Alias(AWSリソース、Zone Apex可能、無料)", easy: "Aは名前→アドレス、CNAMEは名前→別の名前、AliasはAWS専用で無料。" },
-      { label: "ドメイン", text: "ドメイン購入可能。Public vs Private Hosted Zone。DNSSEC対応", easy: "Route53でドメインも買える。Privateはみんなで使う内部電話番号簿。" },
-      { label: "試験ポイント", text: "AliasはELB、CloudFront、S3に使用。CNAMEはZone Apex不可。Alias必ず選択!", easy: "ルートドメインはCNAME使えない、Aliasだけ! AWSサービス接続は無条件Alias!" }
+      {
+        label: "ルーティングポリシー",
+        text: "シンプル、加重、レイテンシーベース、フェイルオーバー、ジオロケーション、ジオプロキシミティ、マルチバリュー",
+        easy: "加重はA/Bテスト、レイテンシーは最速サーバー、フェイルオーバーはバックアップサーバー。"
+      },
+      {
+        label: "ヘルスチェック",
+        text: "エンドポイントを監視。15のグローバルヘルスチェッカー。フェイルオーバーと合わせて必須",
+        easy: "30秒ごとにサーバーに「生きてる？」と確認。レスポンスなしならバックアップへルーティング。"
+      },
+      {
+        label: "レコードタイプ",
+        text: "A（IPv4）、AAAA（IPv6）、CNAME（ドメイン→ドメイン）、エイリアス（AWSリソース、ゾーンApex対応、無料）",
+        easy: "A=名前→アドレス、CNAME=名前→別の名前、エイリアス=AWSのみで無料。"
+      },
+      {
+        label: "ドメイン",
+        text: "ドメイン購入可能。パブリックとプライベートホストゾーン。DNSSECサポート",
+        easy: "Route 53でドメインを買える。プライベートはVPC専用の内部電話帳。"
+      },
+      {
+        label: "試験ポイント",
+        text: "ELB、CloudFront、S3にはエイリアスを使用。ゾーンApexではCNAME不可。常にエイリアスを選ぶ！",
+        easy: "ルートドメインにはCNAME使えない、エイリアスのみ！AWSサービスには常にエイリアスを使って！"
+      }
     ]
   },
   sns: {
     title: "Amazon SNS",
     subtitle: "Simple Notification Service",
-    easy: "SNSは放送システム! マイクに叫んだら購読者みんなが同時に聞こえる!",
+    easy: "SNSは放送システム！マイク（トピック）に向かって「昼食の時間！」と叫べば全生徒（サブスクライバー）が同時に聞こえます。SQS、Lambda、メールに同時送信できます！",
     points: [
-      { label: "概要", text: "Pub/Sub。Publisher → Topic → Subscribers (SQS, Lambda, Email, SMS, HTTP)", easy: "ラジオ放送! 放送局が喋ったらラジオたちが同時受信。" },
-      { label: "Fan-out パターン", text: "SNS Topic → 複数SQS Queue。並列処理。疎結合", easy: "注文完了1つで在庫差し引き、領収書送信、ポイント加算を同時処理!" },
-      { label: "FIFO Topic", text: "SQS FIFOと組合。順序保証 + 重複除去。金融・在庫システム", easy: "銀行の順番表! 順番通り処理して同じ番号2回発行しない。" },
-      { label: "メッセージフィルタリング", text: "Subscription Filter Policy。JSON属性ベース。費用削減・効率化", easy: "『赤い封筒だけもらう』みたいに条件のメッセージだけ選んで受け取り。" },
-      { label: "試験ポイント", text: "SNSはプッシュ(SQSはポーリング)。メッセージ永続性なし。DLQはSQSに設定", easy: "SNSは放送だから保存しない。保存必要ならSQSで受け取るべし。" }
+      {
+        label: "概要",
+        text: "パブ/サブメッセージング。パブリッシャー → トピック → サブスクライバー。サブスクライバー：SQS、Lambda、メール、SMS、HTTP、Kinesis Firehose",
+        easy: "ラジオ放送みたいなもの！放送局（パブリッシャー）が電波（トピック）に流し、ラジオ（サブスクライバー）が同時に受信。サブスクライバーは無限に追加可能。"
+      },
+      {
+        label: "メッセージフィルタリング",
+        text: "サブスクリプションごとのフィルターポリシー。各サブスクライバーはマッチするメッセージのみ受信",
+        easy: "メールフィルターみたいなもの — サブスクライバーは自分のフィルタールールに合うメッセージだけ受け取る。"
+      },
+      {
+        label: "デリバリー",
+        text: "HTTPエンドポイントへのプッシュ、SQSからのプル、Lambdaトリガー、メール/SMS通知",
+        easy: "SNSはメッセージを異なる場所に同時にプッシュ — メール仕分けセンターみたいなもの。"
+      },
+      {
+        label: "ファンアウトパターン",
+        text: "SNS → 複数SQSで並列処理。各SQSがメッセージの完全なコピーを取得",
+        easy: "1つのSNSメッセージが10個のSQSにファンアウト — 1つのアナウンスが10つの異なるグループに届く。"
+      },
+      {
+        label: "試験ポイント",
+        text: "SNSプッシュ ≠ SQSプル。SNS-SQSファンアウトで耐久性のある非同期処理。FIFO SNS-SQSサポート",
+        easy: "SNSは叫ぶ（プッシュ）、SQSは保存する（プル）。組み合わせると耐久性のある放送！"
+      }
     ]
   },
   kinesis: {
     title: "Amazon Kinesis",
     subtitle: "リアルタイムデータストリーミング",
-    easy: "Kinesisは川のようなデータパイプ! 流れてくるデータを受け取って処理する。",
+    easy: "Kinesisはデータのコンベアベルト！大量データをリアルタイムでストリーム。情報のアセンブリラインのように — 継続的な流れ。",
     points: [
-      { label: "Data Streams", text: "リアルタイム。シャード単位(1MB入力/2MB出力)。保管24時間~365日。直接コンシューマー管理", easy: "パイプ! シャードが多いほどより多くデータ流せる。" },
-      { label: "Firehose", text: "完全管理型。S3/Redshift/OpenSearchに自動配信。バッファリング。Near Real-time", easy: "自動的にタンクに満たすシステム。管理しなくてOK。" },
-      { label: "Data Analytics", text: "SQLでリアルタイム分析。異常検知・集計", easy: "流れるデータを見ながらリアルタイムSQL分析。" },
-      { label: "vs SQS", text: "Kinesis: 大容量ストリーミング、多重コンシューマー、順序保証。SQS: メッセージキュー、単一コンシューマー、処理後削除", easy: "Kinesisは複数人が同じ川を見られる。SQSは1人が取り出したら消える。" },
-      { label: "試験ポイント", text: "シャード数 = 処理量。Hot Partitionを防止。Firehoseはで Lambda変換可能", easy: "特定シャードにデータ集中したら病気! パーティションキー分散が重要。" }
+      {
+        label: "Kinesis Data Streams",
+        text: "プロデューサー → シャード → コンシューマー。24時間保持（設定可能）。シャードルーティングにパーティションキー",
+        easy: "高速道路の車線みたいなもの。各車線が独立してトラフィックを処理。データは自動的に車線に振り分け。"
+      },
+      {
+        label: "Kinesis Firehose",
+        text: "S3、Redshift、Splunk、DataDogへのデータ配信。フルマネージド。ETLオプション",
+        easy: "倉庫への自動コンベアベルト。必要に応じてデータを変換。キャパシティ管理不要。"
+      },
+      {
+        label: "コンシューマー",
+        text: "アプリケーション、Lambda、Kinesis Analytics、DynamoDB。シャードごとの並列消費",
+        easy: "複数のワーカーが同じ車線を独立して処理。大規模な並列処理。"
+      },
+      {
+        label: "スケーリング",
+        text: "シャードを追加してスケール。各シャード = 1MB/秒書き込み。TPS = RPS × レコードサイズを使用",
+        easy: "トラフィック増加？車線（シャード）を追加。各車線は1MB/秒処理。"
+      },
+      {
+        label: "試験ポイント",
+        text: "Kinesis Streamsはリアルタイム、Firehoseはデリバリー。SQSはバッチ、Kinesisはストリーミング",
+        easy: "SQS=バッチ処理、Kinesis=リアルタイムストリーミング。異なるツール、異なる速度！"
+      }
     ]
   },
   elasticache: {
     title: "Amazon ElastiCache",
-    subtitle: "インメモリキャッシュ",
-    easy: "ElastiCacheは机の上のメモ紙! よく見る内容をDBから毎回取り出すと遅いから、メモリに書いておくと高速!",
+    subtitle: "インメモリキャッシュサービス",
+    easy: "ElastiCacheは超高速のメモリストレージ！よく使う本を図書館でなく机の上に置くようなもの。RedisまたはMemcached。",
     points: [
-      { label: "Redis vs Memcached", text: "Redis: 永続性、複製、Multi-AZ、データ構造、Pub/Sub。Memcached: シンプル、マルチスレッド、シャーディング", easy: "Redisは電源ある高級メモ紙(消えない)、Memcachedは普通のメモ紙(消える)。" },
-      { label: "キャッシング戦略", text: "Lazy Loading(キャッシュミス時に保存)、Write Through(書き込み時キャッシュ更新)、TTL期限切れ", easy: "Lazy Loadingは『ないなら持ってきてメモ』、Write Throughは『書く時メモも更新』。" },
-      { label: "ユースケース", text: "DBキャッシング、セッション保存所、リアルタイムリーダーボード、Rate Limiting", easy: "ゲーム順位表、ショッピングモールカート、API呼び出し制限に使用。" },
-      { label: "Redis Cluster", text: "データシャーディング 水平拡張。最大500ノード。Multi-AZ + 自動フェイルオーバー", easy: "メモ紙が多くなったら複数机に分散。より多く、より高速に!" },
-      { label: "試験ポイント", text: "RDS前にElastiCache → 読み取り負荷減少。セッション管理 → Redis。Memcachedは永続性なし", easy: "RDS遅い → ElastiCacheキャッシング! セッション保存 → Redis!" }
+      {
+        label: "エンジン",
+        text: "Redis：データ構造、永続性、パブ/サブ。Memcached：シンプルなキーバリュー、最速",
+        easy: "Redisはスマートキャッシュ（電源オフでもデータ保持）、Memcachedはシンプルキャッシュ（電源オフでデータ消失）。"
+      },
+      {
+        label: "ユースケース",
+        text: "セッションストレージ、リアルタイムリーダーボード、DBクエリのキャッシュ、レート制限",
+        easy: "「ログインしたか」のリマインダー保持、ゲームランキング、よく使われる検索結果のキャッシュなどに使う。"
+      },
+      {
+        label: "立ち退きポリシー",
+        text: "LRU（最近最も使われていない）、LFU（最も使用頻度が低い）、TTL（生存時間）",
+        easy: "メモリがいっぱいになったら、最も使われていないか古いアイテムを削除。"
+      },
+      {
+        label: "高可用性",
+        text: "自動フェイルオーバーを備えたマルチAZ。クラスターモードによる水平スケーリング",
+        easy: "バックアップインスタンスを準備、より高速化のための水平スケーリング。"
+      },
+      {
+        label: "試験ポイント",
+        text: "ElastiCache vs RDS：キャッシュは速度、DBはストレージ。大規模データにはRedisクラスター",
+        easy: "速度が必要？キャッシュ。データが必要？データベース。両方？組み合わせて使おう！"
+      }
     ]
   },
   ebs: {
     title: "Amazon EBS",
-    subtitle: "Elastic Block Store",
-    easy: "EBSはEC2に挿したUSB外付けHDD! コンピューター切ってもUSBは消えない。同じAZでしか使えない!",
+    subtitle: "Elastic Block Storage",
+    easy: "EBSはEC2のハードドライブみたいなもの！インスタンスに接続し、データを永続保存、スナップショットでバックアップ。",
     points: [
-      { label: "ボリュームタイプ", text: "gp3(汎用、3000 IOPS), io2(プロビジョニング IOPS、DB用)、st1(処理量HDD)、sc1(コールドHDD、最安)", easy: "gp3は一般SSD、io2は高級SSD(DB用)、st1は大容量HDD、sc1は一番安いHDD。" },
-      { label: "特性", text: "単一AZ。1:1接続(io1/io2はMulti-Attach)。ネットワークドライブ。独立な耐用年数", easy: "ネットワークで繋がったUSB。EC2切っても生きてる。同じAZでのみ接続可能。" },
-      { label: "スナップショット", text: "増分バックアップ。S3保存。別AZ/リージョン複写。Snapshot Archive(75%安い)", easy: "USB写真撮影! 最初は全体、その次は変わった部分だけ撮って保存。" },
-      { label: "暗号化", text: "KMS使用。未暗号化 → スナップショット → 暗号化複写 → 復元で変換", easy: "USBに南京錠! 最初作る時だけ設定。後から変えたければ3段階必要。" },
-      { label: "試験ポイント", text: "ルートボリュームデフォルト削除(終了時)。gp3がgp2より安価+IOPS独立。RAID 0パフォーマンス向上", easy: "EC2終了したらルートEBS基本削除! 重要データはスナップショット必須。gp3がgp2より良い。" }
+      {
+        label: "ボリュームタイプ",
+        text: "gp3（汎用、3 IOPS/GB）、gp2（旧）、io1（高IOPS）、st1（スループット）、sc1（コールド）",
+        easy: "gp3は優秀な万能型（新バージョンで速い）、io1はデータベース向け（超速）、st1は広い高速道路、sc1はバックアップ用。"
+      },
+      {
+        label: "スナップショット",
+        text: "ブロックレベルの増分バックアップ。リージョン間コピー可能。スナップショットからAMI作成可能",
+        easy: "ハードドライブのバックアップみたいなもの。新しい部分だけ保存（増分）。復元したりイメージ作成もできる。"
+      },
+      {
+        label: "暗号化",
+        text: "作成時にKMSで暗号化。暗号化スナップショットのコピー可能。コピーで再暗号化",
+        easy: "作成時に暗号化を選ぶ。変更するには暗号化されたボリュームにコピーが必要。"
+      },
+      {
+        label: "パフォーマンス",
+        text: "ボリュームタイプごとのIOPSとスループット制限。デタッチなしでgp3を変更可能",
+        easy: "各ボリュームには速度制限あり。gp3は停止せずに速度調整可能。"
+      },
+      {
+        label: "試験ポイント",
+        text: "EBS vs インスタンスストア：EBSは永続、インスタンスストアは消える。高性能にはio1",
+        easy: "EBS=ロッカー（永続）、インスタンスストア=メモ（消える）。必要に応じて選ぼう！"
+      }
     ]
   },
   efs: {
     title: "Amazon EFS",
     subtitle: "Elastic File System",
-    easy: "EFSは複数コンピューターが同時に使える共有フォルダ! EBSが1人で使うUSBなら、EFSは公共ファイルサーバー!",
+    easy: "EFSは共有ファイルキャビネット！複数のEC2インスタンスが同じファイルに同時アクセス可能。共有ストレージに最適。",
     points: [
-      { label: "特性", text: "完全管理型NFS。複数EC2マウント。Multi-AZ。自動拡張/縮小。Linux専用", easy: "複数EC2が同時に同じフォルダ開いてファイル読み書きできる。Linuxのみ!" },
-      { label: "パフォーマンスモード", text: "General Purpose(デフォルト、低遅延)。Max I/O(高処理量、ビッグデータ用)", easy: "General Purposeは一般道路(高速反応)、Max I/Oは高速道路(多量)。" },
-      { label: "処理量モード", text: "Bursting、Provisioned(固定)、Elastic(自動調整)", easy: "Burstingは時々爆発、Provisonedは固定速度、Elasticは自動調整。" },
-      { label: "ストレージクラス", text: "Standard、EFS-IA(非頻繁アクセス)、Archive。Lifecycle Policy自動移動", easy: "よく使うもの高速棚に、たまに使うもの倉庫に。自動で移す。" },
-      { label: "試験ポイント", text: "複数EC2共有 → EFS。Windows → FSx。EFSはEBSより高い代わり共有可能", easy: "複数EC2が同じファイル → EFS! Windows → FSx! EBSは1人、EFSは一緒!" }
+      {
+        label: "アクセス",
+        text: "NFSプロトコル。サブネットのマウントターゲット経由でマウント。自動スケール、事前プロビジョニング不要",
+        easy: "会社オフィスのネットワークドライブみたいなもの。複数のコンピューターが同じファイルを共有。"
+      },
+      {
+        label: "パフォーマンスモード",
+        text: "汎用（デフォルト、大半のユースケース）、Max IO（高同時実行、エンタープライズアプリ）",
+        easy: "汎用は通常使用、Max IOは重いワークロード向け。"
+      },
+      {
+        label: "スループットモード",
+        text: "バースト（デフォルト、ファイル数に応じてスケール）、プロビジョニング（固定スループット）",
+        easy: "バーストは自動拡張、プロビジョニングは固定速度。"
+      },
+      {
+        label: "ストレージクラス",
+        text: "Standard、Standard-IA（低頻度アクセス）。ライフサイクルポリシーで自動移行",
+        easy: "Standardは頻繁アクセス、IAはまれなアクセス — 安い！"
+      },
+      {
+        label: "試験ポイント",
+        text: "EFS vs EBS：EFSは共有、EBSは単一インスタンス。EFSはより高価、EBSはより速い",
+        easy: "共有にはEFS、速度にはEBS。共有=EFS、速度=EBS。"
+      }
     ]
   },
   cognito: {
     title: "Amazon Cognito",
-    subtitle: "ユーザー認証",
-    easy: "Cognitoはアプリの会員登録/ログイン係! Google/Facebookログインも対応!",
+    subtitle: "ユーザー認証・認可",
+    easy: "Cognitoはアプリのログインシステム！ユーザー登録、ログイン、MFA、ソーシャルログイン（Google/Facebook）を全て内蔵。",
     points: [
-      { label: "User Pool", text: "会員ディレクトリ。JWTトークン発給。ソーシャルログイン。MFA。Lambda Trigger", easy: "会員名簿! ログイン成功したら出入証(JWT)発給。Google認証ログインも可能!" },
-      { label: "Identity Pool", text: "AWSリソースアクセス一時資格認証(STS)。Unauthenticatedアクセスも可能", easy: "AWSサービス使える一時キー発給。S3直接アップロード可能。" },
-      { label: "フロー", text: "User Pool認証 → JWT → Identity Pool → STS → S3/DynamoDB アクセス", easy: "ログイン → トークン → AWS一時キー交換 → S3直接アップロード。中間サーバー不要!" },
-      { label: "統合", text: "API Gateway: Cognito Authorizer。ALB: 認証オフロード", easy: "API Gatewayでトークン本物かCognitoが確認してくれる。" },
-      { label: "試験ポイント", text: "User Pool = 認証(AuthN)、Identity Pool = 権限付与(AuthZ)。モバイルアプリAWS直接アクセスパターン", easy: "User Poolは『あなた誰?』、Identity Poolは『何できる?』。両方合わせてモバイルアプリがS3アクセス!" }
+      {
+        label: "ユーザープール",
+        text: "アプリ用ユーザーディレクトリ。ユーザー名/メールパスワード。MFAサポート。カスタム属性",
+        easy: "ユーザーデータベースみたいなもの。ソーシャルログイン連携。パスワードリセットメール送信。"
+      },
+      {
+        label: "IDプール",
+        text: "一時的なAWS認証情報。S3、DynamoDBなどAWSサービスへのアクセス。ロールベース",
+        easy: "ログイン後、AWSサービスを使う鍵をもらう。異なるロールは異なる権限。"
+      },
+      {
+        label: "MFA",
+        text: "TOTP（認証アプリ）、SMS、メール。バックアップコード",
+        easy: "追加セキュリティ。携帯からのコード＋パスワード。"
+      },
+      {
+        label: "カスタム認証フロー",
+        text: "カスタムLambdaで認証ロジック。チャレンジ/レスポンス",
+        easy: "カスタムログインルール。「会社のIPからしかログインできない」など。"
+      },
+      {
+        label: "試験ポイント",
+        text: "ユーザープールはログイン用、IDプールはAWSアクセス用。Cognito=認証、IAM=権限",
+        easy: "ユーザープール=「あなたは誰？」、IDプール=「何ができる？」"
+      }
     ]
   },
   ecs: {
-    title: "Amazon ECS/EKS",
-    subtitle: "コンテナオーケストレーション",
-    easy: "ECSはコンテナボックスを管理する班長! Fargate使ったらサーバー管理をAWSがすべてやってくれる!",
+    title: "Amazon ECS",
+    subtitle: "Elastic Container Service",
+    easy: "ECSはコンテナ管理！EC2またはFargate（サーバーレス）でDockerコンテナを実行。オーケストレーション、スケール、自動再起動。",
     points: [
-      { label: "ECS vs EKS", text: "ECS: AWS独自。EKS: 管理型Kubernetes(オープンソース、移植性高い)", easy: "ECSはAWSのやり方、EKSはKubernetes。別クラウドに引越し可能ならEKS。" },
-      { label: "ロンチタイプ", text: "EC2: 直接管理、費用削減。Fargate: サーバーレス、便利、より高い", easy: "EC2は直接管理(安いけど仕事多い)、Fargateはaws管理(高いけど楽)。" },
-      { label: "Task & Service", text: "Task Definition: コンテナ設定。Service: Task数維持・ELB連動・Auto Scaling", easy: "Task Definitionはレシピ、Taskは料理1個、Serviceは『常に3個維持』管理者。" },
-      { label: "ストレージ", text: "EFSマウントでコンテナ間共有。S3はアプリコードでアクセス", easy: "コンテナ切ったら消える。重要なら EFSに保存!" },
-      { label: "試験ポイント", text: "FargateはVPC/サブネット必須。Task RoleでAWS権限。ECS Anywhereでオンプレミス実行", easy: "FargateはVPC必須! AWS権限はTask Role に — EC2 Instance Profileと混同しないで!" }
+      {
+        label: "起動タイプ",
+        text: "EC2：インスタンスを自分で管理。Fargate：サーバーレスコンテナ、タスクごとに課金",
+        easy: "EC2=アパートを借りて自分で管理。Fargate=ホテルの部屋＋ホテルが管理。"
+      },
+      {
+        label: "タスク定義",
+        text: "コンテナの設計図。Dockerイメージ、メモリ、CPU、環境変数を指定",
+        easy: "コンテナのレシピ。Dockerイメージ、材料（メモリ/CPU）、作り方。"
+      },
+      {
+        label: "サービス",
+        text: "タスクを管理。自動スケーリング、ロードバランシング、自己修復。希望数",
+        easy: "一定数のコンテナを稼働維持。失敗したら自動再起動。"
+      },
+      {
+        label: "クラスター",
+        text: "リソースのグループ（EC2インスタンスまたはFargate）。ネットワークとセキュリティ",
+        easy: "複数のアパート（タスク）があるビル群みたいなもの。"
+      },
+      {
+        label: "試験ポイント",
+        text: "ECS Fargateはシンプルさのため。EC2はコスト最適化のため。CloudWatchで自動スケーリング",
+        easy: "簡単さが欲しい？Fargate。安くしたい？EC2。CloudWatchメトリクスでスケール！"
+      }
     ]
   },
   asg: {
     title: "Auto Scaling Group",
-    subtitle: "自動スケーリング",
-    easy: "ASGは忙しい時に従業員増やして、暇な時減らす人事部! 費用も節約!",
+    subtitle: "自動インスタンススケーリング",
+    easy: "ASGは自動採用・解雇！忙しいときサーバーを追加（スケールアップ）、静かなときに削除（スケールダウン）。自動的な弾力性。",
     points: [
-      { label: "スケーリングポリシー", text: "Target Tracking(目標値維持)、Step(段階別)、Scheduled(時間ベース)、Predictive(ML予測)", easy: "Target Trackingはエアコンみたいに『CPU50%維持』。Scheduledは時間表通り。" },
-      { label: "主要設定", text: "Min/Max/Desired インスタンス数。Health Check(EC2/ELB)。Cooldown(デフォルト300秒)", easy: "『最小2台、最大10台、平時3台』。Cooldownは安定化時間。" },
-      { label: "Launch Template", text: "AMI、インスタンスタイプ、SG、キーペアなど設定", easy: "新入社員採用基準表。OS、コンピューター仕様、セキュリティ設定事前設定。" },
-      { label: "Lifecycle Hook", text: "インスタンス開始/終了時にカスタム作業実行", easy: "サーバー起動時『ソフトウェア導入完了まで待て』設定。" },
-      { label: "試験ポイント", text: "ELB連動時Health CheckはELB基準推奨。Spot混合で費用削減", easy: "ELB基準Health Checkが正確。Spot混ぜると最大90%削減!" }
+      {
+        label: "ポリシー",
+        text: "ターゲット追跡：メトリクスをレベルに維持。ステップスケーリング：増分でスケール。シンプル：単一閾値",
+        easy: "ターゲット=CPU70%を維持。ステップ=CPU70%超えのたびに+1インスタンス/20%。シンプル=80%超えたら1つ追加。"
+      },
+      {
+        label: "ライフサイクルフック",
+        text: "起動/終了時にカスタムスクリプトを実行。グレースフルシャットダウンに最適",
+        easy: "インスタンスが死ぬとき、まずさよならの音楽を再生。赤ちゃんインスタンスが生まれたとき、部屋を用意する。"
+      },
+      {
+        label: "ヘルスチェック",
+        text: "ELBヘルスチェック、EC2ステータスチェック。異常インスタンスを自動置換",
+        easy: "常にインスタンスが健康か確認。病気になったら入れ替え。"
+      },
+      {
+        label: "クールダウン",
+        text: "次のスケーリングアクション前の待機時間。スラッシングを防止",
+        easy: "スケーリング後、次のチェックまで待つ。オン/オフを繰り返さない。"
+      },
+      {
+        label: "試験ポイント",
+        text: "高可用性にはASG＋ELB。グレースフルシャットダウンにはライフサイクルフック",
+        easy: "ASG＋ELB=自動スケール＋ロードバランス。最強コンビ！"
+      }
     ]
   },
   beanstalk: {
     title: "AWS Elastic Beanstalk",
-    subtitle: "PaaS プラットフォーム",
-    easy: "Beanstalkはコードだけ持ってくれば、サーバー設定は自動でやる店長!",
+    subtitle: "Platform as a Service",
+    easy: "Beanstalkは家具付きアパートを借りるみたいなもの！コードを提供するだけで、Beanstalkがサーバー、データベース、スケーリング、モニタリングを管理。",
     points: [
-      { label: "対応環境", text: "Node.js、Python、Java、.NET、PHP、Ruby、Go、Docker", easy: "どんな言語でもコード上げたら合う環境で実行!" },
-      { label: "デプロイ方式", text: "All at once、Rolling、Rolling with batch、Immutable、Blue/Green", easy: "All at onceは同時交換、Rollingは順次、Blue/Greenは新規作成後切り替え。" },
-      { label: "構成要素", text: "Application → Environment(Web/Worker) → Application Version", easy: "Applicationは会社、Environmentは開発チーム/運営チーム、Versionはデプロイパッケージ。" },
-      { label: "設定", text: ".ebextensionsでカスタム。CloudFormation使用。RDSは外部推奨", easy: ".ebextensionsで設定カスタマイズ。RDSは別に作ると安全。" },
-      { label: "試験ポイント", text: "Beanstalk自体無料(リソースのみ課金)。Blue/Green無中断デプロイ。WorkerはSQS連動", easy: "Beanstalk自体無料! Blue/Greenで無中断デプロイ可能!" }
+      {
+        label: "環境",
+        text: "Dev：単一インスタンス（安い）。Prod：ロードバランス（高いがスケーラブル）",
+        easy: "Dev=ワンルームマンション、Prod=執事付きの一軒家。"
+      },
+      {
+        label: "サポートプラットフォーム",
+        text: "Node.js、Python、Ruby、Java、Go、.NET、Docker、カスタムプラットフォーム",
+        easy: "多くの言語をサポート。または自前のDockerを持ち込む。"
+      },
+      {
+        label: "デプロイ",
+        text: "Gitプッシュ、CLI、コンソール。自動ブルー/グリーンデプロイ。失敗時ロールバック",
+        easy: "GitHubプッシュのようにデプロイ。新バージョンを自動テスト、旧バージョンをスタンバイ。"
+      },
+      {
+        label: "カスタマイズ",
+        text: "環境変数、.ebextensions設定、web.config、procfile",
+        easy: "必要なら全てカスタマイズ可能。設定ファイルで動作を制御。"
+      },
+      {
+        label: "試験ポイント",
+        text: "Beanstalkは素早いPaaSデプロイ用。CloudFormationが裏側。ヘルスモニタリング",
+        easy: "Beanstalk=PaaS、EC2=IaaS。Beanstalkは簡単、EC2はより細かい制御。"
+      }
     ]
   },
   glacier: {
-    title: "S3 Glacier",
-    subtitle: "長期アーカイビング",
-    easy: "Glacierは冷凍倉庫! 滅多に使わない書類を安く保管。取り出すのに時間かかる!",
+    title: "Amazon S3 Glacier",
+    subtitle: "コールドストレージサービス",
+    easy: "Glacierは冷凍庫ストレージ！非常に安いが取り出しに時間がかかります。めったにアクセスしないが保持が必要なデータ用。",
     points: [
-      { label: "3つのティア", text: "Instant(ミリ秒)、Flexible(1~12時間)、Deep Archive(12~48時間、最安)", easy: "Instantは冷蔵庫、Flexibleは冷凍室、Deep Archiveは地下氷倉庫(一番安い)。" },
-      { label: "費用", text: "S3 Standard比最大95%安い。検索費用は別途", easy: "Standard比最大95%安い! 取り出す時だけ費用発生。" },
-      { label: "S3 Lifecycle", text: "Standard → IA → Glacier → Deep Archive自動転換", easy: "ファイルが古いほど自動的にもっと安い倉庫に引っ越し。" },
-      { label: "Vault Lock", text: "WORM方針。法令遵守。変更不可", easy: "一度保管したら削除不可。法的保管義務に使用。" },
-      { label: "試験ポイント", text: "Flexible最小90日、Deep Archive最小180日。前倒し削除時残金請求", easy: "Glacierは最小保管期間ある! 早く削除したら残り料金払う。" }
+      {
+        label: "取り出し時間",
+        text: "Instant：1〜5分。Flexible：3〜5時間。Deep：12時間",
+        easy: "Instantは素早く解凍、Flexibleは一晩解凍、Deepは翌日解凍。"
+      },
+      {
+        label: "ボールトロック",
+        text: "WORM（Write Once Read Many）適用。コンプライアンスロックで変更不可",
+        easy: "鍵のかかる金庫みたいなもの — 一度ロックしたら、たとえ望んでも削除不可。規制対応のため。"
+      },
+      {
+        label: "ライフサイクルポリシー",
+        text: "設定日数後にS3→Glacierへ自動移動。ストレージコスト80%以上削減",
+        easy: "古いファイルが自動的にコールドストレージに移動 — 古い書類をアーカイブするみたいなもの。"
+      },
+      {
+        label: "リストア",
+        text: "S3に一時的にリストア。DynamoDB Streamsでリストア自動化をトリガー",
+        easy: "ファイルが必要なとき、一時的にS3にリストアし、その後Glacierに戻す。"
+      },
+      {
+        label: "試験ポイント",
+        text: "Glacier Instant vs Flexible：取り出し時間のトレードオフ。コンプライアンスにはVault Lock",
+        easy: "素早く必要？Instant。待てる？Flexible（格段に安い）。コンプライアンス？ロックして！"
+      }
     ]
   },
   redshift: {
     title: "Amazon Redshift",
-    subtitle: "データウェアハウス",
-    easy: "Redshiftは分析用図書館! 『過去3年で一番売上がいい商品は?』みたいな複雑な分析に高速で答える!",
+    subtitle: "データウェアハウスサービス",
+    easy: "Redshiftはビッグデータ分析用の巨大倉庫！大量データを安く保存して素早く分析。分析にはRDSより優れています。",
     points: [
-      { label: "アーキテクチャ", text: "Leader Node(計画) + Compute Nodes(処理)。列型ストレージ。並列処理", easy: "Leaderは工場長、Computeは従業員。複数従業員が同時に働くから分析が高速。" },
-      { label: "Spectrum", text: "S3データを直接クエリ。データ移動不要", easy: "S3ファイルをRedshiftで直接SQL照会! データ移動しなくてOK。" },
-      { label: "ロード", text: "COPYコマンドでS3/DynamoDBから大量ロード。Kinesis Firehoseでリアルタイム適材", easy: "S3からCOPYで大量取得。Firehoseで自動リアルタイム適材。" },
-      { label: "クラスター", text: "RA3: ストレージ分離(S3)。DC2: 高性能SSD。サーバーレスオプション", easy: "RA3はコンピューティング+保存分離。サーバーレスはクラスター管理なく照会のみ。" },
-      { label: "試験ポイント", text: "OLAP専用。OLTP → RDS/Aurora。Multi-AZ制限的(RA3のみ)", easy: "Redshiftは分析(OLAP)用! リアルタイム処理(OLTP) → RDS/Aurora!" }
+      {
+        label: "アーキテクチャ",
+        text: "リーダーノード（クエリルーティング）＋コンピュートノード（データストレージ/クエリ）。列指向ストレージ",
+        easy: "リーダーがトラフィックを誘導し、コンピュートノードが重い作業を実施。行でなく列で整理（分析が速い）。"
+      },
+      {
+        label: "データ読み込み",
+        text: "S3、DynamoDB、EC2からCOPY。並列取り込み。バルク操作が速い",
+        easy: "S3から何千行も同時にロード。小型車ではなくトラックで一括輸送。"
+      },
+      {
+        label: "パフォーマンス",
+        text: "圧縮でサイズ10分の1。ソートキーと分散キーで最適化",
+        easy: "圧縮=ファイルをzip化。ソートキー=データを事前整理。分散=データを賢く分割。"
+      },
+      {
+        label: "バックアップとリストア",
+        text: "S3への自動スナップショット。クロスリージョンコピー。新しいクラスターにリストア",
+        easy: "S3への自動バックアップ。災害時には別リージョンにリストア可能。"
+      },
+      {
+        label: "試験ポイント",
+        text: "RedshiftはOLAP（分析）、RDSはOLTP（トランザクション）。Redshiftは大規模データに格段に安い",
+        easy: "Redshift=分析倉庫、RDS=業務用データベース。異なるツール、異なる用途！"
+      }
     ]
   },
   directconn: {
     title: "AWS Direct Connect",
-    subtitle: "専用線接続",
-    easy: "Direct Connectは専用高速道路! インターネット(VPN)は一般道路だから混雑するけど専用線はいつも速く安定!",
+    subtitle: "専用ネットワーク接続",
+    easy: "Direct ConnectはAWSへのプライベート高速道路！インターネットの代わりに専用線を使用。より安全で速く、安定しています。",
     points: [
-      { label: "特徴", text: "物理専用線。一貫した性能。1Gbps~100Gbps。インターネット経由しない", easy: "AWSまで光ケーブル直接接続。別トラフィック影響なし。" },
-      { label: "接続方式", text: "Dedicated: AWSから直接ポート割当。Hosted: APN パートナー経由提供", easy: "Dedicatedは直接ケーブル、Hostedは中間業者経由(より早い導入)。" },
-      { label: "Virtual Interface", text: "Public VIF: S3等パブリックアクセス。Private VIF: VPC内部。Transit VIF: Transit GW", easy: "Public VIFは公開サービス用、Private VIFはVPC内部アクセス用レーン。" },
-      { label: "高可用性", text: "2つ以上冗長化。VPN バックアップ併行推奨。Direct Connect Gatewayで複数リージョン", easy: "専用道路1つ工事中だと困る! 2つ以上引く、またはVPN バックアップ必要。" },
-      { label: "試験ポイント", text: "VPNより高いけど安定。導入数週~数ヶ月。暗号化基本なし(VPN over DXで解決)", easy: "Direct Connectは暗号化ない! セキュリティ必要ならVPNも合わせて使って。" }
+      {
+        label: "接続タイプ",
+        text: "専用接続：AWSがポートを割り当て。ホスト接続：サードパーティプロバイダーが割り当て",
+        easy: "専用=自分専用の高速道路出口。ホスト=他の人と共有。"
+      },
+      {
+        label: "仮想インターフェース",
+        text: "プライベートVIF：VPCアクセス。パブリックVIF：AWSパブリックサービス。トランジットVIF：Transit Gateway",
+        easy: "プライベート=VPC向け、パブリック=S3/DynamoDB向け、トランジット=複数VPC向け。"
+      },
+      {
+        label: "利点",
+        text: "帯域コスト削減、安定したネットワーク、プライベート、低レイテンシー、高可用性",
+        easy: "混んだバスではなく専用列車みたいなもの。速い、信頼性あり、プライベート。"
+      },
+      {
+        label: "セットアップ",
+        text: "AWSに注文、プロバイダーと調整、ルーター設定、4〜8週間のリードタイム",
+        easy: "設定に時間がかかるがエンタープライズには価値あり。"
+      },
+      {
+        label: "試験ポイント",
+        text: "エンタープライズにDirect Connect。BGPルーティングプロトコル。VPNでバックアップ",
+        easy: "高価だが安全。フェイルオーバーのためVPNバックアップと組み合わせ。"
+      }
     ]
   },
   waf: {
-    title: "WAF & Shield",
-    subtitle: "ウェブ防火壁 & DDoS防御",
-    easy: "WAFはアプリ前の警備員、ShieldはDDoS盾!",
+    title: "AWS WAF",
+    subtitle: "Webアプリケーションファイアウォール",
+    easy: "WAFはナイトクラブの警備員！悪いリクエスト（SQLインジェクション、XSS）がアプリに到達する前にブロック。",
     points: [
-      { label: "WAF", text: "L7防火壁。SQL Injection、XSS防御。IP/地域ブロック。Rate Limiting。CloudFront、ALB、API GW接続", easy: "変な要求(ハッキング試行)来たら止めろ規則設定。国またはIP禁止も可能。" },
-      { label: "Web ACL & Rules", text: "規則グループ。AWS Managed Rules。許可/ブロック/カウント アクション", easy: "AWSが作ったハッキングパターンDBをそのまま使うか、直接規則追加も可能。" },
-      { label: "Shield Standard", text: "無料。L3/L4 DDoS自動防御。SYN Flood、UDP Reflection防御", easy: "無料自動防御膜! 別途設定なし常にオン。" },
-      { label: "Shield Advanced", text: "$3,000/月。L7 DDoS。DRT 24/7サポート。攻撃費用クレジット", easy: "月$3,000高級防御! DDoSで費用爆増したらAWSがクレジット還付。" },
-      { label: "試験ポイント", text: "WAFはCloudFront(グローバル)またはALB/API GW(リージョン)。Shield AdvancedはRoute53、CF、ELB、EC2 EIP", easy: "ウェブハッキング防御 → WAF、DDoS防御 → Shield!" }
+      {
+        label: "ルール",
+        text: "IP評判、地理的ブロック、レート制限、文字列マッチング、正規表現パターン",
+        easy: "悪いIPをブロック、国をブロック、リクエストを制限、攻撃を検出。"
+      },
+      {
+        label: "統合",
+        text: "CloudFront、ALB、API Gateway。カスタムオリジンの保護も可能",
+        easy: "あらゆるWebアプリの入口を保護。"
+      },
+      {
+        label: "Web ACL",
+        text: "順序付きルール。最初にマッチしたルールが適用。デフォルトアクションは許可/ブロック",
+        easy: "セキュリティチェックリストみたいなもの — 最初にマッチしたルールが適用。"
+      },
+      {
+        label: "マネージドルール",
+        text: "OWASP Top 10、SQLインジェクション、XSS、ボット制御に対するAWSメンテナンスのルールセット",
+        easy: "一般的な攻撃に対する事前構築ルール。専門の警備員を使うみたいなもの。"
+      },
+      {
+        label: "試験ポイント",
+        text: "WAF vs NACL：WAFはアプリ層、NACLはネットワーク層。WAFはロジック攻撃をキャッチ",
+        easy: "NACLはトラフィックをブロック、WAFは攻撃をブロック。両方必要！"
+      }
     ]
   },
   secrets: {
     title: "AWS Secrets Manager",
-    subtitle: "秘密値管理",
-    easy: "Secrets Managerは秘密金庫! DB パスワードを安全に保管して自動交換!",
+    subtitle: "シークレット・資格情報管理",
+    easy: "Secrets Managerは安全なパスワード金庫！APIキー、DBパスワード、シークレットを保存。自動ローテーション、アクセス監査。",
     points: [
-      { label: "核心機能", text: "秘密値保存·検索·交換自動化。RDS認証自動ローテーション。KMS暗号化", easy: "パスワードを金庫に入れて30日ごと自動交換。コード変更なく最新値使用。" },
-      { label: "自動ローテーション", text: "Lambdaで定期交換。RDS対応DBは基本Lambda提供", easy: "Lambda ロボットが定期的に新パスワード作ってDBに更新。" },
-      { label: "vs Parameter Store", text: "Secrets Manager: 自動ローテーション、$0.40/月。Parameter Store: 無料、ローテーション直接実装", easy: "自動交換必要 → Secrets Manager! 無料希望 → Parameter Store。" },
-      { label: "アクセス制御", text: "IAM + Resource-based Policy。VPC Endpointでインターネットなしアクセス", easy: "開発チームは開発DB パスワード只、運営チームは運営DBパスワード只見えるように制御。" },
-      { label: "試験ポイント", text: "RDS パスワード → Secrets Manager。Lambda環境変数ハードコーディング禁止", easy: "DBパスワード何処に? → Secrets Manager! Lambdaに直接入れたら絶対ダメ!" }
+      {
+        label: "ストレージ",
+        text: "保存時暗号化（KMS）。転送時暗号化（TLS）。ログに表示されない",
+        easy: "超安全な金庫みたいなもの。二重ロック、絶対に見えない。"
+      },
+      {
+        label: "ローテーション",
+        text: "X日ごとに自動ローテーション。ローテーションロジック用Lambdaファンクション。RDS自動ローテーション",
+        easy: "30日ごとにパスワードを自動変更。刑務所の警備員のローテーションみたいなもの。"
+      },
+      {
+        label: "アクセス制御",
+        text: "誰がアクセスできるかはIAMポリシーで。リソースベースポリシー。CloudTrailで監査",
+        easy: "特定の人だけがシークレットを取得可能。誰がいつアクセスしたか追跡。"
+      },
+      {
+        label: "アプリケーション統合",
+        text: "実行時にSDKサポートで取得。コード/設定ファイルに含めない",
+        easy: "アプリが実行時に「パスワードをください」と要求、ハードコードしない。"
+      },
+      {
+        label: "試験ポイント",
+        text: "Secrets Manager vs パラメータストア：Managerはシークレット用（ローテーション）、Storeは設定用",
+        easy: "シークレット=パスワード（ローテーション）、パラメータ=URL（ローテーション不要）。"
+      }
     ]
   },
   eventbridge: {
     title: "Amazon EventBridge",
-    subtitle: "イベントバス",
-    easy: "EventBridgeはイベント中継所! 何か起きたら自動的に別サービスに接続!",
+    subtitle: "イベントバス・ルーティングサービス",
+    easy: "EventBridgeはイベントディスパッチャー！Xが起きたらYをトリガー。AWSイベントをLambda、SNS、SQSなどに自動ルーティング。",
     points: [
-      { label: "イベントバス", text: "Default(AWS)、Custom(アプリ)、Partner(SaaS: Zendesk、Shopify)。アカウント間転送可能", easy: "AWSサービス、自分のアプリ、外部サービスイベントを各々別チャネルで受け取り。" },
-      { label: "Rules", text: "パターンマッチングでターゲット実行。Cron/Rate スケジュール。最大5個ターゲット。入力変換", easy: "『このイベント来たら実行』規則。Cronでスケジューラーも可能。" },
-      { label: "ターゲット", text: "Lambda、SQS、SNS、ECS、Step Functions、API Gateway、Kinesis等20+", easy: "Lambda実行、SQS メッセージ、SNS通知等20種類以上サービスと接続。" },
-      { label: "Archive & Replay", text: "イベントアーカイビング後再処理。デバッグ·再試行·テスト活用", easy: "過去イベントを再生! バグ修正後その時点から再実行可能。" },
-      { label: "試験ポイント", text: "CloudWatch Eventsのアップグレード。SaaS パートナー連動はEventBridgeのみ。Pipeパイプライン", easy: "外部サービスイベントをAWSに受け取るにはEventBridgeのみ可能!" }
+      {
+        label: "イベントソース",
+        text: "AWSサービス（EC2、RDS、CodeBuild）、パートナーイベント（Datadog、PagerDuty）、カスタムアプリ",
+        easy: "あらゆるAWSイベントやカスタムイベントをリッスン。全てのためのドアベルみたいなもの。"
+      },
+      {
+        label: "ルール",
+        text: "イベント属性のパターンマッチング。最大5ターゲット（ファンアウト）",
+        easy: "eventType=OrderPlaced かつ amount>100 なら、メール＋Lambda＋データベースをトリガー。"
+      },
+      {
+        label: "ターゲット",
+        text: "Lambda、SNS、SQS、Kinesis、Step Functions、API Gateway、EC2、Batchなど",
+        easy: "多くの場所にルーティング可能。1つのイベントが複数のアクションをトリガー。"
+      },
+      {
+        label: "スケジューリング",
+        text: "Cron式。Rate（5分）。スケジュールタスクに最適",
+        easy: "「毎日午前3時」または「5分ごと」にタスク実行。"
+      },
+      {
+        label: "試験ポイント",
+        text: "EventBridgeはイベント駆動アーキテクチャ用。SNS vs EB：EBの方が柔軟",
+        easy: "EventBridge=イベントディスパッチャー、SNS=通知。EBの方がパワフル！"
+      }
     ]
   },
   cloudtrail: {
     title: "AWS CloudTrail",
-    subtitle: "API監査ログ",
-    easy: "CloudTrailはAWS ドライブレコーダー! 誰がいつどんなサーバー作ったか全部記録!",
+    subtitle: "APIアクティビティログ・監査",
+    easy: "CloudTrailはAPIコール用の防犯カメラ！AWSへの全APIコールを記録 — 誰がいつ何をしたか。コンプライアンスに必須。",
     points: [
-      { label: "イベントタイプ", text: "Management Events(API呼び出し、デフォルト有効)、Data Events(S3/Lambda、別途設定)、Insight Events(異常検知)", easy: "Managementは『誰がEC2作った』、DataはS3ファイル開いた』みたいな詳細記録。" },
-      { label: "保存", text: "デフォルト90日(コンソール)。S3保存時無制限。CloudWatch Logs リアルタイム。Athena分析", easy: "コンソール90日のみ表示。S3に保存したら永遠に。Athenaで SQL分析も可能。" },
-      { label: "Trail", text: "単一リージョンまたはすべてのリージョン。組織Trail: Organizations全体中央収集。無結性検証", easy: "全世界すべての地域記録を1箇所に集められる。" },
-      { label: "セキュリティ", text: "SSE-KMS暗号化。S3アクセス制御。MFA Delete削除防止", easy: "ログファイルはKMSで暗号化。MFAないと削除不可 — 証拠隠滅防止!" },
-      { label: "試験ポイント", text: "CloudTrail ≠ CloudWatch。『誰が削除?』 → CloudTrail。『サーバー何で遅い?』 → CloudWatch", easy: "CloudTrailは監査日誌(誰が何した)、CloudWatchはパフォーマンス監視。別目的!" }
+      {
+        label: "ログ",
+        text: "管理イベント（デフォルト、操作）。データイベント（S3、Lambda詳細）。インサイトイベント（異常なアクティビティ）",
+        easy: "管理='誰がデータベースを削除した？'。データ='誰がこのファイルにアクセスした？'。インサイト='怪しい！'。"
+      },
+      {
+        label: "ストレージ",
+        text: "デフォルトでCloudTrailコンソールに90日間。長期保存はS3へ送信。Athenaでクエリ",
+        easy: "コンソールは90日表示、S3は永遠に保持、Athenaで検索できる。"
+      },
+      {
+        label: "組織トレイル",
+        text: "組織全体に単一のトレイル。全アカウントを一元監視",
+        easy: "全オフィスを同時に見る1台のカメラ。"
+      },
+      {
+        label: "保護",
+        text: "CloudTrail整合性。ログ改ざん防止。ダイジェストファイル検証",
+        easy: "ログをロックして削除・変更不可。ログが本物であることを証明。"
+      },
+      {
+        label: "試験ポイント",
+        text: "CloudTrailは監査に必須。VPCフローログはネットワークトラフィック用。CloudTrailはAPIコール用",
+        easy: "CloudTrail=API監査、VPCフロー=ネットワーク監査。両方必要！"
+      }
     ]
   },
   apigw: {
     title: "Amazon API Gateway",
-    subtitle: "API管理",
-    easy: "API Gatewayはアプリの玄関! 要求を受けてLambda、EC2に渡し、Throttling、Cachingも!",
+    subtitle: "API管理サービス",
+    easy: "API Gatewayはフロントデスク！お客さんからのHTTPリクエストを受け取り、バックエンドのLambda/EC2などにルーティング。",
     points: [
-      { label: "API タイプ", text: "REST(フル機能·キャッシング)、HTTP(70%安い·高速)、WebSocket(リアルタイム双方向)", easy: "RESTはフルオプション自動ドア、HTTPは基本ドア(安い)、WebSocketはチャット·ゲーム用。" },
-      { label: "統合", text: "Lambda Proxy、AWSサービス直接(S3、DynamoDB)、HTTP バックエンド、Mock", easy: "Lambda Proxyは電話接続、直接統合はDynamoDB直接照会、Mockはテスト用ダミー。" },
-      { label: "セキュリティ", text: "IAM、Cognito Authorizer、Lambda Authorizer、Resource Policy(IP/VPC制限)", easy: "IAMは社員証、Cognitoは会員トークン、Lambda Authorizerはカスタム確認。" },
-      { label: "パフォーマンス", text: "Throttling: デフォルト10,000 RPS。キャッシング: TTL 300秒。Stage別デプロイ(dev/prod)", easy: "要求殺到時番号札待機。よく聞く話はキャッシュ。dev/prod分離管理。" },
-      { label: "試験ポイント", text: "Edge-Optimized(グローバル)、Regional(1リージョン)、Private(VPC)。WebSocket → リアルタイムチャット", easy: "全世界 → Edge、1リージョン → Regional、内部ネット → Private。リアルタイムチャット → WebSocket!" }
+      {
+        label: "種類",
+        text: "REST API：HTTP、柔軟。HTTP API：モダン、安い、速い。WebSocket：リアルタイム",
+        easy: "RESTは信頼の定番、HTTPはより速く安い、WebSocketはチャット/ゲーム用。"
+      },
+      {
+        label: "統合",
+        text: "Lambda、EC2、Kinesis、DynamoDB、SQS、SNS、Step Functions、モック",
+        easy: "何にでもルーティング可能。レストランがお客さんをキッチンに案内するみたいなもの。"
+      },
+      {
+        label: "スロットリング",
+        text: "乱用防止。トークンバケットアルゴリズム。レート制限設定可能",
+        easy: "1秒あたりのリクエストを制限。店の行列管理みたいなもの。"
+      },
+      {
+        label: "キャッシュ",
+        text: "ステージごとにレスポンスをキャッシュ。TTL設定可能。バックエンド負荷を削減",
+        easy: "頻繁なリクエストをキャッシュ。Lambdaコール削減=コスト節約。"
+      },
+      {
+        label: "試験ポイント",
+        text: "API GW＋Lambda=サーバーレスAPI。ブラウザリクエストにはCORSが必要。メータリングには使用量プラン",
+        easy: "API GW=フロントエンド、Lambda=ロジック。CORS=ブラウザセキュリティ。使用量=レート制限。"
+      }
+    ]
+  },
+  batch: {
+    title: "AWS Batch",
+    subtitle: "フルマネージドバッチコンピューティング",
+    easy: "AWS Batchは宿題を自動的に配るクラス委員長みたいなもの！ジョブリストを送ると、コンピュートを借りて全部処理して返してくれます。サーバー管理不要！",
+    points: [
+      {
+        label: "コアコンポーネント",
+        text: "ジョブ定義（作業テンプレート）、ジョブキュー（優先度キュー）、コンピュート環境（EC2/Fargate自動プロビジョン）",
+        easy: "ジョブ定義=レシピ、ジョブキュー=注文の列、コンピュート環境=自動プロビジョンシェフ。"
+      },
+      {
+        label: "コンピュート環境",
+        text: "マネージド（AWSがEC2/Fargateを自動管理）vs アンマネージド（自分で管理）。スポットインスタンスで最大90%節約",
+        easy: "マネージド=AWSが自動でサーバー準備。アンマネージド=自分で管理。スポットで90%節約！"
+      },
+      {
+        label: "ワークフロー統合",
+        text: "バッチパイプラインにStep Functions。スケジュール実行にEventBridge",
+        easy: "事前処理→バッチ→後処理の自動パイプラインにStep Functionsを接続。"
+      },
+      {
+        label: "Lambdaとの比較",
+        text: "Lambda：最大15分、シンプルなイベント処理。Batch：数時間〜数日、大規模並列処理",
+        easy: "Lambda=短距離スプリント、Batch=マラソン！ML学習、レンダリング、ビッグデータ→Batchを使って。"
+      },
+      {
+        label: "試験ポイント",
+        text: "BatchはECS上で動作。15分超のジョブ→Batchを使用。スポット中断は自動リトライ",
+        easy: "15分超のタスク→AWS Batch！スポット中断？自動リトライ！"
+      }
+    ]
+  },
+  fsx: {
+    title: "Amazon FSx",
+    subtitle: "マネージドファイルシステム",
+    easy: "FSxはAWSでさまざまなファイルサーバーをそのまま使えます！Windowsの共有フォルダ、HPC用ファイルシステムなどをフルマネージドサービスとして提供。",
+    points: [
+      {
+        label: "FSx for Windows File Server",
+        text: "フルマネージドWindowsファイルサーバー。SMB/NTFS。Active Directory統合。マルチAZサポート",
+        easy: "AWSのWindows共有フォルダ！既存のAD認証情報をそのまま使える。"
+      },
+      {
+        label: "FSx for Lustre",
+        text: "HPC/ML向け高性能。S3ダイレクト統合。数百GB/sのスループット",
+        easy: "スーパーコンピューター速度のファイルシステム！ML学習、ゲノミクス、動画処理向け。"
+      },
+      {
+        label: "FSx for NetApp ONTAP",
+        text: "フルマネージドNetApp ONTAP。NFS/SMB/iSCSI。自動ティアリング。重複排除",
+        easy: "エンタープライズNetAppをAWSにリフトアンドシフト。オンプレミス互換！"
+      },
+      {
+        label: "FSx for OpenZFS",
+        text: "ZFSベース。NFS互換。スナップショットとレプリケーション。Linuxワークロード最適化",
+        easy: "Linux向け高性能ファイルシステム。ZFS機能（スナップショット、圧縮）をマネージドサービスとして。"
+      },
+      {
+        label: "試験ポイント",
+        text: "Windowsファイル共有→FSx for Windows（EFSではない！）。HPC/ML→FSx for Lustre。EFS=Linux NFS専用",
+        easy: "Windowsの共有フォルダ→FSx for Windows！Linux共有→EFS。HPC→Lustre！"
+      }
+    ]
+  },
+  storagegateway: {
+    title: "AWS Storage Gateway",
+    subtitle: "ハイブリッドストレージブリッジ",
+    easy: "Storage GatewayはオンプレミスサーバーとAWSクラウドをつなぐ橋！オンプレミスサーバーからAWS S3をローカルドライブのように使えます。",
+    points: [
+      {
+        label: "File Gateway",
+        text: "NFS/SMB経由でS3アクセス。低レイテンシーのローカルキャッシュ。オンプレミスアプリのコードを変更せずにS3を使用",
+        easy: "会社のファイルサーバーをS3に接続！社員はネットワークドライブとして普通に使える。"
+      },
+      {
+        label: "Volume Gateway",
+        text: "iSCSIブロックストレージ。Cached（S3に保存、頻繁なデータはローカル）。Stored（ローカルが主、S3がバックアップ）",
+        easy: "Cached=ほぼS3、Stored=ローカルが主＋S3バックアップ。ディザスタリカバリに使用。"
+      },
+      {
+        label: "Tape Gateway",
+        text: "仮想テープライブラリ（VTL）。既存バックアップソフト（Veeamなど）をそのまま使用。S3/Glacierに保存",
+        easy: "テープバックアップシステムをクラウドに移行！ソフトを変えずにS3に保存。"
+      },
+      {
+        label: "ユースケース",
+        text: "オンプレミス→クラウドバックアップ、ディザスタリカバリ、クラウド移行の中間ステップ",
+        easy: "会社データをクラウドに移行する過渡期によく使われる。"
+      },
+      {
+        label: "試験ポイント",
+        text: "オンプレミスからS3アクセス→Storage Gateway。テープバックアップ→クラウド→Tape Gateway。S3/Glacier互換",
+        easy: "オンプレミス＋S3接続のキーワード→Storage Gateway！テープ→Glacier！"
+      }
+    ]
+  },
+  datasync: {
+    title: "AWS DataSync",
+    subtitle: "オンラインデータ転送サービス",
+    easy: "DataSyncは引っ越し業者！既存サーバーからAWSにデータを素早く安全に転送します。自動暗号化してデータが正しく転送されたか検証！",
+    points: [
+      {
+        label: "ソース/デスティネーション",
+        text: "ソース：NFS、SMB、HDFS、S3、EFS、FSx、オブジェクトストレージ。デスティネーション：S3、EFS、FSx",
+        easy: "NFSサーバー、Hadoop、S3からAWSストレージへ転送。"
+      },
+      {
+        label: "パフォーマンス",
+        text: "ネットワーク帯域を最大活用。並列転送。DataSyncエージェント（オンプレミスにインストール）。Direct Connect/VPNサポート",
+        easy: "高速転送のために自動的にネットワークを最大活用。Direct Connectでさらに速く。"
+      },
+      {
+        label: "自動化と検証",
+        text: "スケジュール転送。自動データ整合性検証。転送後削除オプション。CloudWatchモニタリング",
+        easy: "スケジュールに従って自動同期し、データが破損なく転送されたか検証！"
+      },
+      {
+        label: "Storage Gatewayとの比較",
+        text: "DataSync：一回限りまたは定期的な大規模移行。Storage Gateway：継続的なオンプレミス-クラウド接続",
+        easy: "DataSync=引っ越し（データ移行）、Storage Gateway=通勤（常時接続）。"
+      },
+      {
+        label: "試験ポイント",
+        text: "オンプレミス→S3/EFS大規模移行→DataSync。Snow Family=オフライン、DataSync=オンライン",
+        easy: "ネットワーク経由のデータ転送→DataSync！遠隔地でインターネットなし→Snow Family！"
+      }
+    ]
+  },
+  snow: {
+    title: "AWS Snow Family",
+    subtitle: "オフライン大規模データ移行",
+    easy: "Snow FamilyはAWSがトラックでハードドライブを届けるサービス！インターネットが遅いか使えない場合、数十〜数百ペタバイトのデータを物理的に転送。",
+    points: [
+      {
+        label: "Snowcone",
+        text: "超コンパクト（2.1kg）。8TB〜14TB。現場データ収集と転送。DataSync内蔵",
+        easy: "バッグに入る。遠隔地でのデータ収集向け。"
+      },
+      {
+        label: "Snowball Edge",
+        text: "ストレージ最適化（80TB）、コンピュート最適化（42TB＋GPU）。エッジコンピューティング可能。クラスタリング",
+        easy: "スーツケース大のデバイス。転送だけでなく現場でのコンピューティングも可能。"
+      },
+      {
+        label: "Snowmobile",
+        text: "40フィートのコンテナトラック。最大100PB。エクサバイト規模の移行",
+        easy: "データセンター丸ごと移行に！AWSのトラックが来て直接接続。"
+      },
+      {
+        label: "エッジコンピューティング",
+        text: "インターネットなしの現場でEC2/Lambdaを実行。収集→処理→後でAWSにアップロード",
+        easy: "インターネットのない鉱山や船上でデータを処理し、後でAWSに転送。"
+      },
+      {
+        label: "試験ポイント",
+        text: "ネットワークで10年以上かかる→Snow。オフラインのみ。転送後AWSがデータを消去",
+        easy: "「数十PBを移行」＋「インターネット制限」→Snow Family！アップロード後データは消去。"
+      }
+    ]
+  },
+  natgw: {
+    title: "NAT Gateway",
+    subtitle: "プライベートサブネットのインターネット外向き通信",
+    easy: "NAT Gatewayはプライベートサブネットの住人が外に出られる裏口！外向きは許可されるが外からの内向きアクセスは不可。",
+    points: [
+      {
+        label: "役割",
+        text: "プライベートサブネットのEC2/Lambdaがインターネットへ外向き通信可能にする。内向き不可（ステートフル）",
+        easy: "プライベートサブネットのインスタンスがソフトウェア更新や外部API呼び出し可能。外からはアクセスできない。"
+      },
+      {
+        label: "デプロイ",
+        text: "パブリックサブネットに配置。Elastic IPが必要。高可用性のためAZごとに1つ推奨",
+        easy: "NAT Gateway自体はパブリックサブネットに必要。安全のためアベイラビリティゾーンごとに作成。"
+      },
+      {
+        label: "NATインスタンス",
+        text: "EC2ベース（レガシー）。手動管理とパッチ適用が必要。セキュリティグループ適用可能。低コスト",
+        easy: "NAT Gateway=AWSマネージド、NATインスタンス=自分でEC2を管理。試験の引っ掛けによく出る！"
+      },
+      {
+        label: "コスト",
+        text: "時間単位＋処理データGBあたり。クロスAZトラフィック料金。同AZのNAT Gatewayを推奨",
+        easy: "送信データが増えるほど高くなる。AZごとのNAT Gatewayでデータ転送コスト削減。"
+      },
+      {
+        label: "試験ポイント",
+        text: "NAT GatewayはパブリックサブネットにあるHA=AZごとにNAT Gateway。IPv6はEgress-Only IGWを使用",
+        easy: "IPv6のプライベートサブネット→NAT GatewayではなくEgress-Only IGWを使用！試験の引っ掛け！"
+      }
+    ]
+  },
+  vpcendpoint: {
+    title: "VPCエンドポイント",
+    subtitle: "インターネットを使わずにAWSサービスにアクセス",
+    easy: "VPCエンドポイントはAWSサービスへの秘密トンネル！インターネットを経由せず、AWSの内部ネットワーク経由でS3、DynamoDBなどにアクセス。",
+    points: [
+      {
+        label: "ゲートウェイエンドポイント",
+        text: "S3とDynamoDBのみ。無料。ルートテーブルにルートを追加。リージョナルアクセス",
+        easy: "S3、DynamoDB→ゲートウェイエンドポイント（無料）！ルートテーブルに宛先を追加するだけ。"
+      },
+      {
+        label: "インターフェースエンドポイント（PrivateLink）",
+        text: "他のAWSサービス（EC2、SQSなど）。ENIを作成。時間単位＋データ料金。DNS解決が変わる",
+        easy: "ほとんどのAWSサービス接続にはインターフェースエンドポイントを使用。通信用のENIを1つ作成。"
+      },
+      {
+        label: "ゲートウェイロードバランサーエンドポイント",
+        text: "GWLBと統合。サードパーティのファイアウォール/IPSトラフィックを透過的に挿入。検査後に元の宛先に配信",
+        easy: "セキュリティアプライアンスを通過させる特殊なエンドポイント。ファイアウォール検査を透過的に挿入。"
+      },
+      {
+        label: "セキュリティの利点",
+        text: "Internet Gateway/NATゲートウェイなしにAWSサービスにアクセス。バケットポリシーでVPCエンドポイント条件を指定可能",
+        easy: "S3のデータがインターネットを経由しない — より安全！特定VPCからのみバケットアクセスを許可できる。"
+      },
+      {
+        label: "試験ポイント",
+        text: "S3/DynamoDB→ゲートウェイ（無料）。その他→インターフェース（有料）。オンプレミスからは使用不可",
+        easy: "S3=ゲートウェイエンドポイント（無料）！他のサービス=インターフェースエンドポイント。オンプレミス→VPCエンドポイント不可！"
+      }
+    ]
+  },
+  transitgw: {
+    title: "AWS Transit Gateway",
+    subtitle: "ネットワークハブルーター",
+    easy: "Transit Gatewayは複数のVPCとオンプレミスネットワークを1か所でつなぐ中央ハブ！VPCが増えるほどピアリングより簡単になります。",
+    points: [
+      {
+        label: "ハブアンドスポーク",
+        text: "最大5,000のVPC/VPN接続。VPCピアリングと異なりトランジティブルーティングをサポート。集中管理",
+        easy: "10VPCだとピアリングは45本必要。TGWは1つのハブに10本の接続だけ！"
+      },
+      {
+        label: "マルチアカウント",
+        text: "リソースアクセスマネージャー（RAM）経由でアカウント間共有。Organizations統合",
+        easy: "複数のAWSアカウントのVPCを1つのTGWに接続。マルチアカウントアーキテクチャに必須。"
+      },
+      {
+        label: "ルートテーブル",
+        text: "トラフィック分離のための複数ルートテーブル。VPC隔離可能。ブラックホールルーティング",
+        easy: "VPC A↔Bは許可するがA↔Cはブロック — 細かいルーティング制御が可能。"
+      },
+      {
+        label: "アタッチメントタイプ",
+        text: "VPCアタッチメント、VPNアタッチメント、Direct Connect Gatewayアタッチメント、ピアリングアタッチメント（クロスリージョン）",
+        easy: "VPC、VPN、Direct Connectが全て1つのTGWを通じて接続。クロスリージョンTGWピアリングも可能。"
+      },
+      {
+        label: "試験ポイント",
+        text: "TGW：トランジティブルーティングYES。VPCピアリング：トランジティブルーティングNO。100以上のVPC→TGW推奨",
+        easy: "多くのVPC＋通信が必要→Transit Gateway！ピアリング=1対1のみ、TGW=多対多！"
+      }
+    ]
+  },
+  globalaccel: {
+    title: "AWS Global Accelerator",
+    subtitle: "グローバルネットワーク高速化",
+    easy: "Global Acceleratorは世界中のユーザーを最寄りのAWSエッジに接続してサーバーへの高速アクセスを実現！インターネットの代わりにAWSの内部高速道路を使用。",
+    points: [
+      {
+        label: "Anycast IP",
+        text: "静的Anycast IPが2つ提供される。同じIPが世界中のどこからでも最寄りのエッジに接続",
+        easy: "どこから電話しても常に最寄りの支店につながる固定電話番号みたいなもの。"
+      },
+      {
+        label: "パフォーマンス",
+        text: "インターネットの代わりにAWSグローバルネットワークを使用。パケットロス/レイテンシー/ジッターを削減。60%速いレスポンス",
+        easy: "公道ではなくAWS専用高速道路！格段に速くて安定。"
+      },
+      {
+        label: "ヘルスチェックとフェイルオーバー",
+        text: "エンドポイントヘルスチェック。異常時に別のリージョン/エンドポイントへ自動切り替え。30秒以内",
+        easy: "サーバーがダウン？30秒以内に別のサーバーへ自動切り替え！"
+      },
+      {
+        label: "エンドポイント",
+        text: "ALB、NLB、EC2、Elastic IP。重み付けトラフィックルーティング。ブルー/グリーンデプロイ",
+        easy: "複数リージョンのロードバランサーに重みを配分。A/Bテスト、ゼロダウンタイムデプロイ。"
+      },
+      {
+        label: "試験ポイント",
+        text: "CloudFront vs Global Accelerator：CloudFront=キャッシュ（HTTP）、GA=TCP/UDPネットワーク高速化",
+        easy: "静的コンテンツのキャッシュが必要→CloudFront。ゲーム/リアルタイム/キャッシュなし高速化→Global Accelerator！"
+      }
+    ]
+  },
+  sitevpn: {
+    title: "AWS Site-to-Site VPN",
+    subtitle: "オンプレミスVPN接続",
+    easy: "Site-to-Site VPNはインターネット経由で社内ネットワークをAWS VPCに安全に接続する暗号化トンネル！Direct Connectよりも早く設定できます。",
+    points: [
+      {
+        label: "コンポーネント",
+        text: "仮想プライベートゲートウェイ（VGW）またはTransit Gateway＋カスタマーゲートウェイ（オンプレミスルーター）＋2つのIPsecトンネル",
+        easy: "AWSのドア（VGW）と会社のドア（CGW）が2つの暗号化トンネルで接続。"
+      },
+      {
+        label: "冗長性",
+        text: "2つのトンネルが自動作成（アクティブ/パッシブ）。高可用性。異なるAZで終端",
+        easy: "自動的に2つのトンネル！1つが壊れても別のトンネルで通信継続。"
+      },
+      {
+        label: "速度と制限",
+        text: "最大1.25Gbps/トンネル。インターネット経由で可変レイテンシー。数時間で設定",
+        easy: "Direct Connectより早く設定できる。でも速度はDirect Connectが勝る。"
+      },
+      {
+        label: "Direct Connect上のVPN",
+        text: "DXには暗号化がない。DX＋Site-to-Site VPNで暗号化を追加",
+        easy: "Direct Connectには暗号化がない — セキュリティが必要ならVPNも一緒に導入。"
+      },
+      {
+        label: "試験ポイント",
+        text: "VPN：素早い設定、インターネット経由。DX：数週間〜数か月の設定、専用線。DXバックアップにVPN推奨",
+        easy: "「すぐに接続」→VPN。「安定した帯域」→Direct Connect。「暗号化＋DX」→VPN over DX！"
+      }
+    ]
+  },
+  vpcpeering: {
+    title: "VPCピアリング",
+    subtitle: "VPC間の直接プライベート接続",
+    easy: "VPCピアリングは2つのVPCを秘密トンネルで接続すること！異なるVPCのサーバーがインターネットなしで通信できます。",
+    points: [
+      {
+        label: "機能",
+        text: "AWSネットワーク経由のプライベート接続。同一リージョンまたはクロスリージョン。同一アカウントまたはクロスアカウント",
+        easy: "2つのVPC間の専用トンネル。インターネット不要。他のアカウントやリージョンもサポート。"
+      },
+      {
+        label: "トランジティブルーティングなし",
+        text: "A→B→Cのトランジティブルーティングは非サポート。A↔Cを接続するには別のピアリングが必要",
+        easy: "A-B-Cが接続されていても、AはCに到達できない。A-Cの接続を別途作成が必要！"
+      },
+      {
+        label: "CIDR制限",
+        text: "重複するCIDRブロックはピアリング不可。両側のルートテーブルを更新が必要",
+        easy: "2つのVPCのIP範囲が重なると接続できない！CIDRを慎重に計画して。"
+      },
+      {
+        label: "Transit Gatewayとの比較",
+        text: "ピアリング：1対1、トランジティブなし、無料。TGW：ハブ、トランジティブ、コストあり",
+        easy: "2〜3VPC→ピアリング（無料）。複雑な多数のVPC→Transit Gateway。"
+      },
+      {
+        label: "試験ポイント",
+        text: "トランジティブルーティングなし。重複CIDRなし。両側のルートテーブル更新が必要",
+        easy: "ピアリング後、両側のルートテーブルを更新が必要！片側だけでは動かない。"
+      }
+    ]
+  },
+  scp: {
+    title: "サービスコントロールポリシー（SCP）",
+    subtitle: "Organizationsの最大権限境界",
+    easy: "SCPは会社全体の憲法！従業員（アカウント）がどんな権限を持っていても、SCPが禁じていれば絶対にできません。IAMが許可していても、SCPがブロックします！",
+    points: [
+      {
+        label: "概要",
+        text: "AWS Organizations内のOU/アカウントに適用。許可される最大権限境界を定義。IAMへの追加条件",
+        easy: "SCPはアカウントごとの権限の天井。IAMが全て許可しても、SCPが禁じたことはできない。"
+      },
+      {
+        label: "許可と拒否",
+        text: "許可リスト：リストされたアクションのみ許可。拒否リスト：リストされたアクションのみ拒否（デフォルト）",
+        easy: "拒否リストがデフォルト。特定サービスをブロック。許可リスト=許可されたサービスのみ使用可能。"
+      },
+      {
+        label: "スコープ",
+        text: "SCPをルートアカウントに適用不可。メンバーアカウントにのみ適用。管理アカウントは影響なし",
+        easy: "SCPは子アカウントのみ制限。マスター（管理）アカウントはSCPの影響を受けない。注意！"
+      },
+      {
+        label: "階層",
+        text: "OU→子OU→アカウントへの継承。親OUのSCPと自アカウントのSCPを両方満たす必要あり",
+        easy: "ルールはトップダウンで流れる。親OUでブロックされると子はオーバーライドできない。"
+      },
+      {
+        label: "試験ポイント",
+        text: "SCP ≠ IAMポリシー。ルートユーザーもSCP制限の対象。管理アカウントはSCP免除",
+        easy: "SCPが禁じていればルートアカウントでさえできない！管理アカウントのみSCP免除。"
+      }
+    ]
+  },
+  networkfirewall: {
+    title: "AWS Network Firewall",
+    subtitle: "マネージドVPCネットワークファイアウォール",
+    easy: "Network FirewallはVPCのセキュリティガード！ステートフル検査で全ての入出力トラフィックを検査。WAFはアプリ層、Network Firewallはネットワーク層を担当！",
+    points: [
+      {
+        label: "概要",
+        text: "フルマネージドのステートフルファイアウォール。VPCのインバウンド/アウトバウンド/東西トラフィックを保護。ゲートウェイロードバランサー不要",
+        easy: "VPCレベルのファイアウォール。全トラフィックを検査：インターネット→VPC、VPC→インターネット、VPC→VPC。"
+      },
+      {
+        label: "ルールタイプ",
+        text: "ステートレス（パケット単位）、ステートフル（コネクション追跡）、ドメインリスト（ドメインブロック）、Suricata IPS（オープンソースルール）",
+        easy: "シンプルなIP/ポートブロックからドメインベースのブロック、IPSルールまで — 高度に設定可能。"
+      },
+      {
+        label: "アーキテクチャ",
+        text: "専用ファイアウォールサブネットにデプロイ。トラフィックルーティング調整が必要。集中型または分散型デプロイ",
+        easy: "専用ファイアウォールサブネットを作成し、全トラフィックをそこを通すようにルーティング。"
+      },
+      {
+        label: "WAF・セキュリティグループとの比較",
+        text: "SG：インスタンスレベル。WAF：L7 HTTP。Network Firewall：VPCレベルL3〜L7包括",
+        easy: "SG=ゲストリスト、WAF=アプリセキュリティ、Network Firewall=住宅地入口の包括的なセキュリティ。"
+      },
+      {
+        label: "試験ポイント",
+        text: "VPCレベルのトラフィック検査/ブロック→Network Firewall。IDS/IPS機能が必要→Network Firewall",
+        easy: "全VPCトラフィックのフィルタリング＋IPS機能→Network Firewall！"
+      }
+    ]
+  },
+  guardduty: {
+    title: "Amazon GuardDuty",
+    subtitle: "MLベースの脅威検出",
+    easy: "GuardDutyはAWSの探偵！ログを分析して「異常なログイン」「仮想通貨マイニング」「データ流出」などの脅威を自動検出。インストール不要で即座に有効化！",
+    points: [
+      {
+        label: "分析ソース",
+        text: "CloudTrail（APIコール）、VPCフローログ（ネットワーク）、DNSログ（ドメイン）、EKS監査ログ、S3イベント",
+        easy: "CloudTrail、VPCフロー、DNSを同時分析。エージェント不要 — 30秒で有効化！"
+      },
+      {
+        label: "検出タイプ",
+        text: "異常なAPIコール、悪意あるIPアクセス、仮想通貨マイニング、認証情報盗難、ポートスキャン、S3流出",
+        easy: "ハッカーのパターン（悪意あるIP）、内部脅威（異常なAPI）、マルウェア（マイニング）などを検出。"
+      },
+      {
+        label: "検出結果",
+        text: "検出→EventBridge→Lambda/SNS。重要度（低/中/高）。自動修復可能",
+        easy: "脅威発見→EventBridgeアラート→Lambdaが自動ブロック！完全自動化可能。"
+      },
+      {
+        label: "マルチアカウント",
+        text: "Organizations統合。管理アカウントから全メンバーアカウントを一元管理",
+        easy: "全アカウントの脅威を1か所で管理。Organizations統合が必須。"
+      },
+      {
+        label: "試験ポイント",
+        text: "30日無料トライアル。VPCフローログが無効でもGuardDutyは独自に収集。エージェント不要",
+        easy: "オンにするだけで即時保護！脅威検出→GuardDuty、脆弱性スキャン→Inspector"
+      }
+    ]
+  },
+  inspector: {
+    title: "Amazon Inspector",
+    subtitle: "自動脆弱性スキャン",
+    easy: "InspectorはサーバーのセキュリティチェックロボットEC2、Lambda、コンテナ内の既知の脆弱性（CVE）を自動発見し、リスクスコア付きでレポート。",
+    points: [
+      {
+        label: "スキャン対象",
+        text: "EC2（OS/ソフトウェアCVE）、Lambda関数（コード依存関係）、ECRコンテナイメージ",
+        easy: "EC2、Lambda、コンテナイメージ内のパッケージやライブラリの脆弱性を自動スキャン。"
+      },
+      {
+        label: "継続スキャン",
+        text: "初回デプロイ＋新CVE公開時に自動再スキャン。SSM Agentを使用。ほぼリアルタイム",
+        easy: "一度だけでなく — 新しい脆弱性が発見されるたびに自動再スキャン！常に最新状態。"
+      },
+      {
+        label: "リスクスコア",
+        text: "CVSSv3＋ネットワーク到達性を組み合わせ。実際のリスクに基づいた優先度。Inspectorスコア",
+        easy: "CVEスコアだけでなく、インターネット露出も考慮して真のリスクレベルを計算。"
+      },
+      {
+        label: "統合",
+        text: "検出→Security Hub統合。EventBridge→自動化。ECRイメージスキャン統合",
+        easy: "Security Hubから一元管理。新しい脆弱性発見時に自動でチケット作成。"
+      },
+      {
+        label: "試験ポイント",
+        text: "GuardDuty：脅威検出（行動分析）。Inspector：脆弱性スキャン（CVE）。目的が異なる！",
+        easy: "GuardDuty=探偵（不審な行動）。Inspector=医師（健康診断）。全く別物！"
+      }
+    ]
+  },
+  macie: {
+    title: "Amazon Macie",
+    subtitle: "S3機密データ自動検出",
+    easy: "MacieはS3ストレージの機密データ検出器！クレジットカード番号、SSN、メールなどの機密データがどこに保存されているか自動発見。GDPRコンプライアンスに役立つ！",
+    points: [
+      {
+        label: "検出タイプ",
+        text: "PII（個人情報）、金融情報（クレジットカード/口座）、医療情報（PHI）、認証情報（APIキー/パスワード）",
+        easy: "SSN、クレジットカード番号、APIキーがS3にあれば — 自動的に発見してアラート！"
+      },
+      {
+        label: "分類",
+        text: "ML＋パターンマッチング。100以上のマネージドデータ識別子。カスタム識別子追加可能",
+        easy: "100以上のAWS作成パターンで自動検出。会社固有のパターンも追加可能。"
+      },
+      {
+        label: "S3カバレッジ",
+        text: "アカウント内の全S3バケットを自動発見。セキュリティステータス表示：暗号化、パブリックアクセス",
+        easy: "全S3バケットを自動スキャンしてアラート：「このバケットに機密データあり！」"
+      },
+      {
+        label: "検出結果",
+        text: "検出→EventBridge→Lambda/SNS。Security Hub統合。30日無料トライアル",
+        easy: "機密データ発見→EventBridge→自動通知または移動！"
+      },
+      {
+        label: "試験ポイント",
+        text: "S3機密データ検出→Macie。PII/コンプライアンス→Macie。GuardDuty=脅威検出！",
+        easy: "「S3にPIIはどこ？」→Macie！「ハッキング試みを検出」→GuardDuty！"
+      }
+    ]
+  },
+  acm: {
+    title: "AWS Certificate Manager",
+    subtitle: "SSL/TLS証明書管理",
+    easy: "ACMはWebサイトのHTTPS証明書を無料で発行し自動更新！証明書の期限切れを心配する必要なし — 常にHTTPSを維持！",
+    points: [
+      {
+        label: "主要機能",
+        text: "無料SSL/TLS証明書発行。自動更新。パブリックとプライベート証明書。DNS/メール検証",
+        easy: "AWSが証明書の発行、更新、デプロイを管理。更新忘れ=障害発生！"
+      },
+      {
+        label: "統合サービス",
+        text: "ELB（ALB/NLB）、CloudFront、API Gateway、Elastic Beanstalk。EC2に直接デプロイ不可",
+        easy: "ALB、CloudFrontに証明書を付けられる。EC2に直接デプロイ不可 — ELBの背後に置く必要あり！"
+      },
+      {
+        label: "パブリックとプライベート",
+        text: "パブリック：無料、インターネットサービス向け。プライベート（ACM Private CA）：有料、内部サービス向け",
+        easy: "インターネット向け証明書→無料！社内システム向け→Private CA（有料）。"
+      },
+      {
+        label: "リージョン制限",
+        text: "CloudFront証明書はus-east-1（バージニア）で発行が必要。リージョンは独立",
+        easy: "CloudFront＋HTTPS→us-east-1で証明書発行！他のリージョンの証明書はCloudFrontで使えない。"
+      },
+      {
+        label: "試験ポイント",
+        text: "ACMはEC2に直接デプロイ不可。CloudFront証明書→us-east-1必須。自動更新で期限切れ防止",
+        easy: "CloudFront SSL→us-east-1のACM！EC2に直接デプロイ不可 — ELB/CFを経由する必要あり！"
+      }
+    ]
+  },
+  s3objectlock: {
+    title: "S3 Object Lock",
+    subtitle: "WORMデータ保護",
+    easy: "S3 Object Lockは設定期間中ファイルを削除・変更できないようにロック。金融、医療、法務分野で法的に必要なデータ保持に使用！",
+    points: [
+      {
+        label: "WORM",
+        text: "Write Once, Read Many。データ不変性を保証。ランサムウェア対策。コンプライアンスデータ保持",
+        easy: "一度書いたら保持期間中は読み取り専用！削除も変更もできない。ランサムウェア耐性。"
+      },
+      {
+        label: "ガバナンスモード",
+        text: "特別な権限（s3:BypassGovernanceRetention）でアンロック/削除可能。テスト、柔軟な保護",
+        easy: "特別な権限を持つ管理者はアンロックできる。テスト向けのより柔軟な保護。"
+      },
+      {
+        label: "コンプライアンスモード",
+        text: "ルートを含む誰も削除/変更不可。保持期間変更不可。厳格なコンプライアンス",
+        easy: "ルートでさえ削除できない！法的に義務付けられたデータ保持に使用。一度設定したら変更不可。"
+      },
+      {
+        label: "リーガルホールド",
+        text: "保持期間なしで無期限保護。s3:PutObjectLegalHold権限で設定/解除",
+        easy: "法的調査が終わるまで無期限で保護。訴訟での証拠保全に使用。"
+      },
+      {
+        label: "試験ポイント",
+        text: "S3 Object LockにはバージョニングFlickerが必要。バケット作成時に有効化（後から変更不可）。GlacierはVault Lockをサポート",
+        easy: "WORM＋コンプライアンス→S3 Object Lock！コンプライアンスモード=ルートでさえ削除できない！"
+      }
+    ]
+  },
+  stepfunctions: {
+    title: "AWS Step Functions",
+    subtitle: "サーバーレスワークフローオーケストレーション",
+    easy: "Step Functionsは複数のLambdaをつなぐ指揮者！成功したら次のステップへ、失敗したら自動リトライまたはエラーハンドリング。",
+    points: [
+      {
+        label: "ステートマシン",
+        text: "JSON/YAMLでワークフロー定義。ビジュアルエディター。Task/Choice/Wait/Parallel/Map状態",
+        easy: "フローチャートをコードとして描く！分岐、並列実行、待機、ループ全て表現可能。"
+      },
+      {
+        label: "StandardとExpress",
+        text: "Standard：最大1年、正確に1回の実行、監査ログ。Express：最大5分、高スループット、非同期",
+        easy: "Standard=長時間実行のクリティカルワークフロー、Express=高速高スループット（IoT、ストリーミング）。"
+      },
+      {
+        label: "統合",
+        text: "Lambda、ECS、DynamoDB、SQS、SNS、Bedrock、SageMakerなど多数のAWSサービスと直接統合",
+        easy: "Lambdaだけでなく — コードなしでECS、DynamoDB、SageMakerに直接接続！"
+      },
+      {
+        label: "エラーハンドリング",
+        text: "Retry、Catch（フォールバック）。指数バックオフ。タイムアウト。ハートビート",
+        easy: "Lambdaが失敗→3回リトライ、それでも失敗→自動的にエラーハンドリングパスに誘導。"
+      },
+      {
+        label: "試験ポイント",
+        text: "複雑なLambdaチェーン→Step Functions。並列処理→Map/Parallel状態。15分超→Standard",
+        easy: "複数のLambdaを順番に、条件分岐で、並列に実行→Step Functions！"
+      }
+    ]
+  },
+  dynamostreams: {
+    title: "DynamoDB Streams",
+    subtitle: "DynamoDB変更イベントストリーム",
+    easy: "DynamoDB Streamsはテーブルの全変更をリアルタイムで通知するシステム！アイテムの追加/変更/削除時にLambdaが自動起動。",
+    points: [
+      {
+        label: "概要",
+        text: "DynamoDBアイテム変更（INSERT/MODIFY/REMOVE）の順序付きストリーム。24時間保持。シャードベース",
+        easy: "テーブルの変更を順番に記録するテープ。24時間以内に処理が必要。"
+      },
+      {
+        label: "ストリームレコードタイプ",
+        text: "KEYS_ONLY、NEW_IMAGE、OLD_IMAGE、NEW_AND_OLD_IMAGES",
+        easy: "キーのみ、または変更前後のデータを送るか選択。前後の比較=NEW_AND_OLD_IMAGES。"
+      },
+      {
+        label: "Lambda統合",
+        text: "Lambdaイベントソースとして自動ポーリング。バッチ処理。失敗時リトライ。DLQ設定可能",
+        easy: "新しい変更→Lambdaが自動起動！バッチ処理、失敗アイテムはDLQへ。"
+      },
+      {
+        label: "ユースケース",
+        text: "クロスリージョンレプリケーション（グローバルテーブルの基盤）、イベント駆動キャッシュ無効化、変更監査ログ",
+        easy: "注文が入る→在庫減少＋配送開始＋通知が全て同時に処理！"
+      },
+      {
+        label: "試験ポイント",
+        text: "StreamsはLambdaトリガーの基盤。グローバルテーブルも内部でStreamsを使用。Kinesis Data Streamsも選択可能",
+        easy: "DynamoDB変更→Lambda自動トリガー→Streams！グローバルテーブルもStreams経由でレプリケーション。"
+      }
+    ]
+  },
+  dms: {
+    title: "AWS Database Migration Service",
+    subtitle: "データベース移行",
+    easy: "DMSはデータベースの引っ越しヘルパー！OracleからAurora、MySQLからPostgreSQLへダウンタイムなしでデータ移行。移行中もサービスは稼働継続！",
+    points: [
+      {
+        label: "移行タイプ",
+        text: "同種（MySQL→MySQL）、異種（Oracle→Aurora）。フルロード、CDC（継続レプリケーション）、フルロード＋CDC",
+        easy: "同じエンジン=直接移行。異なるエンジン=まずスキーマ変換ツール（SCT）を使い、次にDMS。"
+      },
+      {
+        label: "CDC（変更データキャプチャ）",
+        text: "移行中のソースDB変更をリアルタイムでレプリケーション。ダウンタイムを最小化",
+        easy: "移行中に到着した新しいデータも自動移動！サービス中断なしで移行。"
+      },
+      {
+        label: "レプリケーションインスタンス",
+        text: "処理用のDMSレプリケーションインスタンス。EC2ベース。サイズを選択。マルチAZオプション",
+        easy: "中間でデータを読み書きするEC2サーバー。データ量に応じてサイズを選択。"
+      },
+      {
+        label: "サポートDB",
+        text: "ソース/ターゲット：RDS、Aurora、Redshift、DynamoDB、S3、MongoDB、DocumentDB、Kafkaなど",
+        easy: "ほぼあらゆるDBからほぼあらゆるDBへ移行。オンプレミス→クラウドもサポート！"
+      },
+      {
+        label: "試験ポイント",
+        text: "異種DB移行→SCT＋DMS。同種→DMSのみ。最小ダウンタイム→CDCを使用",
+        easy: "Oracle→Aurora（異種）→SCTでスキーマ変換、DMSでデータ移行！"
+      }
+    ]
+  },
+  transferfamily: {
+    title: "AWS Transfer Family",
+    subtitle: "マネージドファイル転送サービス",
+    easy: "Transfer Familyは既存のSFTPクライアントを使ってS3にファイルをアップロードできます！レガシーシステムを変更せずにS3/EFSにファイル転送。",
+    points: [
+      {
+        label: "サポートプロトコル",
+        text: "SFTP（SSH FTP）、FTPS（FTP over SSL）、FTP、AS2（B2B標準）。フルマネージドエンドポイント提供",
+        easy: "古いSFTP/FTPクライアントをそのまま使う！AWSがエンドポイントを管理。"
+      },
+      {
+        label: "ストレージ接続",
+        text: "ファイルはAmazon S3またはAmazon EFSに保存。既存S3バケットを活用",
+        easy: "SFTP経由でアップロードしたファイルが自動的にS3またはEFSに保存！"
+      },
+      {
+        label: "認証",
+        text: "サービス管理ユーザー、Active Directory、LDAP、カスタムIdP（Lambda）統合",
+        easy: "既存の会社ADアカウントでSFTPログイン！別のアカウント管理不要。"
+      },
+      {
+        label: "VPCデプロイ",
+        text: "インターネットまたはVPC内部（プライベート）。EIPで固定IP。SGでアクセス制御",
+        easy: "パブリックインターネットかVPC内部専用かを選択。固定IPでファイアウォールルールが簡単。"
+      },
+      {
+        label: "試験ポイント",
+        text: "レガシーSFTP→S3移行→Transfer Family。AS2=B2Bパートナーファイル交換。EDI標準",
+        easy: "SFTPそのままS3へ→Transfer Family！B2Bファイル交換（AS2）→Transfer Family！"
+      }
+    ]
+  },
+  appflow: {
+    title: "Amazon AppFlow",
+    subtitle: "SaaS↔AWSデータ統合",
+    easy: "AppFlowはSalesforceやSlackなどのSaaSサービスからAWSへデータを自動的に取り込むコネクター！コーディング不要でデータパイプラインを構築。",
+    points: [
+      {
+        label: "サポートコネクター",
+        text: "Salesforce、Marketo、Slack、ServiceNow、SAP、Google Analytics → S3、Redshift、EventBridge",
+        easy: "SalesforceのCRMデータを自動的にS3に保存！毎日、特定イベント時、またはリアルタイムで。"
+      },
+      {
+        label: "データ変換",
+        text: "転送中のデータマスキング、フィルタリング、検証、フォーマット変換。機密データ保護",
+        easy: "SaaSデータ取り込み時にPIIをマスク、必要なフィールドだけ選択など。"
+      },
+      {
+        label: "セキュリティ",
+        text: "転送中と保存時の暗号化。インターネット経由なしの転送にPrivateLink。監査ログ",
+        easy: "データはAWSの内部ネットワークだけを通りインターネットに露出なし — 安全。"
+      },
+      {
+        label: "トリガー",
+        text: "オンデマンド、スケジュール（分単位）、イベントベース。双方向（S3→Salesforceも可能）",
+        easy: "毎晩自動でSalesforce→S3に同期！または新しいデータが来たらすぐにトリガー。"
+      },
+      {
+        label: "試験ポイント",
+        text: "SaaS→AWSのノーコード統合→AppFlow。vs EventBridge：AppFlow=データ移動、EB=イベントルーティング",
+        easy: "Salesforce/SlackのデータをAWS S3/Redshiftへ→AppFlow！設定のみでコーディング不要！"
+      }
+    ]
+  },
+  cloudformation: {
+    title: "AWS CloudFormation",
+    subtitle: "Infrastructure as Code",
+    easy: "CloudFormationは設計図（コード）からAWSインフラを自動構築！クリックの代わりに1つのコードファイルでVPC、EC2、RDSなどを自動作成。",
+    points: [
+      {
+        label: "テンプレート",
+        text: "JSON/YAML形式。Resources（必須）、Parameters、Mappings、Outputs、Conditions、Metadataセクション",
+        easy: "レゴの説明書！Resources=何を作るか、Parameters=入力、Outputs=結果。"
+      },
+      {
+        label: "スタック",
+        text: "テンプレートから作成されたAWSリソースの集合。スタック削除で全リソース削除（DeletionPolicy除く）",
+        easy: "スタック=説明書から完成したレゴセット。スタックを削除=レゴを分解。"
+      },
+      {
+        label: "StackSets",
+        text: "複数のアカウントとリージョンに同時デプロイ。Organizations統合。集中管理デプロイ",
+        easy: "同じ設計図を複数のアカウントとリージョンに一括展開！標準化された自動デプロイ。"
+      },
+      {
+        label: "ドリフト検出",
+        text: "実際のリソース設定がテンプレートと異なる場合を自動検出",
+        easy: "「誰かがコンソールで直接変更した？」コードと実際の状態の差異を確認。"
+      },
+      {
+        label: "試験ポイント",
+        text: "IaC=CloudFormation。失敗時自動ロールバック。Change Setで変更プレビュー。再利用にはネストスタック",
+        easy: "インフラのコード化→CloudFormation。変更プレビュー→Change Set。モジュール化→ネストスタック！"
+      }
+    ]
+  },
+  awsconfig: {
+    title: "AWS Config",
+    subtitle: "リソース設定履歴・コンプライアンス",
+    easy: "AWS ConfigはAWSリソースのブラックボックス！セキュリティグループをいつ誰が変更したか、S3バケットがパブリックになっていないかを記録し、ルール違反を自動アラート！",
+    points: [
+      {
+        label: "設定記録",
+        text: "全リソース設定変更を記録。時系列スナップショット。誰がいつ何を変更したか追跡",
+        easy: "VPC、SG、S3の設定が変わるたびに写真撮影。タイムラインとして表示。"
+      },
+      {
+        label: "Config Rules",
+        text: "150以上のAWSマネージドルール、カスタムルール（Lambda）。継続的なコンプライアンス評価",
+        easy: "「S3バケットをパブリックにしてはいけない！」ルール設定→違反時に自動アラート！"
+      },
+      {
+        label: "自動修復",
+        text: "修復アクション。SSM Automationで非準拠リソースを自動修正",
+        easy: "ルール違反→自動修正！SGのポートが開いている→自動的に閉じる。"
+      },
+      {
+        label: "集約",
+        text: "全Organizationsアカウントに渡る集中設定集約。Config Aggregator。マルチリージョン",
+        easy: "全アカウントのコンプライアンス状況を1画面で確認！"
+      },
+      {
+        label: "試験ポイント",
+        text: "CloudTrail（誰がやった）vs Config（何が変わった）。コンプライアンス評価→Config Rules。コスト：記録ごと",
+        easy: "CloudTrail=アクションログ（誰が）。Config=状態ログ（何が）。コンプライアンス自動化→Config！"
+      }
+    ]
+  },
+  controltower: {
+    title: "AWS Control Tower",
+    subtitle: "マルチアカウントランディングゾーン",
+    easy: "Control TowerはAWS環境のビル管理人！複数のAWSアカウントを安全で標準化された方法で自動作成・管理。セキュリティが事前設定されたアカウントを自動作成！",
+    points: [
+      {
+        label: "ランディングゾーン",
+        text: "マルチアカウント環境の自動セットアップ。ログアーカイブと監査アカウントを自動作成。Organizations統合",
+        easy: "基盤構築！最初にログストレージ、監査アカウントなどを自動作成。"
+      },
+      {
+        label: "ガードレール",
+        text: "予防的ガードレール（SCPベース）：禁止されたアクションをブロック。検出的ガードレール（Configベース）：違反を検出",
+        easy: "予防的=「ブロックする」（SCP）、検出的=「間違ったらアラート」（Config Rules）。"
+      },
+      {
+        label: "Account Factory",
+        text: "新しいアカウントを自動プロビジョン。標準設定を適用。Service Catalog統合",
+        easy: "新しいAWSアカウントをリクエスト→標準設定で自動作成！"
+      },
+      {
+        label: "ダッシュボード",
+        text: "全アカウントのガードレールコンプライアンス状況を一目で確認。違反アカウントを特定。ドリフト検出",
+        easy: "どのアカウントが違反しているか1画面で管理！"
+      },
+      {
+        label: "試験ポイント",
+        text: "マルチアカウントガバナンスの自動化→Control Tower。SCP＋Config Rulesのコンビ。Account Factoryで標準化",
+        easy: "新チームへのAWSアカウント自動発行＋標準セキュリティ適用→Control Tower！"
+      }
+    ]
+  },
+  trustedadvisor: {
+    title: "AWS Trusted Advisor",
+    subtitle: "ベストプラクティス自動チェック",
+    easy: "Trusted AdvisorはAWSアカウントの健康診断医！コストの無駄、セキュリティの穴、パフォーマンス問題、サービス制限リスクを自動チェック！",
+    points: [
+      {
+        label: "5つのチェックカテゴリー",
+        text: "コスト最適化、パフォーマンス、セキュリティ、障害耐性、サービス制限。緑（OK）/黄（警告）/赤（アラート）",
+        easy: "5カテゴリーのチェックリスト！コストの無駄、セキュリティの穴、サービス制限超過を自動チェック。"
+      },
+      {
+        label: "無料と有料",
+        text: "Basic/Developer：7つのコアセキュリティ/制限チェック。Business/Enterprise：全チェック＋APIアクセス",
+        easy: "無料=基本チェックのみ。Businessプラス契約=全チェック＋自動化可能。"
+      },
+      {
+        label: "主要チェック項目",
+        text: "未使用のEBS/EIP、MFAなしのルート、オープンセキュリティグループ（0.0.0.0/0）、80%のサービス制限",
+        easy: "コストの無駄：未使用EBS。セキュリティ：MFAなしのルート。制限：サービス使用率90%以上。"
+      },
+      {
+        label: "自動化",
+        text: "Trusted AdvisorのレコメンデーションにEventBridge＋Lambdaで自動対応。週次メールアラート",
+        easy: "Trusted Advisorが問題発見→Lambdaが自動修正！例：未使用EIPを自動解放。"
+      },
+      {
+        label: "試験ポイント",
+        text: "サービス制限増加リクエスト→サポートセンター。全チェックはBusiness/Enterpriseプラン。Compute Optimizerとの違い",
+        easy: "サービス制限チェック→Trusted Advisor！実際の制限増加→サポートケース！"
+      }
+    ]
+  },
+  organizations: {
+    title: "AWS Organizations",
+    subtitle: "マルチアカウント一元管理",
+    easy: "AWS Organizationsは複数のAWSアカウントを一つの会社として管理！チームごとにアカウントを分けながら一元管理し、請求も一本化。",
+    points: [
+      {
+        label: "構造",
+        text: "管理アカウント（ルート）→ルート→OU→メンバーアカウント。階層的なポリシー継承",
+        easy: "会社の組織図みたいなもの！本社（管理）→部門（OU）→チーム（メンバーアカウント）。"
+      },
+      {
+        label: "SCP",
+        text: "サービスコントロールポリシー。OU/アカウントごとの最大許可権限を設定。IAMの上に適用",
+        easy: "SCPは各アカウントの憲法！IAMが全て許可しても、SCPが禁じたことはできない。"
+      },
+      {
+        label: "一括請求",
+        text: "全アカウントの請求を一本化。ボリューム割引。リザーブド/Savings Plans共有。Cost Explorer統合",
+        easy: "10アカウント→1つの請求書！アカウント全体の使用量に対してボリューム割引が適用。"
+      },
+      {
+        label: "サービス統合",
+        text: "AWS SSO、Config、CloudTrail、GuardDuty、Security Hub、MacieなどをOrganizations全体で有効化",
+        easy: "セキュリティサービスを全アカウントに一括適用！新アカウントにも自動適用。"
+      },
+      {
+        label: "試験ポイント",
+        text: "一括請求→Organizations。クロスアカウント権限制限→SCP。サービスの一元管理→Organizations",
+        easy: "マルチアカウント管理、請求一本化、SCP適用→AWS Organizations！"
+      }
+    ]
+  },
+  backup: {
+    title: "AWS Backup",
+    subtitle: "集中バックアップサービス",
+    easy: "AWS BackupはEC2、EBS、RDS、DynamoDBなど多数のサービスのバックアップを一か所で管理！バックアップポリシーを作れば全て自動バックアップ。",
+    points: [
+      {
+        label: "サポートサービス",
+        text: "EC2、EBS、RDS/Aurora、DynamoDB、EFS、FSx、S3、Storage Gateway、DocumentDB、Neptune",
+        easy: "ほぼ全てのAWSデータサービスを一括バックアップ！サービスごとの個別設定不要。"
+      },
+      {
+        label: "バックアッププラン",
+        text: "バックアッププラン：スケジュール（日次/週次/月次）、保持期間、移行（コールドストレージ）、クロスリージョンコピー",
+        easy: "「毎日自動バックアップ、30日保持、古いものはGlacierへ」— ルール一度設定で自動実行。"
+      },
+      {
+        label: "バックアップボールト",
+        text: "バックアップストレージ。暗号化（KMS）。ボールトロック（WORM）：削除防止。クロスアカウント共有",
+        easy: "金庫にバックアップを保存！ボールトロック=管理者でも削除できない。ランサムウェア対策に使用。"
+      },
+      {
+        label: "Organizations統合",
+        text: "Organizations全体に集中バックアップポリシーを適用。全アカウントを自動バックアップ。コンプライアンス",
+        easy: "同じバックアップポリシーが全アカウントに自動適用！従業員による手動設定不要。"
+      },
+      {
+        label: "試験ポイント",
+        text: "集中バックアップ→AWS Backup。ボールトロック=WORM。クロスリージョンバックアップでディザスタリカバリ",
+        easy: "複数サービスの集中バックアップ管理→AWS Backup！削除防止バックアップ→ボールトロック！"
+      }
+    ]
+  },
+  iamidentitycenter: {
+    title: "IAM Identity Center",
+    subtitle: "シングルサインオン（SSO）サービス",
+    easy: "IAM Identity Centerは全AWSアカウントとアプリへの統合ログインサービス！一度ログインすれば全AWSアカウント＋Salesforce、Slackなどにアクセス。",
+    points: [
+      {
+        label: "SSO",
+        text: "シングルサインオン。一つのログインで複数のAWSアカウントとアプリにアクセス。ユーザーポータル提供",
+        easy: "一度ログイン→全AWSアカウントにアクセス！アカウントごとに再ログイン不要。"
+      },
+      {
+        label: "IDソース",
+        text: "IAM Identity Center組み込み、Active Directory（ADコネクター/AWSマネージドAD）、外部IdP（Okta、Azure AD）",
+        easy: "会社のADアカウントでAWSにログイン！Okta、Azure ADも接続可能。"
+      },
+      {
+        label: "アクセス許可セット",
+        text: "アクセス許可セット：アカウントに割り当てるロールの集合。OUまたはアカウントごとに異なる権限。SCPとは独立",
+        easy: "開発チームは開発アカウントの管理者、運用チームは運用アカウントの閲覧者 — 別々に割り当て。"
+      },
+      {
+        label: "SCIM自動プロビジョニング",
+        text: "IdPがユーザーを追加/削除した際に自動同期。手動管理不要",
+        easy: "人事がEmployee追加→AWSアクセスが自動作成！退職→自動削除。"
+      },
+      {
+        label: "試験ポイント",
+        text: "マルチアカウントSSO→IAM Identity Center。Cognito=アプリユーザー認証、IAM Identity Center=AWSアカウントアクセス",
+        easy: "従業員のAWS統合ログイン→IAM Identity Center！アプリのサインアップ/ログイン→Cognito！"
+      }
+    ]
+  },
+  emr: {
+    title: "Amazon EMR",
+    subtitle: "マネージドビッグデータ処理",
+    easy: "EMRはAWSクラスター上でHadoopやSparkを簡単に実行！EC2を自分で管理する代わりにマネージドサービスとしてビッグデータを処理。",
+    points: [
+      {
+        label: "サポートフレームワーク",
+        text: "Apache Spark、Hadoop、Hive、Presto、HBase、Flink、Hudi、Iceberg。JupyterHub統合",
+        easy: "数百TBにはSpark、大規模SQLにはHive、NoSQLにはHBase — 全部EMRで！"
+      },
+      {
+        label: "クラスター構造",
+        text: "プライマリノード（調整）、コアノード（処理＋ストレージ）、タスクノード（処理のみ）。コスト削減にスポット",
+        easy: "現場監督（プライマリ）＋ワーカー（コア）＋臨時スタッフ（タスク）。タスクにスポットを使って80%節約！"
+      },
+      {
+        label: "ストレージ",
+        text: "HDFS（一時的）、EMRファイルシステム（EMRFS、S3統合）、ローカル。S3をデータレイクとして",
+        easy: "S3=永続ストレージ、HDFS=一時的な作業スペース。S3データはクラスター終了後も保持。"
+      },
+      {
+        label: "EMR Serverless",
+        text: "クラスター管理なしでSpark/Hiveジョブを実行。自動スケーリング。秒単位課金",
+        easy: "クラスターのセットアップ不要 — コードだけ！自動でサーバーをプロビジョン、処理、解放。"
+      },
+      {
+        label: "試験ポイント",
+        text: "ビッグデータ処理（Spark/Hadoop）→EMR。S3データレイク＋EMRの組み合わせ。コスト削減にスポット",
+        easy: "数百TBのデータ処理、ML前処理→EMR！スポットインスタンス=最大90%コスト削減！"
+      }
+    ]
+  },
+  glue: {
+    title: "AWS Glue",
+    subtitle: "サーバーレスETLサービス",
+    easy: "Glueはデータ変換工場！S3、RDS、DynamoDBからサーバーなしでデータを自動抽出・クリーニング・ロード。",
+    points: [
+      {
+        label: "ETLジョブ",
+        text: "サーバーレスApache Sparkベース。Python/Scalaスクリプトを自動生成。スケジュールまたはイベントトリガー",
+        easy: "S3のrawデータをExtract、Transform（クリーニング）、分析DBにLoad — 自動化。"
+      },
+      {
+        label: "データカタログ",
+        text: "中央メタデータリポジトリ。Athena、Redshift Spectrum、EMRと共有。Glue Crawlerが自動検出",
+        easy: "「S3のどこに何のデータがあるか」— 自動調査してカタログ作成（Crawler）。"
+      },
+      {
+        label: "Glue DataBrew",
+        text: "ノーコードのビジュアルデータ準備。250以上の変換関数。非開発者でも使用可能",
+        easy: "クリックでデータをクリーン、コーディング不要！Excelのようにデータを変換。"
+      },
+      {
+        label: "Glue Studio",
+        text: "ビジュアルETLパイプライン設計。ドラッグアンドドロップ。リアルタイムモニタリング",
+        easy: "図を描くようにETLパイプラインを視覚的に接続！コード不要。"
+      },
+      {
+        label: "試験ポイント",
+        text: "サーバーレスETL→Glue。データカタログ→Glue Catalog。AthenaでクエリするにはCrawler実行が必要",
+        easy: "S3データの変換/クリーニング→Glue ETL！AthenaでS3をクエリするにはGlue Catalogが必要！"
+      }
+    ]
+  },
+  lakeformation: {
+    title: "AWS Lake Formation",
+    subtitle: "データレイク構築・セキュリティ",
+    easy: "Lake Formationはデータレイク（S3ベースの大規模データストア）の構築を簡単にし、「この人はこの列だけ見られる」という粒度でアクセスを制御！",
+    points: [
+      {
+        label: "データレイク構築",
+        text: "S3ベース。データ取り込み、クリーニング、分類を自動化。Glueと密接に統合",
+        easy: "生データをS3に集め、Lake Formationがクリーニング、セキュリティ、アクセス制御を担当。"
+      },
+      {
+        label: "細粒度アクセス制御",
+        text: "列、行、セルレベルのアクセス制御。データマスキング。タグベース制御（LF-Tags）",
+        easy: "「マーケティングチームは顧客名の列を見られない」「PIIはマスクされる」— 粒度の高い制御。"
+      },
+      {
+        label: "統合サービス",
+        text: "Athena、Redshift Spectrum、EMR、Glue、QuickSight統合。一元的な権限管理",
+        easy: "全ての分析サービスに一貫したアクセス制御を適用。1か所で権限管理。"
+      },
+      {
+        label: "ブループリント",
+        text: "データ取り込み自動化テンプレート。RDS/S3→データレイクパイプラインを自動構築",
+        easy: "数クリックでRDSデータをS3データレイクにロードするパイプラインを自動作成。"
+      },
+      {
+        label: "試験ポイント",
+        text: "データレイクの細粒度権限→Lake Formation。S3のIAMだけでは行/列レベル制御不可",
+        easy: "S3データレイク＋行/列レベルアクセス制御→Lake Formation！IAM/S3ポリシーだけではできない！"
+      }
+    ]
+  },
+  quicksight: {
+    title: "Amazon QuickSight",
+    subtitle: "サーバーレスクラウドBI",
+    easy: "QuickSightはデータをグラフで視覚化するサーバーレスBIツール！S3、RDS、Redshiftのデータに接続して即座にダッシュボードとグラフを作成。",
+    points: [
+      {
+        label: "データソース",
+        text: "S3、Athena、RDS/Aurora、Redshift、DynamoDB、Salesforce、外部DB",
+        easy: "ほぼ全てのAWSデータソースに接続。数クリックでグラフ作成！"
+      },
+      {
+        label: "SPICE",
+        text: "Super-fast Parallel In-memory Calculation Engine。データメモリキャッシュ。高速クエリレスポンス",
+        easy: "データをメモリに事前ロードしてダッシュボードの読み込みを高速化！"
+      },
+      {
+        label: "ML Insights",
+        text: "異常検出、予測、Auto-Narratives（自動生成された説明）",
+        easy: "AIが「今月の売上が異常に低い」を自動検出！トレンド予測も自動。"
+      },
+      {
+        label: "埋め込み分析",
+        text: "外部アプリにダッシュボードを埋め込み。SDK。Q（自然言語クエリ）。匿名アクセス可能",
+        easy: "「顧客アプリに分析ダッシュボードを追加」！QuickSightをアプリに埋め込み可能。"
+      },
+      {
+        label: "試験ポイント",
+        text: "サーバーレスBIの視覚化→QuickSight。Redshiftと組み合わせ。ユーザーごとの課金（Standard/Enterprise）",
+        easy: "データの視覚化/ダッシュボード→QuickSight！他のBIツールの代わりにAWSネイティブを選ぼう。"
+      }
+    ]
+  },
+  sagemaker: {
+    title: "Amazon SageMaker",
+    subtitle: "フルマネージドMLプラットフォーム",
+    easy: "SageMakerはMLモデルのライフサイクル全体（構築、学習、デプロイ）をサポート！データ準備からモデルデプロイまで一つのプラットフォームで完結。",
+    points: [
+      {
+        label: "SageMaker Studio",
+        text: "統合ML開発環境。JupyterLabベース。データ準備から学習、デプロイまでの全サイクル",
+        easy: "ML用の統合IDE！Jupyterノートブック＋データ管理＋実験追跡が1画面で。"
+      },
+      {
+        label: "学習",
+        text: "マネージドされた学習インスタンス（GPU）。分散学習。スポットインスタンス（最大90%節約）。実験追跡",
+        easy: "GPUサーバー管理なしで学習開始！スポットで学習コスト90%節約。"
+      },
+      {
+        label: "デプロイ",
+        text: "リアルタイムエンドポイント（低レイテンシー）、サーバーレス（断続的なトラフィック）、バッチ変換（大量推論）",
+        easy: "モデルをWeb APIサービスとしてデプロイ！サーバーレスはトラフィックゼロ時にコストゼロ。"
+      },
+      {
+        label: "Autopilot＆Canvas",
+        text: "AutoML：自動特徴量エンジニアリング、モデル選択、ハイパーパラメーターチューニング。Canvas：ノーコードML",
+        easy: "Autopilot=データを入力して最適モデルを自動選択！Canvas=コーディングなしでML。"
+      },
+      {
+        label: "試験ポイント",
+        text: "MLモデルの学習とデプロイ→SageMaker。Feature Store、Model Registry、Pipelines。Rekognitionとの違い",
+        easy: "自分でMLモデルを構築→SageMaker。事前構築済みAI API（画像認識など）→Rekognition！"
+      }
     ]
   }
 };
+
+export type ConceptKey = keyof typeof CONCEPTS_JA;

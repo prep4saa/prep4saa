@@ -1001,6 +1001,426 @@ export const CONCEPTS_EN: Record<string, Concept> = {
         easy: "API GW = frontend, Lambda = logic. CORS = browser security. Usage = rate limit."
       }
     ]
+  },
+  batch: {
+    title: "AWS Batch",
+    subtitle: "Fully Managed Batch Computing",
+    easy: "AWS Batch is the class monitor who hands out homework automatically! Submit a job list, it borrows compute, processes everything, then returns it. No server management needed!",
+    points: [
+      { label: "Core Components", text: "Job Definition(work template), Job Queue(priority queue), Compute Environment(EC2/Fargate auto-provisioned)", easy: "Job Definition = recipe, Job Queue = order line, Compute Environment = auto-provisioned chef." },
+      { label: "Compute Environment", text: "Managed(AWS auto-manages EC2/Fargate) vs Unmanaged(you manage). Spot Instances save up to 90%", easy: "Managed = AWS prepares servers automatically. Unmanaged = you manage. Spot saves 90%!" },
+      { label: "Workflow Integration", text: "Step Functions for batch pipelines. EventBridge for scheduled execution", easy: "Connect to Step Functions for pre-process→batch→post-process automated pipeline." },
+      { label: "vs Lambda", text: "Lambda: max 15 min, simple event processing. Batch: hours-days, large-scale parallel processing", easy: "Lambda = short sprint, Batch = marathon! ML training, rendering, big data → use Batch." },
+      { label: "Exam Points", text: "Batch runs on ECS. Jobs >15 min → use Batch. Spot interruptions auto-retried", easy: "Task over 15 min → AWS Batch! Spot interrupted? Auto-retry!" }
+    ]
+  },
+  fsx: {
+    title: "Amazon FSx",
+    subtitle: "Managed File Systems",
+    easy: "FSx lets you use various file servers in AWS as-is! Provides Windows shared folders, HPC file systems, and more as fully managed services.",
+    points: [
+      { label: "FSx for Windows File Server", text: "Fully managed Windows file server. SMB/NTFS. Active Directory integration. Multi-AZ support", easy: "Windows shared folders in AWS! Use existing AD credentials as-is." },
+      { label: "FSx for Lustre", text: "High-performance for HPC/ML. Direct S3 integration. Hundreds of GB/s throughput", easy: "Supercomputer-speed file system! For ML training, genomics, video processing." },
+      { label: "FSx for NetApp ONTAP", text: "Fully managed NetApp ONTAP. NFS/SMB/iSCSI. Auto-tiering. Deduplication", easy: "Lift-and-shift enterprise NetApp to AWS. On-premises compatible!" },
+      { label: "FSx for OpenZFS", text: "ZFS-based. NFS compatible. Snapshots and replication. Linux workload optimized", easy: "High-performance file system for Linux. ZFS features (snapshots, compression) as managed service." },
+      { label: "Exam Points", text: "Windows file share → FSx for Windows(not EFS!). HPC/ML → FSx for Lustre. EFS = Linux NFS only", easy: "Windows shared folder → FSx for Windows! Linux shared → EFS. HPC → Lustre!" }
+    ]
+  },
+  storagegateway: {
+    title: "AWS Storage Gateway",
+    subtitle: "Hybrid Storage Bridge",
+    easy: "Storage Gateway is the bridge between on-premises servers and AWS cloud! On-premises servers can use AWS S3 just like a local drive.",
+    points: [
+      { label: "File Gateway", text: "S3 access via NFS/SMB. Local cache for low latency. Use S3 without changing on-premises app code", easy: "Connect company file server to S3! Employees use it just like a network drive." },
+      { label: "Volume Gateway", text: "iSCSI block storage. Cached(stored in S3, frequent data local). Stored(local primary, S3 backup)", easy: "Cached = mostly S3, Stored = local primary + S3 backup. Used for disaster recovery." },
+      { label: "Tape Gateway", text: "Virtual Tape Library(VTL). Use existing backup software(Veeam etc.) unchanged. Store in S3/Glacier", easy: "Migrate tape backup system to cloud! Store in S3 without changing software." },
+      { label: "Use Cases", text: "On-premises→cloud backup, disaster recovery, intermediate step in cloud migration", easy: "Commonly used during the transition period of moving company data to the cloud." },
+      { label: "Exam Points", text: "On-premises S3 access → Storage Gateway. Tape backup→cloud → Tape Gateway. S3/Glacier compatible", easy: "On-premises + S3 connection keyword → Storage Gateway! Tape → Glacier!" }
+    ]
+  },
+  datasync: {
+    title: "AWS DataSync",
+    subtitle: "Online Data Transfer Service",
+    easy: "DataSync is a moving company! It transfers data from existing servers to AWS quickly and securely. Auto-encrypts and verifies the data was transferred correctly!",
+    points: [
+      { label: "Sources/Destinations", text: "Sources: NFS, SMB, HDFS, S3, EFS, FSx, object storage. Destinations: S3, EFS, FSx", easy: "Transfer from NFS servers, Hadoop, S3 to AWS storage." },
+      { label: "Performance", text: "Maximizes network utilization. Parallel transfer. DataSync Agent(on-premises install). Direct Connect/VPN support", easy: "Automatically maximizes network for fast transfer. Even faster with Direct Connect." },
+      { label: "Automation & Validation", text: "Scheduled transfers. Automatic data integrity verification. Delete-after-transfer option. CloudWatch monitoring", easy: "Auto-sync on schedule and verifies data transferred without corruption!" },
+      { label: "vs Storage Gateway", text: "DataSync: one-time or periodic large-scale migration. Storage Gateway: continuous on-premises-cloud connection", easy: "DataSync = moving(data migration), Storage Gateway = commuting(always connected)." },
+      { label: "Exam Points", text: "On-premises→S3/EFS large migration → DataSync. Snow Family = offline, DataSync = online", easy: "Network-based data transfer → DataSync! No internet in remote area → Snow Family!" }
+    ]
+  },
+  snow: {
+    title: "AWS Snow Family",
+    subtitle: "Offline Large-Scale Data Migration",
+    easy: "Snow Family is AWS delivering hard drives by truck! Used when internet is slow or unavailable to physically transfer tens to hundreds of petabytes of data.",
+    points: [
+      { label: "Snowcone", text: "Ultra-compact(2.1kg). 8TB~14TB. Field data collection and transfer. Built-in DataSync", easy: "Fits in a bag. For data collection at remote sites." },
+      { label: "Snowball Edge", text: "Storage Optimized(80TB), Compute Optimized(42TB+GPU). Edge computing capable. Clustering", easy: "Luggage-sized device. Not just for transfer — can also compute at the site." },
+      { label: "Snowmobile", text: "40-foot container truck. Up to 100PB. Exabyte-scale migration", easy: "For migrating an entire data center! AWS truck comes and connects directly." },
+      { label: "Edge Computing", text: "Run EC2/Lambda at sites without internet. Collect→process→upload to AWS later", easy: "Process data in mines or ships without internet, then transfer to AWS later." },
+      { label: "Exam Points", text: "Network would take 10+ years → Snow. Offline only. AWS wipes data after transfer", easy: "'Tens of PBs to migrate' + 'limited internet' → Snow Family! Data wiped after upload." }
+    ]
+  },
+  natgw: {
+    title: "NAT Gateway",
+    subtitle: "Private Subnet Internet Outbound",
+    easy: "NAT Gateway is the side door that lets private subnet residents go outside! Outbound is allowed but inbound from outside is not.",
+    points: [
+      { label: "Role", text: "Allows outbound internet traffic for EC2/Lambda in private subnet. No inbound(Stateful)", easy: "Private subnet instances can do software updates, call external APIs. Cannot be accessed from outside." },
+      { label: "Deployment", text: "Placed in Public Subnet. Elastic IP required. One per AZ recommended(high availability)", easy: "NAT Gateway itself must be in Public Subnet. Create one per availability zone for safety." },
+      { label: "NAT Instance", text: "EC2-based(legacy). Requires manual management and patching. Security Group applicable. Lower cost", easy: "NAT Gateway = AWS managed, NAT Instance = manage your own EC2. Common exam trap!" },
+      { label: "Cost", text: "Hourly + per-GB processed. Cross-AZ traffic charges. Recommend same-AZ NAT Gateway", easy: "More data sent = higher cost. NAT Gateway per AZ reduces data transfer costs." },
+      { label: "Exam Points", text: "NAT Gateway in Public Subnet. HA = NAT Gateway per AZ. IPv6 uses Egress-Only IGW", easy: "IPv6 private subnet → NOT NAT Gateway, use Egress-Only IGW! Exam trap!" }
+    ]
+  },
+  vpcendpoint: {
+    title: "VPC Endpoints",
+    subtitle: "Access AWS Services Without Internet",
+    easy: "VPC Endpoint is a secret tunnel to AWS services! Access S3, DynamoDB etc. through AWS internal network without touching the internet.",
+    points: [
+      { label: "Gateway Endpoint", text: "S3 and DynamoDB only. Free. Add route to Route Table. Regional access", easy: "S3, DynamoDB → Gateway Endpoint(free)! Just add destination to Route Table." },
+      { label: "Interface Endpoint(PrivateLink)", text: "Other AWS services(EC2, SQS etc.). Creates ENI. Hourly + data charges. DNS resolution changes", easy: "Most AWS service connections use Interface Endpoint. Creates one ENI for communication." },
+      { label: "Gateway Load Balancer Endpoint", text: "Integrates with GWLB. Transparent insertion of 3rd-party firewall/IPS traffic. Delivers to original destination after inspection", easy: "Special endpoint to pass through security appliances. Transparently inserts firewall inspection." },
+      { label: "Security Benefits", text: "Access AWS services without Internet Gateway/NAT Gateway. Bucket Policy can specify VPC Endpoint condition", easy: "S3 data doesn't cross internet — more secure! Can allow bucket access only from specific VPC." },
+      { label: "Exam Points", text: "S3/DynamoDB → Gateway(free). Others → Interface(paid). Cannot use from on-premises", easy: "S3 = Gateway Endpoint(free)! Other services = Interface Endpoint. On-premises→VPC Endpoint impossible!" }
+    ]
+  },
+  transitgw: {
+    title: "AWS Transit Gateway",
+    subtitle: "Network Hub Router",
+    easy: "Transit Gateway is the central hub connecting multiple VPCs and on-premises networks in one place! The more VPCs you have, the simpler it becomes compared to Peering.",
+    points: [
+      { label: "Hub and Spoke", text: "Up to 5,000 VPC/VPN connections. Supports transitive routing unlike VPC Peering. Centralized management", easy: "10 VPCs would need 45 Peering connections. TGW needs just 1 hub with 10 connections!" },
+      { label: "Multi-Account", text: "Share across accounts via Resource Access Manager(RAM). Organizations integration", easy: "Connect VPCs from multiple AWS accounts to one TGW. Essential for multi-account architecture." },
+      { label: "Route Tables", text: "Multiple route tables for traffic separation. VPC isolation possible. Blackhole routing", easy: "Allow VPC A↔B but block A↔C — fine-grained routing control." },
+      { label: "Attachment Types", text: "VPC Attachment, VPN Attachment, Direct Connect Gateway Attachment, Peering Attachment(cross-region)", easy: "VPC, VPN, Direct Connect all connect through one TGW. Cross-region TGW Peering also possible." },
+      { label: "Exam Points", text: "TGW: transitive routing YES. VPC Peering: transitive routing NO. 100+ VPCs → TGW recommended", easy: "Many VPCs + need to communicate → Transit Gateway! Peering = 1:1 only, TGW = many:many!" }
+    ]
+  },
+  globalaccel: {
+    title: "AWS Global Accelerator",
+    subtitle: "Global Network Acceleration",
+    easy: "Global Accelerator connects users worldwide to the nearest AWS edge for fast access to your servers! Instead of the internet, it uses AWS's internal highway.",
+    points: [
+      { label: "Anycast IP", text: "2 static Anycast IPs provided. Same IP connects to nearest edge from anywhere in the world", easy: "Fixed phone number that always connects you to the nearest branch wherever you call from." },
+      { label: "Performance", text: "Uses AWS global network instead of internet. Reduced packet loss/latency/jitter. 60% faster responses", easy: "AWS dedicated highway instead of public internet roads! Much faster and more stable." },
+      { label: "Health Check & Failover", text: "Endpoint health checks. Auto-switch to another region/endpoint if unhealthy. Within 30 seconds", easy: "Server goes down? Automatically switches to another server within 30 seconds!" },
+      { label: "Endpoints", text: "ALB, NLB, EC2, Elastic IP. Weight-based traffic routing. Blue/Green deployment", easy: "Distribute weights to load balancers in multiple regions. A/B testing, zero-downtime deployment." },
+      { label: "Exam Points", text: "CloudFront vs Global Accelerator: CloudFront = caching(HTTP), GA = TCP/UDP network acceleration", easy: "Caching needed for static content → CloudFront. Gaming/real-time/no-cache acceleration → Global Accelerator!" }
+    ]
+  },
+  sitevpn: {
+    title: "AWS Site-to-Site VPN",
+    subtitle: "On-Premises VPN Connection",
+    easy: "Site-to-Site VPN is an encrypted tunnel securely connecting your company network to AWS VPC over the internet! Faster to set up than Direct Connect.",
+    points: [
+      { label: "Components", text: "Virtual Private Gateway(VGW) or Transit Gateway + Customer Gateway(on-premises router) + 2 IPsec tunnels", easy: "AWS door(VGW) and company door(CGW) connected by 2 encrypted tunnels." },
+      { label: "Redundancy", text: "2 tunnels auto-created(Active/Passive). High availability. Different AZ termination", easy: "Automatically 2 tunnels! If one breaks, communication continues through the other." },
+      { label: "Speed & Limits", text: "Max 1.25Gbps/tunnel. Variable latency via internet. Setup in hours", easy: "Faster to set up than Direct Connect. But Direct Connect wins on speed." },
+      { label: "VPN over Direct Connect", text: "DX has no encryption. DX + Site-to-Site VPN adds encryption", easy: "Direct Connect has no encryption — if security needed, install VPN alongside." },
+      { label: "Exam Points", text: "VPN: fast setup, via internet. DX: weeks-months setup, dedicated line. VPN recommended as DX backup", easy: "'Connect quickly' → VPN. 'Stable bandwidth' → Direct Connect. 'Encrypted+DX' → VPN over DX!" }
+    ]
+  },
+  vpcpeering: {
+    title: "VPC Peering",
+    subtitle: "Private Direct VPC-to-VPC Connection",
+    easy: "VPC Peering is connecting two VPCs through a secret tunnel! Servers in different VPCs can communicate without the internet.",
+    points: [
+      { label: "Features", text: "Private connection via AWS network. Same region or cross-region. Same account or cross-account", easy: "Dedicated tunnel between two VPCs. No internet required. Other accounts and regions supported." },
+      { label: "No Transitive Routing", text: "A→B→C transitive routing not supported. Need separate Peering to connect A↔C", easy: "Even if A-B-C connected, A can't reach C. Must create A-C connection separately!" },
+      { label: "CIDR Restriction", text: "Cannot peer with overlapping CIDR blocks. Route tables on both sides must be updated", easy: "If two VPCs have overlapping IP ranges, they can't connect! Plan CIDR carefully." },
+      { label: "vs Transit Gateway", text: "Peering: 1:1, no transitive, free. TGW: hub, transitive, has cost", easy: "2-3 VPCs → Peering(free). Many complex VPCs → Transit Gateway." },
+      { label: "Exam Points", text: "No transitive routing. No overlapping CIDR. Both-side route table update required", easy: "After Peering, must update route tables on both sides! One-sided won't work." }
+    ]
+  },
+  scp: {
+    title: "Service Control Policies (SCP)",
+    subtitle: "Organizations Maximum Permission Boundary",
+    easy: "SCP is the constitution for the entire company! No matter what permissions an employee(account) has, if SCP forbids it, they absolutely cannot do it. Even if IAM allows it, SCP blocks it!",
+    points: [
+      { label: "Overview", text: "Applied to OU/accounts in AWS Organizations. Defines maximum allowed permission boundary. Additional condition on IAM", easy: "SCP is the ceiling of permissions per account. IAM can grant everything, but SCP blocks if forbidden." },
+      { label: "Allow vs Deny", text: "Allow list: only listed actions allowed. Deny list: only listed actions denied(default)", easy: "Deny list is default. Block specific services. Allow list = only allowed services usable." },
+      { label: "Scope", text: "Cannot apply SCP to root account. Applies to member accounts only. Management Account unaffected", easy: "SCP only restricts child accounts. Master(management) account is unaffected by SCP. Beware!" },
+      { label: "Hierarchical", text: "OU → child OU → account inheritance. Must satisfy both parent OU SCP and account SCP", easy: "Rules flow top-down. If blocked at parent OU, child can't override." },
+      { label: "Exam Points", text: "SCP ≠ IAM Policy. Root user also subject to SCP restrictions. Management Account exempt from SCP", easy: "Even root account can't do what SCP forbids! Only Management Account is SCP-exempt." }
+    ]
+  },
+  networkfirewall: {
+    title: "AWS Network Firewall",
+    subtitle: "Managed VPC Network Firewall",
+    easy: "Network Firewall is the VPC's security guard! Inspects all incoming and outgoing traffic with stateful inspection. WAF handles the app layer, Network Firewall handles the network layer!",
+    points: [
+      { label: "Overview", text: "Fully managed stateful firewall. Protects VPC inbound/outbound/east-west traffic. No Gateway Load Balancer needed", easy: "VPC-level firewall. Inspects all traffic: internet→VPC, VPC→internet, VPC→VPC." },
+      { label: "Rule Types", text: "Stateless(per-packet), Stateful(connection tracking), Domain List(domain blocking), Suricata IPS(open-source rules)", easy: "From simple IP/port blocking to domain-based blocking and IPS rules — highly configurable." },
+      { label: "Architecture", text: "Deployed in dedicated Firewall Subnet. Traffic routing adjustment needed. Centralized or distributed deployment", easy: "Create dedicated firewall subnet and route all traffic through it." },
+      { label: "vs WAF vs Security Group", text: "SG: instance level. WAF: L7 HTTP. Network Firewall: VPC-level L3~L7 comprehensive", easy: "SG = guest list, WAF = app security, Network Firewall = neighborhood entrance comprehensive security." },
+      { label: "Exam Points", text: "VPC-level traffic inspection/blocking → Network Firewall. IDS/IPS capability needed → Network Firewall", easy: "Filter all VPC traffic + IPS feature → Network Firewall!" }
+    ]
+  },
+  guardduty: {
+    title: "Amazon GuardDuty",
+    subtitle: "ML-Based Threat Detection",
+    easy: "GuardDuty is AWS's detective! Analyzes logs to automatically find threats like 'unusual logins', 'crypto mining', 'data exfiltration'. Turn it on instantly with no installation!",
+    points: [
+      { label: "Analysis Sources", text: "CloudTrail(API calls), VPC Flow Logs(network), DNS Logs(domains), EKS audit logs, S3 events", easy: "Analyzes CloudTrail, VPC Flow, DNS simultaneously. No agent needed — active in 30 seconds!" },
+      { label: "Detection Types", text: "Abnormal API calls, malicious IP access, crypto mining, credential theft, port scans, S3 exfiltration", easy: "Detects hacker patterns(malicious IPs), insider threats(abnormal APIs), malware(mining) and more." },
+      { label: "Findings", text: "Finding → EventBridge → Lambda/SNS. Severity(low/medium/high). Auto-remediation possible", easy: "Threat found → EventBridge alert → Lambda auto-blocks! Full automation possible." },
+      { label: "Multi-Account", text: "Organizations integration. Centrally manage all member accounts from admin account", easy: "Manage threats across all accounts in one place. Organizations integration essential." },
+      { label: "Exam Points", text: "30-day free trial. GuardDuty collects independently even if VPC Flow Logs disabled. No agent needed", easy: "Just turn on for instant protection! Threat detection → GuardDuty, vulnerability scan → Inspector" }
+    ]
+  },
+  inspector: {
+    title: "Amazon Inspector",
+    subtitle: "Automated Vulnerability Scanning",
+    easy: "Inspector is a security-check robot for your servers! Automatically finds known vulnerabilities(CVE) in EC2, Lambda, and containers, and reports them with a risk score.",
+    points: [
+      { label: "Scan Targets", text: "EC2(OS/software CVE), Lambda functions(code dependencies), ECR container images", easy: "Automatically scans packages and libraries in EC2, Lambda, container images for vulnerabilities." },
+      { label: "Continuous Scanning", text: "Initial deployment + auto-rescan on new CVE publication. Uses SSM Agent. Near real-time", easy: "Not just once — auto-rescans whenever new vulnerabilities are discovered! Always up to date." },
+      { label: "Risk Score", text: "CVSSv3 + network reachability combined. Priority based on actual risk. Inspector Score", easy: "Not just CVE score — considers internet exposure to calculate true risk level." },
+      { label: "Integration", text: "Finding → Security Hub integration. EventBridge → automation. ECR image scan integration", easy: "Manage in one view from Security Hub. Auto-create tickets when new vulnerabilities found." },
+      { label: "Exam Points", text: "GuardDuty: threat detection(behavior analysis). Inspector: vulnerability scanning(CVE). Different purposes!", easy: "GuardDuty = detective(suspicious behavior). Inspector = doctor(health checkup). Completely different!" }
+    ]
+  },
+  macie: {
+    title: "Amazon Macie",
+    subtitle: "S3 Sensitive Data Auto-Detection",
+    easy: "Macie is a sensitive data detector for your S3 storage! Automatically finds where credit card numbers, SSNs, emails and other sensitive data are stored. Helps with GDPR compliance!",
+    points: [
+      { label: "Detection Types", text: "PII(personal info), Financial info(credit card/account), Medical info(PHI), Credentials(API keys/passwords)", easy: "SSNs, credit card numbers, API keys in S3 — automatically finds and alerts!" },
+      { label: "Classification", text: "ML + pattern matching. 100+ managed data identifiers. Custom identifiers addable", easy: "Auto-detects with 100+ AWS-created patterns. Can add company-specific patterns too." },
+      { label: "S3 Coverage", text: "Auto-discovers all S3 buckets in account. Shows security status: encryption, public access", easy: "Automatically scans all S3 buckets and alerts: 'This bucket has sensitive data!'" },
+      { label: "Findings", text: "Finding → EventBridge → Lambda/SNS. Security Hub integration. 30-day free trial", easy: "Sensitive data found → EventBridge → auto-notify or move!" },
+      { label: "Exam Points", text: "S3 sensitive data detection → Macie. PII/compliance → Macie. GuardDuty = threat detection!", easy: "'Where is PII in S3?' → Macie! 'Detect hacking attempts' → GuardDuty!" }
+    ]
+  },
+  acm: {
+    title: "AWS Certificate Manager",
+    subtitle: "SSL/TLS Certificate Management",
+    easy: "ACM issues HTTPS certificates for websites for free and auto-renews them! No more worrying about certificate expiration — always stay on HTTPS!",
+    points: [
+      { label: "Core Features", text: "Free SSL/TLS certificate issuance. Auto-renewal. Public and private certificates. DNS/email validation", easy: "AWS handles certificate issuance, renewal, and deployment. Forgetting renewal = outage!" },
+      { label: "Integrated Services", text: "ELB(ALB/NLB), CloudFront, API Gateway, Elastic Beanstalk. Cannot deploy directly to EC2", easy: "Can attach certificates to ALB, CloudFront. Cannot deploy directly to EC2 — must be behind ELB!" },
+      { label: "Public vs Private", text: "Public: free, for internet services. Private(ACM Private CA): paid, for internal services", easy: "Internet-facing certificate → free! Internal employee system → Private CA(paid)." },
+      { label: "Region Restriction", text: "CloudFront certificates must be issued in us-east-1(Virginia). Regions are independent", easy: "CloudFront + HTTPS → issue certificate in us-east-1! Other region certificates don't work with CloudFront." },
+      { label: "Exam Points", text: "ACM cannot deploy directly to EC2. CloudFront certificate → us-east-1 required. Auto-renewal prevents expiration", easy: "CloudFront SSL → us-east-1 ACM! Can't deploy to EC2 directly — must go through ELB/CF!" }
+    ]
+  },
+  s3objectlock: {
+    title: "S3 Object Lock",
+    subtitle: "WORM Data Protection",
+    easy: "S3 Object Lock locks files so they cannot be deleted or modified for a set period. Used for legally required data retention in finance, healthcare, and legal sectors!",
+    points: [
+      { label: "WORM", text: "Write Once, Read Many. Guarantees data immutability. Ransomware defense. Compliance data retention", easy: "Write once, read-only for the retention period! Cannot delete or modify. Ransomware-proof." },
+      { label: "Governance Mode", text: "Special permission(s3:BypassGovernanceRetention) can unlock/delete. Testing, flexible protection", easy: "Admins with special permissions can unlock. More flexible protection for testing." },
+      { label: "Compliance Mode", text: "Nobody including root can delete/modify. Cannot change retention period. Strict compliance", easy: "Even root can't delete! Used for legally mandated data retention. Immutable once set." },
+      { label: "Legal Hold", text: "Indefinite protection without retention period. Set/release with s3:PutObjectLegalHold permission", easy: "Protect indefinitely until legal investigation ends. Used to preserve evidence in lawsuits." },
+      { label: "Exam Points", text: "S3 Object Lock requires Versioning. Enable at bucket creation(cannot change later). Glacier supports Vault Lock", easy: "WORM + compliance → S3 Object Lock! Compliance mode = even root cannot delete!" }
+    ]
+  },
+  stepfunctions: {
+    title: "AWS Step Functions",
+    subtitle: "Serverless Workflow Orchestration",
+    easy: "Step Functions is the conductor linking multiple Lambdas in sequence! On success go to next step, on failure auto-retry or error-handle.",
+    points: [
+      { label: "State Machine", text: "Workflow defined in JSON/YAML. Visual editor. Task/Choice/Wait/Parallel/Map states", easy: "Draw a flowchart as code! Branches, parallel execution, waiting, loops all expressible." },
+      { label: "Standard vs Express", text: "Standard: up to 1 year, exactly-once execution, audit log. Express: up to 5 min, high-throughput, async", easy: "Standard = long-running critical workflows, Express = fast high-throughput(IoT, streaming)." },
+      { label: "Integrations", text: "Lambda, ECS, DynamoDB, SQS, SNS, Bedrock, SageMaker and more AWS services directly integrated", easy: "Not just Lambda — directly connect ECS, DynamoDB, SageMaker without code!" },
+      { label: "Error Handling", text: "Retry, Catch(fallback). Exponential backoff. Timeout. Heartbeat", easy: "Lambda fails → retry 3 times, still fails → auto-route to error handling path." },
+      { label: "Exam Points", text: "Complex Lambda chain → Step Functions. Parallel processing → Map/Parallel state. >15 min → Standard", easy: "Run multiple Lambdas in sequence, conditionally, in parallel → Step Functions!" }
+    ]
+  },
+  dynamostreams: {
+    title: "DynamoDB Streams",
+    subtitle: "DynamoDB Change Event Stream",
+    easy: "DynamoDB Streams is a real-time notification system for all changes in a table! When items are added/modified/deleted, Lambda automatically fires.",
+    points: [
+      { label: "Overview", text: "Ordered stream of DynamoDB item changes(INSERT/MODIFY/REMOVE). Retained 24 hours. Shard-based", easy: "Tape recording table changes in order. Must process within 24 hours." },
+      { label: "Stream Record Types", text: "KEYS_ONLY, NEW_IMAGE, OLD_IMAGE, NEW_AND_OLD_IMAGES", easy: "Choose to send only keys, or before/after data. Before/after comparison = NEW_AND_OLD_IMAGES." },
+      { label: "Lambda Integration", text: "Auto-polling as Lambda event source. Batch processing. Retry on failure. DLQ configurable", easy: "New change → Lambda auto-triggers! Process in batch, failed items go to DLQ." },
+      { label: "Use Cases", text: "Cross-region replication(basis for Global Tables), event-driven cache invalidation, change audit log", easy: "Order placed → inventory decrease + shipping start + notification all processed simultaneously!" },
+      { label: "Exam Points", text: "Streams underpins Lambda triggers. Global Tables internally uses Streams. Kinesis Data Streams also selectable", easy: "DynamoDB change → Lambda auto-trigger → Streams! Global Tables also replicate via Streams." }
+    ]
+  },
+  dms: {
+    title: "AWS Database Migration Service",
+    subtitle: "Database Migration",
+    easy: "DMS is a database moving helper! Move data from Oracle to Aurora, MySQL to PostgreSQL without downtime. Service keeps running during migration!",
+    points: [
+      { label: "Migration Types", text: "Homogeneous(MySQL→MySQL), Heterogeneous(Oracle→Aurora). Full Load, CDC(continuous replication), Full Load+CDC", easy: "Same engine = migrate directly. Different engine = use Schema Conversion Tool(SCT) first, then DMS." },
+      { label: "CDC(Change Data Capture)", text: "Real-time replication of source DB changes during migration. Minimizes downtime", easy: "New data arriving during migration is also automatically moved! Migrate with no service interruption." },
+      { label: "Replication Instance", text: "DMS Replication Instance for processing. EC2-based. Choose size. Multi-AZ option", easy: "EC2 server reading and writing data in the middle. Choose size based on data volume." },
+      { label: "Supported DBs", text: "Source/Target: RDS, Aurora, Redshift, DynamoDB, S3, MongoDB, DocumentDB, Kafka, etc.", easy: "Migrate from almost any DB to almost any DB. On-premises → cloud also supported!" },
+      { label: "Exam Points", text: "Heterogeneous DB migration → SCT + DMS. Homogeneous → DMS only. Minimum downtime → use CDC", easy: "Oracle→Aurora(heterogeneous) → convert schema with SCT, then migrate data with DMS!" }
+    ]
+  },
+  transferfamily: {
+    title: "AWS Transfer Family",
+    subtitle: "Managed File Transfer Service",
+    easy: "Transfer Family lets you upload files to S3 using existing SFTP clients! Transfer files to S3/EFS without changing legacy systems.",
+    points: [
+      { label: "Supported Protocols", text: "SFTP(SSH FTP), FTPS(FTP over SSL), FTP, AS2(B2B standard). Fully managed endpoint provided", easy: "Use old-style SFTP/FTP clients unchanged! AWS manages the endpoint." },
+      { label: "Storage Connection", text: "Files stored in Amazon S3 or Amazon EFS. Leverage existing S3 buckets", easy: "Files uploaded via SFTP automatically saved to S3 or EFS!" },
+      { label: "Authentication", text: "Service-managed users, Active Directory, LDAP, custom IdP(Lambda) integration", easy: "SFTP login with existing company AD account! No separate account management needed." },
+      { label: "VPC Deployment", text: "Internet or VPC internal(private). Fixed IP with EIP. Access control via SG", easy: "Choose public internet or VPC-internal only. Fixed IP makes firewall rules easy." },
+      { label: "Exam Points", text: "Legacy SFTP→S3 migration → Transfer Family. AS2 = B2B partner file exchange. EDI standard", easy: "SFTP as-is to S3 → Transfer Family! B2B file exchange(AS2) → Transfer Family!" }
+    ]
+  },
+  appflow: {
+    title: "Amazon AppFlow",
+    subtitle: "SaaS↔AWS Data Integration",
+    easy: "AppFlow is a connector that automatically brings data from SaaS services like Salesforce and Slack to AWS! Build data pipelines with configuration only, no coding needed.",
+    points: [
+      { label: "Supported Connectors", text: "Salesforce, Marketo, Slack, ServiceNow, SAP, Google Analytics → S3, Redshift, EventBridge", easy: "Automatically save Salesforce CRM data to S3! Daily, on specific events, or real-time." },
+      { label: "Data Transformation", text: "Data masking, filtering, validation, format conversion during transfer. Sensitive data protection", easy: "Mask PII, select only needed fields and more during SaaS data import." },
+      { label: "Security", text: "Encryption in transit and at rest. PrivateLink for no-internet transfer. Audit logs", easy: "Data moves only through AWS internal network with no internet exposure — secure." },
+      { label: "Triggers", text: "On-demand, scheduled(minute-level), event-based. Bidirectional(S3→Salesforce also possible)", easy: "Auto-sync Salesforce → S3 every night! Or trigger immediately when new data arrives." },
+      { label: "Exam Points", text: "SaaS→AWS no-code integration → AppFlow. vs EventBridge: AppFlow = data movement, EB = event routing", easy: "Salesforce/Slack data → AWS S3/Redshift → AppFlow! Configuration only, no coding!" }
+    ]
+  },
+  cloudformation: {
+    title: "AWS CloudFormation",
+    subtitle: "Infrastructure as Code",
+    easy: "CloudFormation creates AWS infrastructure from blueprints(code) and builds it automatically! Instead of clicking, one code file auto-creates VPC, EC2, RDS, and more.",
+    points: [
+      { label: "Templates", text: "JSON/YAML format. Resources(required), Parameters, Mappings, Outputs, Conditions, Metadata sections", easy: "Lego instruction manual! Resources = what to build, Parameters = inputs, Outputs = results." },
+      { label: "Stacks", text: "AWS resource collection created from a template. Stack deletion removes all resources(except DeletionPolicy)", easy: "Stack = finished lego set from the manual. Delete the stack = disassemble the lego." },
+      { label: "StackSets", text: "Deploy to multiple accounts and regions simultaneously. Organizations integration. Centralized deployment", easy: "Build the same blueprint across multiple accounts and regions at once! Standardized auto-deployment." },
+      { label: "Drift Detection", text: "Automatically detects if actual resource config differs from template", easy: "'Did someone modify this directly in the console?' Check differences between code and actual state." },
+      { label: "Exam Points", text: "IaC = CloudFormation. Rollback: auto on failure. Change Set to preview changes. Nested Stack for reuse", easy: "Infrastructure as code → CloudFormation. Preview changes → Change Set. Modularize → Nested Stack!" }
+    ]
+  },
+  awsconfig: {
+    title: "AWS Config",
+    subtitle: "Resource Configuration History & Compliance",
+    easy: "AWS Config is the black box for AWS resources! Records who changed security groups when, whether S3 buckets became public, and auto-alerts on rule violations!",
+    points: [
+      { label: "Configuration Recording", text: "Records all resource configuration changes. Time-based snapshots. Tracks who changed what when", easy: "Takes a photo every time VPC, SG, S3 configs change. View as timeline." },
+      { label: "Config Rules", text: "150+ AWS Managed Rules, Custom Rules(Lambda). Continuous compliance evaluation", easy: "'S3 buckets must not be public!' Set rule → auto-alert on violation!" },
+      { label: "Auto Remediation", text: "Remediation Actions. Auto-fix non-compliant resources with SSM Automation", easy: "Rule violation → auto-fix! SG port open → automatically close." },
+      { label: "Aggregation", text: "Centralized config aggregation across all Organizations accounts. Config Aggregator. Multi-region", easy: "View compliance status of all accounts on one screen!" },
+      { label: "Exam Points", text: "CloudTrail(who did it) vs Config(what changed). Compliance evaluation → Config Rules. Cost: per recording", easy: "CloudTrail = action log(who). Config = state log(what). Compliance automation → Config!" }
+    ]
+  },
+  controltower: {
+    title: "AWS Control Tower",
+    subtitle: "Multi-Account Landing Zone",
+    easy: "Control Tower is the building manager for your AWS environment! Automatically creates and manages multiple AWS accounts in a secure, standardized way. Creates security-preconfigured accounts automatically!",
+    points: [
+      { label: "Landing Zone", text: "Auto-setup of multi-account environment. Auto-creates log archive and audit accounts. Organizations integration", easy: "Foundation construction! Automatically creates log storage, audit accounts etc. at the start." },
+      { label: "Guardrails", text: "Preventive guardrails(SCP-based): block forbidden actions. Detective guardrails(Config-based): detect violations", easy: "Preventive = 'block it'(SCP), Detective = 'alert if wrong'(Config Rules)." },
+      { label: "Account Factory", text: "Auto-provision new accounts. Apply standard settings. Service Catalog integration", easy: "Request a new AWS account → automatically creates account with standard settings!" },
+      { label: "Dashboard", text: "View guardrail compliance status of all accounts at a glance. Identify violating accounts. Drift detection", easy: "Manage which accounts are in violation on one screen!" },
+      { label: "Exam Points", text: "Automate multi-account governance → Control Tower. SCP + Config Rules combo. Standardize with Account Factory", easy: "Auto-issue AWS accounts to new teams + apply standard security → Control Tower!" }
+    ]
+  },
+  trustedadvisor: {
+    title: "AWS Trusted Advisor",
+    subtitle: "Best Practice Automatic Checks",
+    easy: "Trusted Advisor is your AWS account's health doctor! Automatically checks for cost waste, security holes, performance issues, and service limit risks!",
+    points: [
+      { label: "5 Check Categories", text: "Cost optimization, Performance, Security, Fault tolerance, Service limits. Green(OK)/Yellow(Warning)/Red(Alert)", easy: "5-category checklist! Cost waste, security holes, service limit overruns auto-checked." },
+      { label: "Free vs Paid", text: "Basic/Developer: 7 core security/limit checks. Business/Enterprise: full checks + API access", easy: "Free = basic checks only. Business+ subscription = full checks + automation possible." },
+      { label: "Key Check Items", text: "Unused EBS/EIP, MFA-less root, open security groups(0.0.0.0/0), service limits at 80%", easy: "Cost waste: unused EBS. Security: root without MFA. Limits: service at 90%+ usage." },
+      { label: "Automation", text: "EventBridge + Lambda to auto-act on Trusted Advisor recommendations. Weekly email alerts", easy: "Trusted Advisor finds issue → Lambda auto-fixes! e.g., auto-release unused EIP." },
+      { label: "Exam Points", text: "Service limit increase request → Support Center. Full checks in Business/Enterprise plan. Difference from Compute Optimizer", easy: "Check service limits → Trusted Advisor! Actual limit increase → Support case!" }
+    ]
+  },
+  organizations: {
+    title: "AWS Organizations",
+    subtitle: "Multi-Account Central Management",
+    easy: "AWS Organizations manages multiple AWS accounts like one company! Separate accounts per team while controlling centrally and receiving one consolidated bill.",
+    points: [
+      { label: "Structure", text: "Management Account(root) → Root → OU → Member Accounts. Hierarchical policy inheritance", easy: "Like a company org chart! HQ(Management) → Division(OU) → Team(Member Account)." },
+      { label: "SCP", text: "Service Control Policies. Set max allowed permissions per OU/account. Applied on top of IAM", easy: "SCP is each account's constitution! Even if IAM grants everything, SCP blocks what it forbids." },
+      { label: "Consolidated Billing", text: "All account billing consolidated. Volume discounts. Reserved/Savings Plans sharing. Cost Explorer integration", easy: "10 accounts → one bill! Volume discounts applied to combined usage across accounts." },
+      { label: "Service Integration", text: "AWS SSO, Config, CloudTrail, GuardDuty, Security Hub, Macie etc. enabled at Organizations level", easy: "Apply security services to all accounts at once! Auto-applied to new accounts." },
+      { label: "Exam Points", text: "Consolidated billing → Organizations. Cross-account permission restriction → SCP. Central service management → Organizations", easy: "Multi-account management, billing consolidation, SCP application → AWS Organizations!" }
+    ]
+  },
+  backup: {
+    title: "AWS Backup",
+    subtitle: "Centralized Backup Service",
+    easy: "AWS Backup manages backups for EC2, EBS, RDS, DynamoDB and many more services in one place! Create a backup policy and it auto-backs up everything.",
+    points: [
+      { label: "Supported Services", text: "EC2, EBS, RDS/Aurora, DynamoDB, EFS, FSx, S3, Storage Gateway, DocumentDB, Neptune", easy: "Backup almost all AWS data services at once! No separate setup per service needed." },
+      { label: "Backup Plans", text: "Backup Plan: schedule(daily/weekly/monthly), retention period, transition(cold storage), cross-region copy", easy: "'Daily auto-backup, 30-day retention, old ones to Glacier' — set rule once, runs automatically." },
+      { label: "Backup Vault", text: "Backup storage. Encryption(KMS). Vault Lock(WORM): deletion prevention. Cross-account sharing", easy: "Store backups in a safe! Vault Lock = even admins can't delete. Used against ransomware." },
+      { label: "Organizations Integration", text: "Apply central backup policies across entire Organizations. Auto-backup all accounts. Compliance", easy: "Same backup policy auto-applied to all accounts! No manual setup by employees needed." },
+      { label: "Exam Points", text: "Centralized backup → AWS Backup. Vault Lock = WORM. Cross-region backup for disaster recovery", easy: "Central backup management for multiple services → AWS Backup! Delete-proof backup → Vault Lock!" }
+    ]
+  },
+  iamidentitycenter: {
+    title: "IAM Identity Center",
+    subtitle: "Single Sign-On(SSO) Service",
+    easy: "IAM Identity Center is the unified login service for all AWS accounts and apps! Log in once and access all AWS accounts plus Salesforce, Slack and more.",
+    points: [
+      { label: "SSO", text: "Single Sign-On. One login for multiple AWS accounts and apps. User portal provided", easy: "Log in once → access all AWS accounts! No repeated login per account." },
+      { label: "Identity Sources", text: "IAM Identity Center built-in, Active Directory(AD Connector/AWS Managed AD), External IdP(Okta, Azure AD)", easy: "Log in to AWS with company AD account! Okta, Azure AD also connectable." },
+      { label: "Permission Sets", text: "Permission Set: role collection assigned to account. Different permissions per OU or account. Independent of SCP", easy: "Dev team gets dev account admin, ops team gets ops account read-only — assign separately." },
+      { label: "SCIM Auto-Provisioning", text: "Auto-sync when IdP adds/removes users. No manual management", easy: "HR adds employee → AWS access auto-created! Employee leaves → auto-removed." },
+      { label: "Exam Points", text: "Multi-account SSO → IAM Identity Center. Cognito = app user auth, IAM Identity Center = AWS account access", easy: "Unified employee AWS login → IAM Identity Center! App sign-up/login → Cognito!" }
+    ]
+  },
+  emr: {
+    title: "Amazon EMR",
+    subtitle: "Managed Big Data Processing",
+    easy: "EMR lets you easily run Hadoop and Spark on AWS clusters! Process big data as a managed service instead of managing EC2 yourself.",
+    points: [
+      { label: "Supported Frameworks", text: "Apache Spark, Hadoop, Hive, Presto, HBase, Flink, Hudi, Iceberg. JupyterHub integration", easy: "Spark for hundreds of TB, Hive for large-scale SQL, HBase for NoSQL — all on EMR!" },
+      { label: "Cluster Structure", text: "Primary Node(coordination), Core Node(processing+storage), Task Node(processing only). Spot for cost savings", easy: "Foreman(Primary) + Workers(Core) + Temps(Task). Use Spot for Task to save 80%!" },
+      { label: "Storage", text: "HDFS(temporary), EMR File System(EMRFS, S3 integration), Local. S3 as data lake", easy: "S3 = permanent storage, HDFS = temp workspace. S3 data preserved after cluster termination." },
+      { label: "EMR Serverless", text: "Run Spark/Hive jobs without cluster management. Auto-scaling. Per-second billing", easy: "No cluster setup — just code! Automatically provisions, processes, and releases servers." },
+      { label: "Exam Points", text: "Big data processing(Spark/Hadoop) → EMR. S3 data lake + EMR combo. Spot for cost savings", easy: "Hundreds of TB data processing, ML data prep → EMR! Spot Instance = up to 90% cost savings!" }
+    ]
+  },
+  glue: {
+    title: "AWS Glue",
+    subtitle: "Serverless ETL Service",
+    easy: "Glue is a data transformation factory! Automatically extracts, cleans, and loads data from S3, RDS, DynamoDB without servers.",
+    points: [
+      { label: "ETL Jobs", text: "Serverless Apache Spark-based. Auto-generates Python/Scala scripts. Schedule or event-triggered", easy: "Extract from S3 raw data, Transform(clean), Load into analytics DB — automated." },
+      { label: "Data Catalog", text: "Central metadata repository. Shared with Athena, Redshift Spectrum, EMR. Glue Crawler auto-discovers", easy: "'What data exists where in S3' — auto-survey and create catalog(Crawler)." },
+      { label: "Glue DataBrew", text: "No-code visual data preparation. 250+ transformation functions. Non-developers can use", easy: "Clean data with clicks, no coding! Transform data like Excel." },
+      { label: "Glue Studio", text: "Visual ETL pipeline design. Drag and drop. Real-time monitoring", easy: "Connect ETL pipeline visually like drawing! No code needed." },
+      { label: "Exam Points", text: "Serverless ETL → Glue. Data Catalog → Glue Catalog. Run Crawler before Athena query", easy: "S3 data transform/clean → Glue ETL! Athena querying S3 requires Glue Catalog!" }
+    ]
+  },
+  lakeformation: {
+    title: "AWS Lake Formation",
+    subtitle: "Data Lake Construction & Security",
+    easy: "Lake Formation makes it easy to build a data lake(S3-based large-scale data store) and control access at granular levels like 'this person can only see this column'!",
+    points: [
+      { label: "Data Lake Construction", text: "S3-based. Automates data ingestion, cleaning, classification. Tightly integrated with Glue", easy: "Collect raw data in S3, Lake Formation handles cleaning, security, and access control." },
+      { label: "Fine-Grained Access Control", text: "Column, Row, Cell-level access control. Data masking. Tag-based control(LF-Tags)", easy: "'Marketing team can't see customer name column', 'PII is masked' — granular control." },
+      { label: "Integrated Services", text: "Athena, Redshift Spectrum, EMR, Glue, QuickSight integration. Centralized permission management", easy: "Apply consistent access control across all analytics services. Manage permissions from one place." },
+      { label: "Blueprints", text: "Data ingestion automation templates. Auto-build RDS/S3→data lake pipelines", easy: "A few clicks to auto-create pipeline that loads RDS data into S3 data lake." },
+      { label: "Exam Points", text: "Fine-grained permissions for data lake → Lake Formation. S3 IAM alone cannot do row/column-level control", easy: "S3 data lake + row/column-level access control → Lake Formation! IAM/S3 policies alone can't do it!" }
+    ]
+  },
+  quicksight: {
+    title: "Amazon QuickSight",
+    subtitle: "Serverless Cloud BI",
+    easy: "QuickSight is a serverless BI tool that visualizes data as charts! Connect S3, RDS, Redshift data and immediately create dashboards and charts.",
+    points: [
+      { label: "Data Sources", text: "S3, Athena, RDS/Aurora, Redshift, DynamoDB, Salesforce, external DBs", easy: "Connect almost all AWS data sources. Create charts with just a few clicks!" },
+      { label: "SPICE", text: "Super-fast Parallel In-memory Calculation Engine. Data memory caching. Fast query response", easy: "Pre-loads data into memory for fast dashboard loading!" },
+      { label: "ML Insights", text: "Anomaly Detection, Forecasting, Auto-Narratives(auto-generated explanations)", easy: "AI auto-detects 'this month's revenue is abnormally low'! Trend forecasting also automatic." },
+      { label: "Embedded Analytics", text: "Embed dashboards in external apps. SDK. Q(natural language queries). Anonymous access possible", easy: "'Add analytics dashboard to customer app'! QuickSight embeddable in apps." },
+      { label: "Exam Points", text: "Serverless BI visualization → QuickSight. Pairs with Redshift. Per-user billing(Standard/Enterprise)", easy: "Data visualization/dashboards → QuickSight! Choose AWS-native instead of other BI tools." }
+    ]
+  },
+  sagemaker: {
+    title: "Amazon SageMaker",
+    subtitle: "Fully Managed ML Platform",
+    easy: "SageMaker supports the entire ML model lifecycle — build, train, and deploy! From data prep to model deployment, all in one platform.",
+    points: [
+      { label: "SageMaker Studio", text: "Integrated ML development environment. JupyterLab-based. Full cycle from data prep to training to deployment", easy: "Integrated IDE for ML! Jupyter notebooks + data management + experiment tracking in one screen." },
+      { label: "Training", text: "Managed training instances(GPU). Distributed training. Spot Instance(up to 90% savings). Experiment tracking", easy: "Start training without GPU server management! Save 90% on training with Spot." },
+      { label: "Deployment", text: "Real-time Endpoint(low latency), Serverless(intermittent traffic), Batch Transform(bulk inference)", easy: "Deploy model as web service API! Serverless option = zero cost when no traffic." },
+      { label: "Autopilot & Canvas", text: "AutoML: auto feature engineering, model selection, hyperparameter tuning. Canvas: no-code ML", easy: "Autopilot = feed data, auto-selects best model! Canvas = ML without coding." },
+      { label: "Exam Points", text: "ML model training and deployment → SageMaker. Feature Store, Model Registry, Pipelines. Difference from Rekognition", easy: "Build your own ML model → SageMaker. Pre-built AI APIs(image recognition etc.) → Rekognition!" }
+    ]
   }
 };
 
