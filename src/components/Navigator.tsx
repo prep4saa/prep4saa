@@ -116,6 +116,11 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
             <button onClick={() => onTabChange('mockExam')} style={{ background: 'none', border: 'none', color: currentTab === 'mockExam' ? '#FF9900' : '#D1D5DB', fontSize: '.875rem', fontWeight: 500, cursor: 'pointer', transition: 'color .15s' }}>
               {t.tabMockExam}
             </button>
+            {/* CLI 실습 탭 - 모든 사용자에게 표시 */}
+            <button onClick={() => onTabChange('console')} style={{ background: 'none', border: 'none', color: currentTab === 'console' ? '#FF9900' : '#D1D5DB', fontSize: '.875rem', fontWeight: 500, cursor: 'pointer', transition: 'color .15s' }}>
+              {t.tabConsole}
+            </button>
+
             {isAdmin && (
               <>
                 <button onClick={() => onTabChange('admin')} style={{ background: 'none', border: 'none', color: currentTab === 'admin' ? '#FF9900' : '#D1D5DB', fontSize: '.875rem', fontWeight: 500, cursor: 'pointer', transition: 'color .15s' }}>
@@ -123,9 +128,6 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
                 </button>
                 <button onClick={() => onTabChange('users')} style={{ background: 'none', border: 'none', color: currentTab === 'users' ? '#FF9900' : '#D1D5DB', fontSize: '.875rem', fontWeight: 500, cursor: 'pointer', transition: 'color .15s' }}>
                   Users
-                </button>
-                <button onClick={() => onTabChange('console')} style={{ background: 'none', border: 'none', color: currentTab === 'console' ? '#FF9900' : '#D1D5DB', fontSize: '.875rem', fontWeight: 500, cursor: 'pointer', transition: 'color .15s' }}>
-                  {t.tabConsole}
                 </button>
               </>
             )}
@@ -269,6 +271,7 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
         <button className={`mobile-menu-btn${currentTab === 'concept' ? ' active' : ''}`} onClick={() => { onTabChange('concept'); setShowMobileMenu(false); }}>{t.tabConcept}</button>
         <button className={`mobile-menu-btn${currentTab === 'status' ? ' active' : ''}`} onClick={() => { onTabChange('status'); setShowMobileMenu(false); }}>{t.tabStatus}</button>
         <button className={`mobile-menu-btn${currentTab === 'mockExam' ? ' active' : ''}`} onClick={() => { onTabChange('mockExam'); setShowMobileMenu(false); }}>{t.tabMockExam}</button>
+        <button className={`mobile-menu-btn${currentTab === 'console' ? ' active' : ''}`} onClick={() => { onTabChange('console'); setShowMobileMenu(false); }}>{t.tabConsole}</button>
         {isAdmin && <>
           <button className={`mobile-menu-btn${currentTab === 'admin' ? ' active' : ''}`} onClick={() => { onTabChange('admin'); setShowMobileMenu(false); }}>Admin</button>
           <button className={`mobile-menu-btn${currentTab === 'users' ? ' active' : ''}`} onClick={() => { onTabChange('users'); setShowMobileMenu(false); }}>Users</button>
