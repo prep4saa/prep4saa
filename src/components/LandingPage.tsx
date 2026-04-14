@@ -15,6 +15,7 @@ interface LandingPageProps {
   onProClick?: () => void;
   userEmail?: string | null;
   isAuthChecked?: boolean;
+  emailVerified?: boolean;
   dday?: string;
   streak?: number;
   onDdayClick?: () => void;
@@ -26,7 +27,7 @@ interface LandingPageProps {
   isAdmin?: boolean;
 }
 
-export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, onProClick, userEmail, isAuthChecked, dday, streak, onDdayClick, userStatus, onLogout, onCancelSubscription, currentLocale = 'ko', onLocaleChange, isAdmin = false }: LandingPageProps) {
+export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, onProClick, userEmail, isAuthChecked, emailVerified, dday, streak, onDdayClick, userStatus, onLogout, onCancelSubscription, currentLocale = 'ko', onLocaleChange, isAdmin = false }: LandingPageProps) {
 
   // 버튼 클릭 핸들러: 비로그인 → 로그인 창, 로그인 → 해당 액션
   const handleFreeClick = () => userEmail ? onGetStarted() : onLoginClick?.();
@@ -230,7 +231,7 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, o
         onTabChange={onTabChange}
         currentLocale={locale}
         onLocaleChange={handleLanguageChange}
-        showLoginButton={!userEmail && isAuthChecked}
+        showLoginButton={isAuthChecked && (!userEmail || !emailVerified)}
         onLoginClick={onLoginClick}
         userEmail={userEmail}
         dday={dday}

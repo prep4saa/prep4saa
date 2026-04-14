@@ -2222,6 +2222,7 @@ function App() {
         onLocaleChange={setLocale}
         userEmail={userEmail}
         isAuthChecked={isAuthChecked}
+        emailVerified={emailVerified}
         dday={dday}
         streak={streak}
         onDdayClick={() => setShowExamDateModal(true)}
