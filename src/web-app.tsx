@@ -1976,7 +1976,8 @@ function App() {
  await refreshUserData(); // 최신 상태 새로고침
  const currentUser = getCurrentUser();
  if (currentUser && !currentUser.emailVerified) {
- // 이메일이 아직 검증되지 않음
+ // 이메일이 아직 검증되지 않음 - 로그아웃 처리
+ await signOut();
  setLoginError(t("emailVerificationPending"));
  setEmailVerificationUserEmail(email);
  setShowEmailVerificationModal(true);
