@@ -546,7 +546,7 @@ app.post('/api/send-verification-email', async (req, res) => {
 
     // Resend API로 메일 발송
     const response = await resend.emails.send({
-      from: 'noreply@prep4saa.com',
+      from: process.env.CONTACT_EMAIL || 'awsarchive06@gmail.com',
       to: email,
       subject: '📧 AWS SAA-C03 - 이메일 확인이 필요합니다',
       html: `
