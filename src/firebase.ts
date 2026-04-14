@@ -171,19 +171,30 @@ export async function signUp(email: string, password: string, displayName: strin
     // ✅ 이메일 확인 링크 발송
     try {
       await sendEmailVerification(user);
-      console.log('✅ 이메일 확인 링크 발송 완료:', email);
     } catch (error: any) {
-      console.warn('⚠️ 이메일 확인 링크 발송 실패:', error.message);
       // 이메일 발송 실패해도 계정은 생성됨
     }
 
     return user;
   } catch (error: any) {
     if (error?.code === "auth/email-already-in-use") {
-      const methods = await getSignInMethodsSafely(email);
-      if ((methods.includes("google.com") && !methods.includes("password")) || methods.length === 0) {
-        throw new Error("이 이메일은 현재 Google 로그인으로만 연결되어 있습니다. Google로 로그인한 뒤 비밀번호를 연결해주세요.");
+      // 이미 가입된 이메일인 경우 - 인증 메일 재발송 모달 표시
+      // oob 코드를 요청하려고 시도 (다시 인증 링크 보내기용)
+      try {
+        const methods = await getSignInMethodsSafely(email);
+        // Google 전용 계정인 경우
+        if (methods.includes("google.com") && !methods.includes("password")) {
+          throw new Error("이 이메일은 현재 Google 로그인으로만 연결되어 있습니다. Google로 로그인한 뒤 비밀번호를 연결해주세요.");
+        }
+      } catch (methodCheckError: any) {
+        // 메서드 확인 실패 시 무시하고 계속 진행
       }
+
+      // 이메일/비밀번호로도 가입된 경우 - 인증 메일 재발송 가능
+      // 오류 코드를 유지해서 web-app에서 감지하도록
+      const err = new Error("email-already-in-use");
+      (err as any).code = "auth/email-already-in-use";
+      throw err;
     }
     throw new Error(getErrorMessage(error.code));
   }
@@ -255,8 +266,22 @@ export async function refreshUserData(): Promise<void> {
  */
 export async function resendEmailVerification(): Promise<void> {
   const user = auth.currentUser;
-  if (user) {
-    await sendEmailVerification(user);
+  if (!user) {
+    throw new Error("User not found. Please try again.");
+  }
+  try {
+    await sendEmailVerification(user, {
+      url: `${window.location.origin}/?emailVerified=true`
+    });
+  } catch (error: any) {
+    // Firebase rate limiting 오류 처리
+    if (error.code === 'auth/too-many-requests') {
+      const err = new Error("email-verification-too-many-requests");
+      (err as any).code = "email-verification-too-many-requests";
+      throw err;
+    }
+
+    throw new Error(error.message || "Failed to send verification email");
   }
 }
 
@@ -1309,7 +1334,7 @@ export async function updateMockExamProblemsProgressively(
       // localStorage 저장 실패
     }
   } catch (error: any) {
-    console.error("점진적 저장 실패:", error.message);
+    // Error saving problem data
   }
 }
 
@@ -1359,7 +1384,6 @@ export async function deleteOldMockExamProblems(): Promise<number> {
       // 권한 부족은 정상 - Cloud Function이 없으면 발생
       return 0;
     }
-    console.error("오래된 문제 삭제 실패:", error.message);
     return 0;
   }
 }
@@ -1403,7 +1427,6 @@ export async function canGenerateProblemToday(
       limit
     };
   } catch (error: any) {
-    console.error("❌ 문제 생성 권한 확인 실패:", error.message);
     return { canGenerate: false, count: 0, limit: 0 };
   }
 }
@@ -1437,7 +1460,7 @@ export async function recordProblemGeneration(userId: string): Promise<void> {
     }
 
   } catch (error: any) {
-    console.error("❌ 문제 생성 기록 실패:", error.message);
+    // Error recording problem generation
   }
 }
 
@@ -1469,6 +1492,6 @@ export async function recordMockExamDate(userId: string): Promise<void> {
     const userRef = doc(db, "users", userId);
     await setDoc(userRef, { lastMockExamDate: today }, { merge: true });
   } catch (error: any) {
-    console.error("❌ 모의시험 날짜 저장 실패:", error.message);
+    // Error saving mock exam date
   }
 }

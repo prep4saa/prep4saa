@@ -89,7 +89,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, onSuccess, userEma
       // custom_data에 userId와 email 전달 (webhook에서 받을 데이터)
       const checkoutEmail = email.trim();
       const checkoutUrl = `https://${storeId}.lemonsqueezy.com/checkout/buy/${productId}?checkout[email]=${encodeURIComponent(checkoutEmail)}&checkout[custom][user_id]=${encodeURIComponent(userId || '')}&checkout[custom][email]=${encodeURIComponent(checkoutEmail)}`;
-      console.log('[PaymentModal] Lemon Squeezy checkout', { userEmail, checkoutEmail, userId: userId || '', checkoutUrl });
       window.location.href = checkoutUrl;
     } else {
       setError(currentLabels.errorMessage);

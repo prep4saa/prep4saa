@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const { Resend } = require('resend');
@@ -6,7 +6,6 @@ const crypto = require('crypto');
 const admin = require('firebase-admin');
 require('dotenv').config();
 
-// Firebase Admin SDK 초기화
 const serviceAccount = require('./firebase-key.json');
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -18,48 +17,50 @@ const app = express();
 const PORT = 5000;
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// ✅ 보안 헤더 설정 (XSS, Clickjacking, MIME-sniffing 방지)
+// ??蹂댁븞 ?ㅻ뜑 ?ㅼ젙 (XSS, Clickjacking, MIME-sniffing 諛⑹?)
 app.use(helmet());
 
-// ✅ CORS 설정
+// ??CORS ?ㅼ젙
 app.use(cors({
   origin: [
     'https://prep4saa.com',
     'https://www.prep4saa.com',
-    'http://localhost:5173',  // 개발 환경
-    'http://localhost:3000',  // Vite 대체 포트
-    'http://localhost:3001',  // Vite 대체 포트
-    'http://localhost:3002',  // Vite 대체 포트
-    'http://localhost:3003',  // Vite 대체 포트
-    'http://localhost:5000'   // 로컬 테스트
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'http://localhost:3003',
+    'http://localhost:5000'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  maxAge: 86400  // 24시간
+  maxAge: 86400
 }));
 
-// ✅ 타임아웃 설정
+// ????꾩븘???ㅼ젙
 app.use((req, res, next) => {
-  req.setTimeout(30000);  // 30초
-  res.setTimeout(30000);
+  req.setTimeout(30000);  // 30珥?  res.setTimeout(30000);
   next();
 });
 
-app.use(express.json());
+app.use(express.json({
+  verify: (req, _res, buf) => {
+    req.rawBody = buf.toString('utf8');
+  }
+}));
 
-// Claude API 프록시 핸들러
 async function handleClaudeProxy(req, res) {
   try {
     const { model, max_tokens, messages } = req.body;
     const apiKey = process.env.ANTHROPIC_API_KEY;
 
     if (!apiKey) {
-      console.error('❌ ANTHROPIC_API_KEY not found in environment');
+      console.error('??ANTHROPIC_API_KEY not found in environment');
       return res.status(400).json({ error: { message: 'ANTHROPIC_API_KEY not found' } });
     }
 
-    console.log('📤 Sending request to Claude API:', { model, max_tokens });
+    console.log('?뱾 Sending request to Claude API:', { model, max_tokens });
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -77,35 +78,34 @@ async function handleClaudeProxy(req, res) {
 
     if (!response.ok) {
       const error = await response.json();
-      console.error('❌ Claude API Error:', error);
+      console.error('??Claude API Error:', error);
       return res.status(response.status).json({ error });
     }
 
     const data = await response.json();
-    console.log('✅ Claude API Success');
+    console.log('??Claude API Success');
     res.json(data);
   } catch (error) {
-    console.error('❌ Proxy error:', error);
+    console.error('??Proxy error:', error);
     res.status(500).json({ error: { message: error.message } });
   }
 }
 
-// 양쪽 엔드포인트 지원
-app.post('/api/claude', handleClaudeProxy);
+// ?묒そ ?붾뱶?ъ씤??吏??app.post('/api/claude', handleClaudeProxy);
 app.post('/api/claudeProxy', handleClaudeProxy);
 
-// ✅ Gemini API 프록시 핸들러 (보안: API 키는 서버에만 있음)
+// ??Gemini API ?꾨줉???몃뱾??(蹂댁븞: API ?ㅻ뒗 ?쒕쾭?먮쭔 ?덉쓬)
 async function handleGeminiProxy(req, res) {
   try {
     const { prompt, maxTokens = 2000 } = req.body;
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-      console.error('❌ GEMINI_API_KEY not found in environment');
+      console.error('??GEMINI_API_KEY not found in environment');
       return res.status(400).json({ error: { message: 'GEMINI_API_KEY not found' } });
     }
 
-    console.log('📤 Sending request to Gemini API');
+    console.log('?뱾 Sending request to Gemini API');
 
     const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent', {
       method: 'POST',
@@ -132,36 +132,34 @@ async function handleGeminiProxy(req, res) {
 
     if (!response.ok) {
       const error = await response.json();
-      console.error('❌ Gemini API Error:', error);
+      console.error('??Gemini API Error:', error);
       return res.status(response.status).json({ error });
     }
 
     const data = await response.json();
-    console.log('✅ Gemini API Success');
+    console.log('??Gemini API Success');
     res.json(data);
   } catch (error) {
-    console.error('❌ Gemini Proxy error:', error);
+    console.error('??Gemini Proxy error:', error);
     res.status(500).json({ error: { message: error.message } });
   }
 }
 
-// Gemini API 엔드포인트
-app.post('/api/gemini', handleGeminiProxy);
+// Gemini API ?붾뱶?ъ씤??app.post('/api/gemini', handleGeminiProxy);
 
-// ✅ 2Checkout 결제 처리 핸들러
 app.post('/api/process2CheckoutPayment', async (req, res) => {
   try {
     const { email, fullName, amount, currency } = req.body;
 
-    // 🧪 테스트 모드: 2Checkout API 키 없이도 작동
-    // 프로덕션: 2Checkout API 키 필요
+    // ?㎦ ?뚯뒪??紐⑤뱶: 2Checkout API ???놁씠???묐룞
+    // ?꾨줈?뺤뀡: 2Checkout API ???꾩슂
     const twoCheckoutApiKey = process.env.TWO_CHECKOUT_API_KEY;
 
-    console.log('📤 Processing 2Checkout payment:', { email, fullName, amount, currency });
+    console.log('?뱾 Processing 2Checkout payment:', { email, fullName, amount, currency });
 
-    // ✅ 테스트 모드: 항상 성공
+    // ???뚯뒪??紐⑤뱶: ??긽 ?깃났
     if (!twoCheckoutApiKey) {
-      console.log('🧪 Test Mode: Simulating 2Checkout payment');
+      console.log('?㎦ Test Mode: Simulating 2Checkout payment');
       return res.json({
         success: true,
         message: 'Test mode: Payment simulated successfully',
@@ -169,7 +167,7 @@ app.post('/api/process2CheckoutPayment', async (req, res) => {
       });
     }
 
-    // 프로덕션: 실제 2Checkout API 호출
+    // ?꾨줈?뺤뀡: ?ㅼ젣 2Checkout API ?몄텧
     // const response = await fetch('https://api.2checkout.com/v1/orders', {
     //   method: 'POST',
     //   headers: {
@@ -199,7 +197,7 @@ app.post('/api/process2CheckoutPayment', async (req, res) => {
     // res.json({ success: true, transactionId: data.orderId });
 
   } catch (error) {
-    console.error('❌ 2Checkout Payment Error:', error);
+    console.error('??2Checkout Payment Error:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Payment processing failed',
@@ -207,17 +205,16 @@ app.post('/api/process2CheckoutPayment', async (req, res) => {
   }
 });
 
-// Payment Intent Handler (Stripe - 레거시)
+// Payment Intent Handler (Stripe - ?덇굅??
 app.post('/api/createPaymentIntent', async (req, res) => {
   try {
     const { email, fullName, amount, currency } = req.body;
 
-    // 테스트 모드: 실제 Stripe 통합 전 시뮬레이션
-    // 프로덕션: Stripe SDK 필요
+    // ?뚯뒪??紐⑤뱶: ?ㅼ젣 Stripe ?듯빀 ???쒕??덉씠??    // ?꾨줈?뺤뀡: Stripe SDK ?꾩슂
     const stripeSecretKey = process.env.VITE_STRIPE_SECRET_KEY;
 
     if (!stripeSecretKey) {
-      // 테스트 모드: 더미 clientSecret 반환
+      // ?뚯뒪??紐⑤뱶: ?붾? clientSecret 諛섑솚
       const dummyClientSecret = `pi_test_${Date.now()}_secret_${Math.random().toString(36).substr(2, 9)}`;
 
       return res.json({
@@ -227,7 +224,7 @@ app.post('/api/createPaymentIntent', async (req, res) => {
       });
     }
 
-    // 프로덕션에서는 실제 Stripe API 호출
+    // ?꾨줈?뺤뀡?먯꽌???ㅼ젣 Stripe API ?몄텧
     // const stripe = require('stripe')(stripeSecretKey);
     // const paymentIntent = await stripe.paymentIntents.create({
     //   amount: amount,
@@ -249,7 +246,7 @@ app.post('/api/notifyError', async (req, res) => {
   try {
     const { to, subject, error, apiType, timestamp, difficulty, services, locale } = req.body;
 
-    // 테스트 모드: 에러 로깅만 수행
+    // ?뚯뒪??紐⑤뱶: ?먮윭 濡쒓퉭留??섑뻾
     const errorLog = {
       to,
       subject,
@@ -262,8 +259,8 @@ app.post('/api/notifyError', async (req, res) => {
       receivedAt: new Date().toISOString()
     };
 
-    // 실제 환경에서는 Firebase Cloud Function이나 이메일 서비스 호출
-    // console.log('📧 Error notification:', errorLog);
+    // ?ㅼ젣 ?섍꼍?먯꽌??Firebase Cloud Function?대굹 ?대찓???쒕퉬???몄텧
+    console.log('?벁 Error notification:', errorLog);
 
     res.json({
       status: 'logged',
@@ -279,15 +276,13 @@ app.post('/api/contact', async (req, res) => {
   try {
     const { name, email, subject, message, timestamp } = req.body;
 
-    // 입력값 검증
     if (!name || !email || !subject || !message) {
       return res.status(400).json({ error: { message: 'Missing required fields' } });
     }
 
-    // 환경변수에서 수신 이메일 가져오기 (로직에 노출 X)
+    // ?섍꼍蹂?섏뿉???섏떊 ?대찓??媛?몄삤湲?(濡쒖쭅???몄텧 X)
     const contactEmail = process.env.CONTACT_EMAIL;
 
-    // 문의 정보 저장
     const contactData = {
       name: name.trim(),
       email: email.trim(),
@@ -297,29 +292,28 @@ app.post('/api/contact', async (req, res) => {
       receivedAt: new Date().toISOString()
     };
 
-    // 💾 로그: 민감한 정보 노출 안 함
-    console.log('📧 새 문의 수신:', {
+    console.log('?? ??:', {
       senderName: contactData.name,
       senderEmail: contactData.email,
       subject: contactData.subject,
       timestamp: contactData.timestamp
     });
 
-    // 📧 Resend API를 사용하여 이메일 전송
+    // ?벁 Resend API瑜??ъ슜?섏뿬 ?대찓???꾩넚
     if (contactEmail && process.env.RESEND_API_KEY) {
       try {
         const htmlContent = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #333;">새로운 문의가 도착했습니다</h2>
+            <h2 style="color: #333;">?덈줈??臾몄쓽媛 ?꾩갑?덉뒿?덈떎</h2>
             <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p><strong>발신자:</strong> ${contactData.name}</p>
-              <p><strong>이메일:</strong> ${contactData.email}</p>
-              <p><strong>제목:</strong> ${contactData.subject}</p>
+              <p><strong>諛쒖떊??</strong> ${contactData.name}</p>
+              <p><strong>?대찓??</strong> ${contactData.email}</p>
+              <p><strong>?쒕ぉ:</strong> ${contactData.subject}</p>
               <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;" />
-              <p><strong>메시지:</strong></p>
+              <p><strong>硫붿떆吏:</strong></p>
               <p style="white-space: pre-wrap;">${contactData.message}</p>
               <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;" />
-              <p style="color: #666; font-size: 12px;">수신 시간: ${contactData.receivedAt}</p>
+              <p style="color: #666; font-size: 12px;">?섏떊 ?쒓컙: ${contactData.receivedAt}</p>
             </div>
           </div>
         `;
@@ -327,45 +321,45 @@ app.post('/api/contact', async (req, res) => {
         await resend.emails.send({
           from: 'onboarding@resend.dev',
           to: contactEmail,
-          subject: `새 문의: ${contactData.subject}`,
+          subject: `??臾몄쓽: ${contactData.subject}`,
           html: htmlContent,
         });
 
-        console.log(`✉️ Resend 이메일 발송 완료: ${contactEmail}`);
+        console.log(`?됵툘 Resend ?대찓??諛쒖넚 ?꾨즺: ${contactEmail}`);
       } catch (emailError) {
-        console.error('⚠️ Resend 이메일 발송 실패:', emailError.message);
-        // 이메일 발송 실패해도 클라이언트에는 성공 응답 전송
+        console.error('?좑툘 Resend ?대찓??諛쒖넚 ?ㅽ뙣:', emailError.message);
+        // ?대찓??諛쒖넚 ?ㅽ뙣?대룄 ?대씪?댁뼵?몄뿉???깃났 ?묐떟 ?꾩넚
       }
     }
 
-    // 🗄️ Firebase에 문의 저장 (선택사항)
+    // ?뾼截?Firebase??臾몄쓽 ???(?좏깮?ы빆)
     // await saveContactToFirebase(contactData);
 
-    // 성공 응답
+    // ?깃났 ?묐떟
     res.json({
       status: 'success',
       message: 'Contact message received. We will reply soon.',
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('❌ Contact form error:', error);
+    console.error('??Contact form error:', error);
     res.status(500).json({ error: { message: error.message } });
   }
 });
 
-// ===== Admin 검증 =====
+// ===== Admin 寃利?=====
 
-// Admin check (보안: 서버에서만 처리)
+// Admin check (蹂댁븞: ?쒕쾭?먯꽌留?泥섎━)
 app.post('/api/checkAdmin', (req, res) => {
   try {
     const { email } = req.body;
     const adminEmail = process.env.VITE_ADMIN_EMAIL;
 
-    // 서버에서만 admin 이메일 비교
+    // ?쒕쾭?먯꽌留?admin ?대찓??鍮꾧탳
     const isAdmin = email && adminEmail && email === adminEmail;
 
-    // 디버그 로그
-    console.log('🔍 Admin check:', {
+    // ?붾쾭洹?濡쒓렇
+    console.log('?뵇 Admin check:', {
       receivedEmail: email,
       adminEmail: adminEmail,
       isAdmin: isAdmin,
@@ -377,12 +371,11 @@ app.post('/api/checkAdmin', (req, res) => {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('❌ Admin check error:', error);
+    console.error('??Admin check error:', error);
     res.status(500).json({ error: { message: error.message } });
   }
 });
 
-// Admin 미들웨어: 모든 /api/admin/* 요청 검증
 app.use('/api/admin/', (req, res, next) => {
   try {
     const { email } = req.body;
@@ -395,20 +388,20 @@ app.use('/api/admin/', (req, res, next) => {
       });
     }
 
-    // Admin 확인 완료, 다음 핸들러로
+    // Admin ?뺤씤 ?꾨즺, ?ㅼ쓬 ?몃뱾?щ줈
     next();
   } catch (error) {
     res.status(500).json({ error: { message: error.message } });
   }
 });
 
-// Admin 통계 조회 (관리자 전용)
+// Admin ?듦퀎 議고쉶 (愿由ъ옄 ?꾩슜)
 app.post('/api/admin/stats', (req, res) => {
   try {
     const { email } = req.body;
-    // 미들웨어에서 이미 검증됨
+    // 誘몃뱾?⑥뼱?먯꽌 ?대? 寃利앸맖
 
-    // 테스트용 응답 (실제로는 Firebase getAdminStats() 호출)
+    // ?뚯뒪?몄슜 ?묐떟 (?ㅼ젣濡쒕뒗 Firebase getAdminStats() ?몄텧)
     res.json({
       totalUsers: 0,
       paidUsers: 0,
@@ -420,13 +413,13 @@ app.post('/api/admin/stats', (req, res) => {
   }
 });
 
-// Admin - 모든 사용자 목록 조회 (관리자 전용)
+// Admin - 紐⑤뱺 ?ъ슜??紐⑸줉 議고쉶 (愿由ъ옄 ?꾩슜)
 app.post('/api/admin/users', (req, res) => {
   try {
     const { email } = req.body;
-    // 미들웨어에서 이미 검증됨
+    // 誘몃뱾?⑥뼱?먯꽌 ?대? 寃利앸맖
 
-    // 테스트용 응답 (실제로는 Firebase getAllUsersForAdmin() 호출)
+    // ?뚯뒪?몄슜 ?묐떟 (?ㅼ젣濡쒕뒗 Firebase getAllUsersForAdmin() ?몄텧)
     res.json({
       users: [],
       timestamp: new Date().toISOString()
@@ -436,17 +429,17 @@ app.post('/api/admin/users', (req, res) => {
   }
 });
 
-// Admin - 특정 사용자의 문제 세션 조회 (관리자 전용)
+// Admin - ?뱀젙 ?ъ슜?먯쓽 臾몄젣 ?몄뀡 議고쉶 (愿由ъ옄 ?꾩슜)
 app.post('/api/admin/user/sessions', (req, res) => {
   try {
     const { email, userId } = req.body;
-    // 미들웨어에서 이미 검증됨
+    // 誘몃뱾?⑥뼱?먯꽌 ?대? 寃利앸맖
 
     if (!userId) {
       return res.status(400).json({ error: { message: 'userId is required' } });
     }
 
-    // 테스트용 응답 (실제로는 Firebase getUserProblemSessions() 호출)
+    // ?뚯뒪?몄슜 ?묐떟 (?ㅼ젣濡쒕뒗 Firebase getUserProblemSessions() ?몄텧)
     res.json({
       sessions: [],
       timestamp: new Date().toISOString()
@@ -456,7 +449,7 @@ app.post('/api/admin/user/sessions', (req, res) => {
   }
 });
 
-// Admin Console: 서버 명령어 실행 (admin 전용)
+// Admin Console: ?쒕쾭 紐낅졊???ㅽ뻾 (admin ?꾩슜)
 app.post('/api/admin/console', (req, res) => {
   const { exec } = require('child_process');
   try {
@@ -464,7 +457,7 @@ app.post('/api/admin/console', (req, res) => {
     if (!command || typeof command !== 'string') {
       return res.status(400).json({ error: 'command is required' });
     }
-    // 명령어 길이 제한
+    // 紐낅졊??湲몄씠 ?쒗븳
     if (command.length > 500) {
       return res.status(400).json({ error: 'command too long' });
     }
@@ -487,7 +480,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', port: PORT });
 });
 
-// ✅ Lemon Squeezy Checkout API
+// ??Lemon Squeezy Checkout API
 app.post('/api/lemonsqueezy/checkout', async (req, res) => {
   try {
     const { email, returnUrl } = req.body;
@@ -496,45 +489,41 @@ app.post('/api/lemonsqueezy/checkout', async (req, res) => {
       return res.status(400).json({ error: 'Email is required' });
     }
 
-    const apiKey = process.env.VITE_LEMON_SQUEEZY_API_KEY;
-    if (!apiKey) {
-      console.error('❌ VITE_LEMON_SQUEEZY_API_KEY not found');
-      return res.status(500).json({ error: 'Payment system not configured' });
-    }
-
-    console.log('📤 Creating Lemon Squeezy Checkout...');
-
     const storeId = process.env.VITE_LEMON_SQUEEZY_STORE_ID;
     const productId = process.env.VITE_LEMON_SQUEEZY_PRODUCT_ID;
 
-    // ✅ Lemon Squeezy Hosted Checkout URL (계정 승인 후)
-    // Format: https://checkout.lemonsqueezy.com/buy/{storeId}/{productId}
-    // 현재는 IN REVIEW 상태이므로 테스트 모드 사용
-    let checkoutUrl;
-
-    if (storeId && productId) {
-      // 운영 계정 (승인 후)
-      checkoutUrl = `https://checkout.lemonsqueezy.com/buy/${storeId}/${productId}?checkout[email]=${encodeURIComponent(email)}`;
-    } else {
-      // 테스트 모드 (계정 승인 대기 중)
-      checkoutUrl = `https://lemonsqueezy.com/checkout?email=${encodeURIComponent(email)}&test=true`;
+    if (!storeId || !productId) {
+      return res.status(400).json({
+        error: 'Lemon Squeezy store/product environment variables are missing',
+      });
     }
+
+    const checkoutParams = new URLSearchParams({
+      'checkout[email]': email,
+      'checkout[custom][email]': email,
+    });
+
+    if (returnUrl) {
+      checkoutParams.set('checkout[custom][return_url]', returnUrl);
+    }
+
+    const checkoutUrl = `https://${storeId}.lemonsqueezy.com/checkout/buy/${productId}?${checkoutParams.toString()}`;
 
     console.log('✅ Checkout URL generated:', checkoutUrl);
 
-    res.json({
-      checkoutUrl: checkoutUrl,
-      email: email
+    return res.json({
+      checkoutUrl,
+      email,
     });
   } catch (error) {
-    console.error('❌ Checkout error:', error);
+    console.error('??Checkout error:', error);
     res.status(500).json({ error: { message: error.message } });
   }
 });
 
 /**
- * ✅ 이메일 검증 링크 발송
- * 회원가입 후 사용자에게 확인 메일 발송
+ * ???대찓??寃利?留곹겕 諛쒖넚
+ * ?뚯썝媛?????ъ슜?먯뿉寃??뺤씤 硫붿씪 諛쒖넚
  */
 app.post('/api/send-verification-email', async (req, res) => {
   try {
@@ -544,75 +533,41 @@ app.post('/api/send-verification-email', async (req, res) => {
       return res.status(400).json({ error: 'Email is required' });
     }
 
-    // Resend API로 메일 발송
     const response = await resend.emails.send({
       from: process.env.CONTACT_EMAIL || 'awsarchive06@gmail.com',
       to: email,
-      subject: '📧 AWS SAA-C03 - 이메일 확인이 필요합니다',
+      subject: 'AWS SAA-C03 - Email Verification Required',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px; text-align: center; border-radius: 12px 12px 0 0;">
-            <h1 style="color: white; margin: 0;">AWS SAA-C03 준비</h1>
-          </div>
-
-          <div style="background: #f7f7f7; padding: 40px; border-radius: 0 0 12px 12px;">
-            <h2 style="color: #333;">안녕하세요${userName ? `, ${userName}님` : ''}!</h2>
-
-            <p style="color: #666; font-size: 16px; line-height: 1.6;">
-              AWS SAA-C03 플랫폼에 가입해주셔서 감사합니다.
-            </p>
-
-            <p style="color: #666; font-size: 16px; line-height: 1.6;">
-              계정을 활성화하려면 아래 링크를 클릭하여 이메일을 확인해주세요:
-            </p>
-
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="https://prep4saa.com" style="display: inline-block; background: #667eea; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
-                📧 이메일 확인하기
-              </a>
-            </div>
-
-            <p style="color: #999; font-size: 14px;">
-              또는 이메일을 받으신 후 "확인" 링크를 클릭하세요.
-            </p>
-
-            <p style="color: #999; font-size: 12px; margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px;">
-              이 이메일을 받으신 이유: ${email}로 AWS SAA-C03에 가입하셨습니다.<br>
-              문제가 있으시면 support@prep4saa.com으로 문의해주세요.
-            </p>
-          </div>
+          <h2 style="color: #333;">Hello${userName ? `, ${userName}` : ''}!</h2>
+          <p>Your account verification email has been sent successfully.</p>
+          <p>Please click the link in that email to verify your address.</p>
+          <p>If you did not request this email, you can ignore it.</p>
         </div>
-      `
+      `,
     });
 
-    // ✅ Resend API 응답 확인
     if (response.error) {
-      console.error('❌ Resend API 오류:', response.error);
-      return res.status(500).json({ error: `Resend API 오류: ${response.error}` });
+      console.error('Resend API error:', response.error);
+      return res.status(500).json({ error: `Resend API error: ${response.error}` });
     }
 
-    console.log('✅ 이메일 검증 메일 발송 완료:', email, 'ID:', response.id);
-    res.json({ success: true, message: '이메일이 발송되었습니다.' });
+    console.log('Verification email sent:', email, 'ID:', response.id);
+    return res.json({ success: true, message: 'Verification email sent.' });
   } catch (error) {
-    console.error('❌ 이메일 발송 실패:', error);
-    res.status(500).json({ error: '이메일 발송에 실패했습니다.' });
+    console.error('Verification email send failed:', error);
+    return res.status(500).json({ error: 'Verification email send failed.' });
   }
 });
 
-/**
- * ✅ Lemon Squeezy Webhook Handler
- * Webhook 서명 검증 후 구독 정보 Firebase에 저장
- */
 app.post('/api/webhooks/lemon-squeezy', async (req, res) => {
   try {
-    const signature = req.headers['x-signature'] || req.headers['x-lemon-squeezy-signature'];
-    const body = JSON.stringify(req.body);
+    const signature = req.headers['x-signature'] || req.headers['x-lemon-squeezy-signature'] || req.headers['X-Signature'] || req.headers['X-Lemon-Squeezy-Signature'];
+    const body = req.rawBody || JSON.stringify(req.body);
     const webhookSecret = process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
 
-    // 1️⃣ Webhook 서명 검증 (보안)
     if (!webhookSecret) {
       console.warn('⚠️  LEMON_SQUEEZY_WEBHOOK_SECRET not configured');
-      // 개발 모드: 서명 검증 생략
     } else {
       const expectedSignature = crypto
         .createHmac('sha256', webhookSecret)
@@ -627,24 +582,31 @@ app.post('/api/webhooks/lemon-squeezy', async (req, res) => {
 
     const event = req.body.meta?.event_name;
     const data = req.body.data;
+    const customData = req.body.meta?.custom_data || data?.attributes?.custom_data || {};
 
-    console.log(`📨 Lemon Squeezy Webhook: ${event}`);
+    console.log(`🧭 Lemon Squeezy Webhook: ${event}`);
 
-    // 2️⃣ 구독 생성/업데이트 이벤트
-    if (event === 'subscription_created' || event === 'subscription_updated') {
+    const paidEvents = ['order_created', 'subscription_created', 'subscription_payment_success'];
+    const cancelEvents = ['subscription_cancelled', 'subscription_expired'];
+
+    if (paidEvents.includes(event)) {
       const subscription = data.attributes;
-      const customData = subscription.custom_data || {};
       const userId = customData.user_id;
-      const email = customData.email;
+      const email = customData.email || subscription.user_email || subscription.customer_email;
 
-      if (!userId) {
-        console.warn('⚠️  No user_id in webhook data');
+      if (!userId && !email) {
+        console.warn('⚠️  No user_id or email in webhook data');
         return res.json({ received: true });
       }
 
       try {
-        // Firebase에 구독 정보 저장
-        const userRef = db.collection('users').doc(userId);
+        let userRef;
+        if (userId) {
+          userRef = db.collection('users').doc(userId);
+        } else {
+          const userRecord = await admin.auth().getUserByEmail(email);
+          userRef = db.collection('users').doc(userRecord.uid);
+        }
 
         const updateData = {
           isPaid: subscription.status === 'active' || subscription.status === 'on_trial',
@@ -659,33 +621,37 @@ app.post('/api/webhooks/lemon-squeezy', async (req, res) => {
 
         await userRef.set(updateData, { merge: true });
 
-        console.log(`✅ Firebase updated for user ${userId}:`, {
+        console.log(`✅ Firebase updated for user ${userId || email}:`, {
           isPaid: updateData.isPaid,
           status: subscription.status,
           subscriptionId: data.id
         });
 
-        res.json({ received: true });
-
+        return res.json({ received: true });
       } catch (error) {
         console.error('❌ Firebase update error:', error);
-        res.status(500).json({ error: 'Firebase update failed' });
+        return res.status(500).json({ error: 'Firebase update failed' });
       }
     }
 
-    // 3️⃣ 구독 취소 이벤트
-    else if (event === 'subscription_cancelled') {
+    if (cancelEvents.includes(event)) {
       const subscription = data.attributes;
-      const customData = subscription.custom_data || {};
       const userId = customData.user_id;
+      const email = customData.email || subscription.user_email || subscription.customer_email;
 
-      if (!userId) {
-        console.warn('⚠️  No user_id in webhook data');
+      if (!userId && !email) {
+        console.warn('⚠️  No user_id or email in webhook data');
         return res.json({ received: true });
       }
 
       try {
-        const userRef = db.collection('users').doc(userId);
+        let userRef;
+        if (userId) {
+          userRef = db.collection('users').doc(userId);
+        } else {
+          const userRecord = await admin.auth().getUserByEmail(email);
+          userRef = db.collection('users').doc(userRecord.uid);
+        }
 
         await userRef.set({
           isPaid: false,
@@ -694,38 +660,35 @@ app.post('/api/webhooks/lemon-squeezy', async (req, res) => {
           updatedAt: new Date().toISOString()
         }, { merge: true });
 
-        console.log(`✅ Subscription cancelled for user ${userId}`);
-        res.json({ received: true });
-
+        console.log(`✅ Subscription cancelled for user ${userId || email}`);
+        return res.json({ received: true });
       } catch (error) {
         console.error('❌ Firebase update error:', error);
-        res.status(500).json({ error: 'Firebase update failed' });
+        return res.status(500).json({ error: 'Firebase update failed' });
       }
     }
 
-    else {
-      console.log(`📋 Unhandled event: ${event}`);
-      res.json({ received: true });
-    }
-
+    console.log(`ℹ️ Unhandled event: ${event}`);
+    return res.json({ received: true });
   } catch (error) {
     console.error('❌ Webhook error:', error);
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
 
 // Start server on port 5000
 const server = app.listen(PORT, () => {
-  console.log(`✅ Proxy server running on http://localhost:${PORT}`);
+  console.log(`??Proxy server running on http://localhost:${PORT}`);
   console.log(`   API: http://localhost:${PORT}/api/checkAdmin`);
   console.log(`   Contact API: http://localhost:${PORT}/api/contact`);
 }).on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
-    console.error(`❌ Port ${PORT} is already in use`);
+    console.error(`??Port ${PORT} is already in use`);
     console.error('   Try: taskkill /F /IM node.exe');
     process.exit(1);
   } else {
-    console.error(`❌ Server error: ${err.message}`);
+    console.error(`??Server error: ${err.message}`);
     process.exit(1);
   }
 });
+

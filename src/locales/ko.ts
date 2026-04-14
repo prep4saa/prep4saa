@@ -434,10 +434,12 @@ export const ko = {
   emailVerificationResending: "재발송 중...",
   emailVerificationResendSuccess: "✅ 확인 링크를 다시 발송했습니다. 이메일을 확인해주세요.",
   emailVerificationResendError: "⚠️ 재발송 실패. 잠시 후 다시 시도해주세요.",
+  emailVerificationTooManyRequests: "⚠️ 재전송 요청을 많이 하셨습니다. 3분 후 다시 시도해주세요.",
   emailVerificationCheckEmail: "📧 이메일을 확인해주세요",
   emailVerificationCheckEmailDesc: "계정 활성화를 위해 {email}로 발송된 확인 링크를 클릭하세요.",
-  emailVerificationRefreshBtn: "새로고침",
-  emailVerificationRefreshing: "확인 상태 확인 중...",
+  emailVerificationGoogleOnly: "이 이메일은 현재 Google 로그인으로만 연결되어 있습니다. Google로 로그인한 뒤 비밀번호를 연결해주세요.",
+  emailVerificationUserNotFound: "사용자를 찾을 수 없습니다. 다시 시도해주세요.",
+  emailVerificationCancelBtn: "취소",
 
   // CLI Lab - Scenario Console
   cliLabSelectTypeMsg: "위의 버튼을 선택하세요",

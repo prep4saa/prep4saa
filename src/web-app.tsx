@@ -823,6 +823,7 @@ function App() {
     return maps[type]?.[loc] || maps[type]?.['ko']; // Fallback to Korean
   };
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [emailVerified, setEmailVerified] = useState(false);
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
@@ -840,6 +841,7 @@ function App() {
   const [emailVerificationMessage, setEmailVerificationMessage] = useState<string | null>(null);
   const [emailVerificationUserEmail, setEmailVerificationUserEmail] = useState<string | null>(null);
   const [emailVerificationResending, setEmailVerificationResending] = useState(false);
+  const [isWaitingEmailVerification, setIsWaitingEmailVerification] = useState(false);
   const [streak, setStreak] = useState(0);
   const [sessionId, setSessionId] = useState<string>(`${Date.now()}`); // 현재 세션 ID
   const [pdfGeneratingId, setPdfGeneratingId] = useState<string | null>(null); // PDF 생성 중인 세션
@@ -957,6 +959,18 @@ function App() {
  updateMetaTags();
   }, [locale, t]);
 
+  // 새로고침 후 이메일 검증 대기 상태 복구
+  useEffect(() => {
+ const pendingEmail = localStorage.getItem("pendingVerificationEmail");
+ if (pendingEmail && !userEmail && !showEmailVerificationModal) {
+ setEmailVerificationUserEmail(pendingEmail);
+ setEmailVerificationMessage(t("emailVerificationMessage").replace("{email}", pendingEmail));
+ setShowEmailVerificationModal(true);
+ setShowLoginModal(true);
+ setIsWaitingEmailVerification(true);
+ }
+  }, [isAuthChecked]);
+
   // Restore auth state on mount
   useEffect(() => {
  const unsubscribe = onAuthStateChange(async (user) => {
@@ -965,12 +979,14 @@ function App() {
  try {
  await saveUserInfoToFirebase(user.uid, user.email);
  } catch (error) {
- console.warn('[onAuthStateChange] Error saving user info:', error);
+ // Error saving user info
  }
+
+ // ✅ 이메일 검증 상태 업데이트
+ setEmailVerified(user.emailVerified);
 
  // ✅ 이메일 검증 상태 확인 - 검증되지 않으면 로그인 불가
  if (!user.emailVerified) {
- console.log('[onAuthStateChange] Email not verified:', user.email);
  setUserEmail(null);
  setUserStatusLocal("guest");
  setIsPasswordLoginLinked(false);
@@ -980,6 +996,7 @@ function App() {
  }
 
  setUserEmail(user.email);
+ setEmailVerified(true);
  setShowLanding(false);
  setIsPasswordLoginLinked(isPasswordLinked(user));
 
@@ -1030,7 +1047,7 @@ function App() {
  const deleted = await deleteOldMockExamProblems();
  // 오래된 문제 정리 완료
  } catch (error) {
- console.error("오래된 문제 정리 실패:", error);
+ // Error cleaning up old problems
  }
  })();
   }, []);
@@ -1973,32 +1990,59 @@ function App() {
 
  try {
  if (isSignUp) {
- console.log('[SignUp] Starting signup with email:', email);
+ try {
  await signUp(email, password, displayName);
- console.log('[SignUp] Signup successful - Firebase verification email sent');
-
- // ✅ 회원가입 완료 - 이메일 검증 모달 표시
- // Firebase가 자동으로 확인 메일을 발송했습니다
- setEmailVerificationMessage(t("emailVerificationMessage").replace("{email}", email));
+ } catch (signupError: any) {
+ // 이미 가입된 이메일인 경우 - 입력한 비밀번호로 로그인 시도
+ if (signupError.code === 'auth/email-already-in-use') {
+ try {
+ // 입력한 비밀번호로 로그인 시도
+ await signIn(email, password);
+ // 로그인 성공했으므로 평소대로 진행 (아래 코드 실행)
+ } catch (loginError: any) {
+ // 비밀번호가 틀렸거나 다른 오류 → 인증 메일 재발송 모달
  setEmailVerificationUserEmail(email);
+ setEmailVerificationMessage(t("emailVerificationMessage").replace("{email}", email));
+ setIsWaitingEmailVerification(true);
  setShowEmailVerificationModal(true);
  setLoginError(null);
  setShowLoginModal(false);
- console.log('[SignUp] Email verification modal displayed');
- return; // 여기서 끝내고 이메일 검증을 기다림
+ setLoginLoading(false);
+ return;
+ }
+ // 로그인 성공 시 - 이메일 검증 상태 확인
+ await refreshUserData();
+ const currentUser = getCurrentUser();
+ if (currentUser && !currentUser.emailVerified) {
+ setEmailVerificationUserEmail(email);
+ setEmailVerificationMessage(t("emailVerificationMessage").replace("{email}", email));
+ setIsWaitingEmailVerification(true);
+ setShowEmailVerificationModal(true);
+ setShowLoginModal(false);
+ setLoginLoading(false);
+ return;
+ }
  } else {
+ throw signupError;
+ }
+ }
+
+ // ✅ 회원가입 완료 - 이메일 검증 모달 표시
+ setIsWaitingEmailVerification(true);
+ setEmailVerificationMessage(t("emailVerificationMessage").replace("{email}", email));
+ setEmailVerificationUserEmail(email);
+ setShowEmailVerificationModal(true);
+ localStorage.setItem("pendingVerificationEmail", email);
+ setLoginError(null);
+ return;
+ }  else if (!isSignUp) {
  await signIn(email, password);
  // ✅ 로그인 성공 후 이메일 검증 상태 확인
  await refreshUserData(); // 최신 상태 새로고침
  const currentUser = getCurrentUser();
- console.log('[LoginForm] After refreshUserData:', {
- currentUser: currentUser?.email,
- emailVerified: currentUser?.emailVerified
- });
  if (currentUser && !currentUser.emailVerified) {
  // 이메일이 아직 검증되지 않음 - 로그아웃 처리
- console.log('[LoginForm] Email not verified - logging out');
- await signOut();
+ localStorage.setItem("pendingVerificationEmail", email);
  // UI 상태 초기화
  setUserEmail(null);
  setUserStatusLocal("guest");
@@ -2011,10 +2055,8 @@ function App() {
  setEmailVerificationUserEmail(email);
  setShowEmailVerificationModal(true);
  setLoginLoading(false);
- console.log('[LoginForm] Showing email verification modal');
  return;
  }
- console.log('[LoginForm] Email verified - proceeding with login');
  }
  setIsPasswordLoginLinked(true);
 
@@ -2083,8 +2125,13 @@ function App() {
  }
  }
  } catch (err: any) {
- console.error('[LoginForm] Error during signup/login:', err);
+ // Google 로그인 전용 계정인 경우
+ if (err.message.includes("Google 로그인으로만")) {
+ setLoginError("❌ 이 이메일은 Google 로그인으로만 가입되었습니다.\n\n'Google로 계속' 버튼으로 로그인하세요.\n\n또는 다른 이메일로 회원가입해주세요.");
+ setIsSignUp(false); // 로그인 폼으로 전환
+ } else {
  setLoginError(translateAuthError(err.message));
+ }
  } finally {
  setLoginLoading(false);
  }
@@ -2258,6 +2305,146 @@ function App() {
       )}
       {renderLoginModal()}
       {renderPaymentModal()}
+
+      {/* 이메일 검증 모달 - 랜딩 페이지에서도 표시 */}
+      {showEmailVerificationModal && (
+ <div style={{
+ position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+ backgroundColor: "rgba(0, 0, 0, 0.7)",
+ display: "flex",
+ justifyContent: "center",
+ alignItems: "center",
+ zIndex: 99999,
+ backdropFilter: "blur(4px)",
+ }}>
+ <div style={{
+ backgroundColor: "#1e293b",
+ borderRadius: "12px",
+ padding: "40px",
+ maxWidth: "500px",
+ width: "90%",
+ boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
+ border: "1px solid rgba(255, 255, 255, 0.1)",
+ }}>
+ {/* Close Button */}
+ <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "20px" }}>
+ <button
+ onClick={() => {
+ setShowEmailVerificationModal(false);
+ setIsWaitingEmailVerification(false);
+ localStorage.removeItem("pendingVerificationEmail");
+ }}
+ style={{
+ background: "none",
+ border: "none",
+ color: "#94a3b8",
+ cursor: "pointer",
+ fontSize: "24px",
+ padding: "0",
+ width: "32px",
+ height: "32px",
+ display: "flex",
+ alignItems: "center",
+ justifyContent: "center",
+ }}
+ >
+ ×
+ </button>
+ </div>
+
+ {/* Content */}
+ <h2 style={{ color: "#fff", margin: "0 0 12px 0", fontSize: "24px", textAlign: "center" }}>
+ {t("emailVerificationCheckEmail")}
+ </h2>
+
+ <div style={{
+ backgroundColor: "rgba(59, 130, 246, 0.1)",
+ border: "1px solid rgba(59, 130, 246, 0.3)",
+ borderRadius: "8px",
+ padding: "20px",
+ marginBottom: "24px",
+ }}>
+ <p style={{ color: "#93c5fd", margin: "0", fontSize: "14px", lineHeight: "1.6" }}>
+ {t("emailVerificationCheckEmailDesc").replace("{email}", emailVerificationUserEmail || "")}
+ </p>
+ </div>
+
+ {/* Message */}
+ {emailVerificationMessage && (
+ <p style={{ color: "#cbd5e1", fontSize: "14px", margin: "0 0 24px 0", lineHeight: "1.6", textAlign: "center" }}>
+ {emailVerificationMessage}
+ </p>
+ )}
+
+ {/* Buttons */}
+ <div style={{ display: "flex", gap: "12px", marginTop: "24px", flexDirection: "column" }}>
+ <button
+ onClick={async () => {
+ setEmailVerificationResending(true);
+ try {
+ await resendEmailVerification();
+ setEmailVerificationMessage(t("emailVerificationResendSuccess"));
+ } catch (error: any) {
+ // Firebase rate limiting 오류
+ if (error.message === "email-verification-too-many-requests" || error.code === "email-verification-too-many-requests") {
+ setEmailVerificationMessage(t("emailVerificationTooManyRequests"));
+ } else {
+ setEmailVerificationMessage(t("emailVerificationResendError"));
+ }
+ } finally {
+ setEmailVerificationResending(false);
+ }
+ }}
+ disabled={emailVerificationResending}
+ style={{
+ width: "100%",
+ padding: "12px",
+ backgroundColor: emailVerificationResending ? "#6b7280" : "#6366f1",
+ border: "none",
+ borderRadius: "6px",
+ color: "#fff",
+ fontSize: "14px",
+ cursor: emailVerificationResending ? "not-allowed" : "pointer",
+ fontWeight: "600",
+ transition: "background-color 0.2s",
+ opacity: emailVerificationResending ? 0.7 : 1,
+ }}
+ >
+ {emailVerificationResending ? t("emailVerificationResending") : t("emailVerificationResendBtn")}
+ </button>
+
+ <button
+ onClick={() => {
+ setShowEmailVerificationModal(false);
+ setIsWaitingEmailVerification(false);
+ localStorage.removeItem("pendingVerificationEmail");
+ }}
+ style={{
+ width: "100%",
+ padding: "12px",
+ backgroundColor: "transparent",
+ border: "1px solid rgba(255, 255, 255, 0.2)",
+ borderRadius: "6px",
+ color: "#cbd5e1",
+ fontSize: "14px",
+ cursor: "pointer",
+ fontWeight: "500",
+ transition: "background-color 0.2s",
+ }}
+ onMouseEnter={(e) => {
+ (e.target as HTMLButtonElement).style.backgroundColor = "rgba(255, 255, 255, 0.05)";
+ }}
+ onMouseLeave={(e) => {
+ (e.target as HTMLButtonElement).style.backgroundColor = "transparent";
+ }}
+ >
+ {t("cancelBtn")}
+ </button>
+ </div>
+ </div>
+ </div>
+      )}
+
       <CookieConsent />
     </>;
   }
@@ -2269,7 +2456,7 @@ function App() {
    currentLocale={locale}
    onLocaleChange={setLocale}
    onLoginClick={() => setShowLoginModal(true)}
-   showLoginButton={!userEmail && isAuthChecked}
+   showLoginButton={isAuthChecked && (!userEmail || !emailVerified)}
    onLogoClick={() => setShowLanding(true)}
    userEmail={userEmail}
    dday={dday}
@@ -2295,7 +2482,6 @@ function App() {
          localStorage.setItem("userStatus", "loggedIn");
          alert(locale === 'ko' ? '구독이 취소되었습니다.' : locale === 'ja' ? '購読がキャンセルされました。' : 'Subscription cancelled.');
        } catch (error) {
-         console.error('Subscription cancel error:', error);
          alert(locale === 'ko' ? '구독 취소에 실패했습니다.' : locale === 'ja' ? '購読のキャンセルに失敗しました。' : 'Failed to cancel subscription.');
        }
      }
@@ -2454,9 +2640,9 @@ function App() {
  </div>
 
  <button className="generate-btn"
- disabled={slots.length === 0 || loading || (!isAdmin && dailyCount >= getDailyLimit())}
+ disabled={slots.length === 0 || loading || (!userEmail || !emailVerified) || (!isAdmin && dailyCount >= getDailyLimit())}
  onClick={handleGenerateProblem}
- title={!isAdmin && dailyCount >= getDailyLimit() ? getQuotaMessage(userStatus, getDailyLimit(), dailyCount) : ""}>
+ title={!userEmail ? t("loginRequired") : !emailVerified ? "Please verify your email to generate problems" : !isAdmin && dailyCount >= getDailyLimit() ? getQuotaMessage(userStatus, getDailyLimit(), dailyCount) : ""}>
  {loading && <span className="loading-icon">⏳</span>}
  {loading ? t("btnGenerating") : t("btnGenerate")}
  <br />
@@ -3627,7 +3813,6 @@ function App() {
  setMockExamStartTime(Date.now());
  setMockExamRunning(true);
  } catch (error) {
- console.error(t("errorProblemGeneration"), error);
  alert(t("errorProblemGeneration") + ": " + (error instanceof Error ? error.message : String(error)));
  setMockExamRunning(false);
  // ✅ 에러 발생 시 시험 정보 정리
@@ -4962,8 +5147,6 @@ function App() {
  setLoading(true);
  setMockExamIsLoading(true);
  try {
- console.log("시험 시작하기 - UTC 기준 오늘 문제 확인 중...");
-
  // 1단계: Firestore에서 오늘의 UTC 기준 문제 조회 (언어별)
  const existingProblems = await getTodayMockExamProblems(locale);
  let allProblems = existingProblems;
@@ -5732,15 +5915,15 @@ function App() {
 
  {renderLoginModal()}
 
- {/* 이메일 검증 모달 */}
+ {/* 이메일 검증 모달 - 랜딩 화면에서도 표시 */}
  {showEmailVerificationModal && (
  <div style={{
  position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
- backgroundColor: "rgba(0, 0, 0, 0.5)",
+ backgroundColor: "rgba(0, 0, 0, 0.7)",
  display: "flex",
  justifyContent: "center",
  alignItems: "center",
- zIndex: 10000,
+ zIndex: 99999,
  backdropFilter: "blur(4px)",
  }}>
  <div style={{
@@ -5755,7 +5938,11 @@ function App() {
  {/* Close Button */}
  <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "20px" }}>
  <button
- onClick={() => setShowEmailVerificationModal(false)}
+ onClick={() => {
+ setShowEmailVerificationModal(false);
+ setIsWaitingEmailVerification(false);
+ localStorage.removeItem("pendingVerificationEmail");
+ }}
  style={{
  background: "none",
  border: "none",
@@ -5807,7 +5994,12 @@ function App() {
  await resendEmailVerification();
  setEmailVerificationMessage(t("emailVerificationResendSuccess"));
  } catch (error: any) {
+ // Firebase rate limiting 오류
+ if (error.message === "email-verification-too-many-requests" || error.code === "email-verification-too-many-requests") {
+ setEmailVerificationMessage(t("emailVerificationTooManyRequests"));
+ } else {
  setEmailVerificationMessage(t("emailVerificationResendError"));
+ }
  } finally {
  setEmailVerificationResending(false);
  }
@@ -5831,7 +6023,11 @@ function App() {
  </button>
 
  <button
- onClick={() => setShowEmailVerificationModal(false)}
+ onClick={() => {
+ setShowEmailVerificationModal(false);
+ setIsWaitingEmailVerification(false);
+ localStorage.removeItem("pendingVerificationEmail");
+ }}
  style={{
  width: "100%",
  padding: "12px",
@@ -5852,59 +6048,6 @@ function App() {
  }}
  >
  {t("cancelBtn")}
- </button>
-
- <button
- onClick={async () => {
- setEmailVerificationResending(true);
- try {
- await refreshUserData();
- const currentUser = getCurrentUser();
- if (currentUser?.emailVerified) {
- // 이메일이 확인됨
- setShowEmailVerificationModal(false);
- setShowLoginModal(false);
- setUserEmail(emailVerificationUserEmail);
- // 로그인 완료 처리
- setUserStatusLocal("loggedIn");
- localStorage.setItem("userStatus", "loggedIn");
- localStorage.setItem("userName", emailVerificationUserEmail?.split("@")[0] || "");
- localStorage.setItem("problemCountDate", new Date().toISOString().split("T")[0]);
- } else {
- setEmailVerificationMessage(t("emailVerificationPending"));
- }
- } catch (error: any) {
- console.error("Error refreshing user data:", error);
- } finally {
- setEmailVerificationResending(false);
- }
- }}
- disabled={emailVerificationResending}
- style={{
- width: "100%",
- padding: "12px",
- backgroundColor: emailVerificationResending ? "#6b7280" : "rgba(34, 197, 94, 0.7)",
- border: "1px solid rgba(34, 197, 94, 0.3)",
- borderRadius: "6px",
- color: "#fff",
- fontSize: "14px",
- cursor: emailVerificationResending ? "not-allowed" : "pointer",
- fontWeight: "600",
- transition: "background-color 0.2s",
- opacity: emailVerificationResending ? 0.7 : 1,
- }}
- onMouseEnter={(e) => {
- if (!emailVerificationResending) {
- (e.target as HTMLButtonElement).style.backgroundColor = "rgba(34, 197, 94, 0.9)";
- }
- }}
- onMouseLeave={(e) => {
- if (!emailVerificationResending) {
- (e.target as HTMLButtonElement).style.backgroundColor = "rgba(34, 197, 94, 0.7)";
- }
- }}
- >
- {emailVerificationResending ? t("emailVerificationRefreshing") : t("emailVerificationRefreshBtn")}
  </button>
  </div>
  </div>

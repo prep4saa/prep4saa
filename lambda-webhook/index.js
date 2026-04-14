@@ -1,9 +1,8 @@
-const crypto = require('crypto');
+﻿const crypto = require('crypto');
 const { initializeApp, cert, getApps } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
 
-// Firebase Admin 초기화 (Lambda warm start 고려)
 if (!getApps().length) {
   const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
   initializeApp({ credential: cert(serviceAccount) });
@@ -12,83 +11,104 @@ if (!getApps().length) {
 const db = getFirestore();
 const auth = getAuth();
 
+async function resolveUserRef(customData, attributes) {
+  const userId = customData.user_id;
+  const email = customData.email || attributes.user_email || attributes.customer_email;
+
+  if (userId) {
+    return { userRef: db.collection('users').doc(userId), userKey: userId };
+  }
+
+  if (email) {
+    const userRecord = await auth.getUserByEmail(email);
+    return { userRef: db.collection('users').doc(userRecord.uid), userKey: email };
+  }
+
+  return { userRef: null, userKey: null };
+}
+
 exports.handler = async (event) => {
-  console.log('📩 Webhook received:', event.httpMethod);
+  console.log('🧾 Webhook received:', event.httpMethod);
 
   try {
-    // 1. Webhook 서명 검증
-    const signature = event.headers['X-Signature'] || event.headers['x-signature'];
+    const signature = event.headers['X-Signature'] || event.headers['x-signature'] || event.headers['X-Lemon-Squeezy-Signature'] || event.headers['x-lemon-squeezy-signature'];
     const secret = process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
     const body = event.body;
 
     if (!signature || !secret) {
-      console.error('❌ Missing signature or secret');
+      console.error('Missing signature or secret');
       return { statusCode: 401, body: 'Unauthorized' };
     }
 
-    const hmac = crypto.createHmac('sha256', secret);
-    const digest = hmac.update(body).digest('hex');
-
+    const digest = crypto.createHmac('sha256', secret).update(body).digest('hex');
     if (signature !== digest) {
-      console.error('❌ Invalid signature');
+      console.error('Invalid signature');
       return { statusCode: 401, body: 'Invalid signature' };
     }
 
-    // 2. 이벤트 파싱
     const payload = JSON.parse(body);
     const eventName = payload.meta?.event_name;
-    console.log('📌 Event:', eventName);
+    const data = payload.data || {};
+    const attributes = data.attributes || {};
+    const customData = payload.meta?.custom_data || attributes.custom_data || {};
 
-    // 결제 성공 이벤트
+    console.log('Event:', eventName);
+
     const paidEvents = ['order_created', 'subscription_created', 'subscription_payment_success'];
-    // 구독 취소/만료 이벤트
     const cancelEvents = ['subscription_cancelled', 'subscription_expired'];
 
     if (!paidEvents.includes(eventName) && !cancelEvents.includes(eventName)) {
       return { statusCode: 200, body: 'Ignored' };
     }
 
-    // 3. 고객 이메일 추출
-    const email =
-      payload.data?.attributes?.user_email ||
-      payload.data?.attributes?.customer_email ||
-      payload.meta?.custom_data?.email;
-
-    if (!email) {
-      console.error('❌ No email found in payload');
-      return { statusCode: 400, body: 'No email found' };
+    const resolved = await resolveUserRef(customData, attributes);
+    if (!resolved.userRef) {
+      console.error('No user_id or email found in payload');
+      return { statusCode: 400, body: 'No user found' };
     }
 
-    console.log('📧 Customer email:', email);
+    if (paidEvents.includes(eventName)) {
+      const isPaid = attributes.status === 'active' || attributes.status === 'on_trial' || eventName === 'order_created';
 
-    // 4. Firebase Auth에서 UID 조회
-    let userRecord;
-    try {
-      userRecord = await auth.getUserByEmail(email);
-    } catch (err) {
-      console.error('❌ Firebase user not found for email:', email);
-      return { statusCode: 404, body: 'User not found in Firebase' };
+      await resolved.userRef.set(
+        {
+          isPaid,
+          userStatus: isPaid ? 'paid' : 'loggedIn',
+          lemonSqueezySubscriptionId: data.id,
+          lemonSqueezyCustomerId: attributes.customer_id,
+          subscriptionStatus: attributes.status,
+          subscriptionCreatedAt: attributes.created_at,
+          subscriptionUpdatedAt: attributes.updated_at,
+          subscriptionRenewsAt: attributes.renews_at,
+          updatedAt: new Date().toISOString(),
+          ...(isPaid ? { paidAt: new Date().toISOString() } : {}),
+        },
+        { merge: true }
+      );
+
+      console.log(`isPaid=${isPaid} set for ${resolved.userKey}`);
+      return { statusCode: 200, body: 'OK' };
     }
 
-    // 5. Firestore 업데이트
-    const userRef = db.collection('users').doc(userRecord.uid);
-    const isPaid = paidEvents.includes(eventName);
+    if (cancelEvents.includes(eventName)) {
+      await resolved.userRef.set(
+        {
+          isPaid: false,
+          userStatus: 'loggedIn',
+          subscriptionStatus: 'cancelled',
+          subscriptionCancelledAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
 
-    await userRef.set(
-      {
-        isPaid,
-        userStatus: isPaid ? 'paid' : 'loggedIn',
-        updatedAt: new Date().toISOString(),
-        ...(isPaid ? { paidAt: new Date().toISOString() } : { cancelledAt: new Date().toISOString() }),
-      },
-      { merge: true }
-    );
+      console.log(`Subscription cancelled for ${resolved.userKey}`);
+      return { statusCode: 200, body: 'OK' };
+    }
 
-    console.log(`✅ isPaid=${isPaid} set for ${email} (uid: ${userRecord.uid})`);
-
-    return { statusCode: 200, body: 'OK' };
+    return { statusCode: 200, body: 'Ignored' };
   } catch (error) {
-    console.error('❌ Error:', error.message);
+    console.error('Error:', error.message);
     return { statusCode: 500, body: error.message };
   }
 };
