@@ -961,6 +961,17 @@ function App() {
   useEffect(() => {
  const unsubscribe = onAuthStateChange(async (user) => {
  if (user?.email) {
+ // ✅ 이메일 검증 상태 확인 - 검증되지 않으면 로그인 불가
+ if (!user.emailVerified) {
+ console.log('[onAuthStateChange] Email not verified:', user.email);
+ setUserEmail(null);
+ setUserStatusLocal("guest");
+ setIsPasswordLoginLinked(false);
+ localStorage.removeItem("userStatus");
+ setShowLanding(true);
+ return;
+ }
+
  setUserEmail(user.email);
  setShowLanding(false);
  setIsPasswordLoginLinked(isPasswordLinked(user));
@@ -1975,8 +1986,13 @@ function App() {
  // ✅ 로그인 성공 후 이메일 검증 상태 확인
  await refreshUserData(); // 최신 상태 새로고침
  const currentUser = getCurrentUser();
+ console.log('[LoginForm] After refreshUserData:', {
+ currentUser: currentUser?.email,
+ emailVerified: currentUser?.emailVerified
+ });
  if (currentUser && !currentUser.emailVerified) {
  // 이메일이 아직 검증되지 않음 - 로그아웃 처리
+ console.log('[LoginForm] Email not verified - logging out');
  await signOut();
  // UI 상태 초기화
  setUserEmail(null);
@@ -1990,8 +2006,10 @@ function App() {
  setEmailVerificationUserEmail(email);
  setShowEmailVerificationModal(true);
  setLoginLoading(false);
+ console.log('[LoginForm] Showing email verification modal');
  return;
  }
+ console.log('[LoginForm] Email verified - proceeding with login');
  }
  setIsPasswordLoginLinked(true);
 
