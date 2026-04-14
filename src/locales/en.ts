@@ -427,6 +427,20 @@ export const en: Strings = {
   consoleNextBtn: "Next →",
   consoleNextStep: "Moving to next step...",
 
+  // Email Verification
+  emailVerificationTitle: "Email Verification Required",
+  emailVerificationMessage: "A confirmation link has been sent to {email}. Please check your email to activate your account.",
+  emailVerificationPending: "Your email has not been verified yet.",
+  emailVerificationSent: "✅ Confirmation link sent. Please check your email.",
+  emailVerificationResendBtn: "Resend Confirmation Link",
+  emailVerificationResending: "Resending...",
+  emailVerificationResendSuccess: "✅ Confirmation link resent. Please check your email.",
+  emailVerificationResendError: "⚠️ Resend failed. Please try again later.",
+  emailVerificationCheckEmail: "📧 Please check your email",
+  emailVerificationCheckEmailDesc: "Click the confirmation link sent to {email} to activate your account.",
+  emailVerificationRefreshBtn: "Refresh",
+  emailVerificationRefreshing: "Checking verification status...",
+
   // CLI Lab - Scenario Console
   cliLabSelectTypeMsg: "Select a type button above",
   cliLabInputHint: "Type a command and click the Submit button.",

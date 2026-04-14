@@ -425,6 +425,20 @@ export const ko = {
   consoleNextBtn: "다음 →",
   consoleNextStep: "다음 스텝으로 이동 중...",
 
+  // Email Verification
+  emailVerificationTitle: "이메일 확인 필요",
+  emailVerificationMessage: "이메일 확인 링크가 {email}로 발송되었습니다. 이메일을 확인하여 계정을 활성화해주세요.",
+  emailVerificationPending: "이메일이 아직 확인되지 않았습니다.",
+  emailVerificationSent: "✅ 확인 링크가 발송되었습니다. 이메일을 확인해주세요.",
+  emailVerificationResendBtn: "확인 링크 재발송",
+  emailVerificationResending: "재발송 중...",
+  emailVerificationResendSuccess: "✅ 확인 링크를 다시 발송했습니다. 이메일을 확인해주세요.",
+  emailVerificationResendError: "⚠️ 재발송 실패. 잠시 후 다시 시도해주세요.",
+  emailVerificationCheckEmail: "📧 이메일을 확인해주세요",
+  emailVerificationCheckEmailDesc: "계정 활성화를 위해 {email}로 발송된 확인 링크를 클릭하세요.",
+  emailVerificationRefreshBtn: "새로고침",
+  emailVerificationRefreshing: "확인 상태 확인 중...",
+
   // CLI Lab - Scenario Console
   cliLabSelectTypeMsg: "위의 버튼을 선택하세요",
   cliLabInputHint: "명령어를 입력하고 제출 버튼을 누르세요.",

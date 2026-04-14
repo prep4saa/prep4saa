@@ -10,7 +10,7 @@ import PaymentModal from "./components/Modals/PaymentModal";
 import { CAT, CONCEPTS_KO, LINKS, NODES } from "./data";
 import { CONCEPTS_EN } from "./CONCEPTS_EN";
 import { CONCEPTS_JA } from "./concepts_ja";
-import { auth, createPost, deleteExpiredResults, deleteOldMockExamProblems, deletePost, getAdminStatsSecure, getAllUsersForAdminSecure, getCurrentUser, getExamStartDate, getPostById, getPosts, getTodayMockExamProblems, getUserPaidStatus, getUserProblemSessions, getUserProblemSessionsSecure, getUserQuizStats, isPasswordLinked, linkEmailPasswordToCurrentUser, onAuthStateChange, recordQuizResult, saveExamStartDate, saveTodayMockExamProblems, saveUserInfoToFirebase, signIn, signInWithGoogle, signOut, signUp, updateMockExamProblemsProgressively, updateStreakInFirebase, updateUserPaidStatus, uploadPDFToStorage } from "./firebase";
+import { auth, createPost, deleteExpiredResults, deleteOldMockExamProblems, deletePost, getAdminStatsSecure, getAllUsersForAdminSecure, getCurrentUser, getExamStartDate, getPostById, getPosts, getTodayMockExamProblems, getUserPaidStatus, getUserProblemSessions, getUserProblemSessionsSecure, getUserQuizStats, isPasswordLinked, linkEmailPasswordToCurrentUser, onAuthStateChange, recordQuizResult, saveExamStartDate, saveTodayMockExamProblems, saveUserInfoToFirebase, signIn, signInWithGoogle, signOut, signUp, updateMockExamProblemsProgressively, updateStreakInFirebase, updateUserPaidStatus, uploadPDFToStorage, refreshUserData, resendEmailVerification } from "./firebase";
 import { useLocale } from "./LocaleContext";
 import { useTheme } from "./ThemeContext";
 // SEC Challenges
@@ -836,6 +836,10 @@ function App() {
   const [linkPasswordValue, setLinkPasswordValue] = useState("");
   const [linkPasswordLoading, setLinkPasswordLoading] = useState(false);
   const [linkPasswordError, setLinkPasswordError] = useState<string | null>(null);
+  const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
+  const [emailVerificationMessage, setEmailVerificationMessage] = useState<string | null>(null);
+  const [emailVerificationUserEmail, setEmailVerificationUserEmail] = useState<string | null>(null);
+  const [emailVerificationResending, setEmailVerificationResending] = useState(false);
   const [streak, setStreak] = useState(0);
   const [sessionId, setSessionId] = useState<string>(`${Date.now()}`); // 현재 세션 ID
   const [pdfGeneratingId, setPdfGeneratingId] = useState<string | null>(null); // PDF 생성 중인 세션
@@ -1959,8 +1963,26 @@ function App() {
  try {
  if (isSignUp) {
  await signUp(email, password, displayName);
+ // ✅ 회원가입 완료 - 이메일 검증 모달 표시
+ setEmailVerificationMessage(t("emailVerificationMessage").replace("{email}", email));
+ setEmailVerificationUserEmail(email);
+ setShowEmailVerificationModal(true);
+ setLoginError(null);
+ setShowLoginModal(false);
+ return; // 여기서 끝내고 이메일 검증을 기다림
  } else {
  await signIn(email, password);
+ // ✅ 로그인 성공 후 이메일 검증 상태 확인
+ await refreshUserData(); // 최신 상태 새로고침
+ const currentUser = getCurrentUser();
+ if (currentUser && !currentUser.emailVerified) {
+ // 이메일이 아직 검증되지 않음
+ setLoginError(t("emailVerificationPending"));
+ setEmailVerificationUserEmail(email);
+ setShowEmailVerificationModal(true);
+ setLoginLoading(false);
+ return;
+ }
  }
  setIsPasswordLoginLinked(true);
 
@@ -5676,6 +5698,185 @@ function App() {
  )}
 
  {renderLoginModal()}
+
+ {/* 이메일 검증 모달 */}
+ {showEmailVerificationModal && (
+ <div style={{
+ position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+ backgroundColor: "rgba(0, 0, 0, 0.5)",
+ display: "flex",
+ justifyContent: "center",
+ alignItems: "center",
+ zIndex: 10000,
+ backdropFilter: "blur(4px)",
+ }}>
+ <div style={{
+ backgroundColor: "#1e293b",
+ borderRadius: "12px",
+ padding: "40px",
+ maxWidth: "500px",
+ width: "90%",
+ boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
+ border: "1px solid rgba(255, 255, 255, 0.1)",
+ }}>
+ {/* Close Button */}
+ <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "20px" }}>
+ <button
+ onClick={() => setShowEmailVerificationModal(false)}
+ style={{
+ background: "none",
+ border: "none",
+ color: "#94a3b8",
+ cursor: "pointer",
+ fontSize: "24px",
+ padding: "0",
+ width: "32px",
+ height: "32px",
+ display: "flex",
+ alignItems: "center",
+ justifyContent: "center",
+ }}
+ >
+ ×
+ </button>
+ </div>
+
+ {/* Content */}
+ <h2 style={{ color: "#fff", margin: "0 0 12px 0", fontSize: "24px", textAlign: "center" }}>
+ {t("emailVerificationCheckEmail")}
+ </h2>
+
+ <div style={{
+ backgroundColor: "rgba(59, 130, 246, 0.1)",
+ border: "1px solid rgba(59, 130, 246, 0.3)",
+ borderRadius: "8px",
+ padding: "20px",
+ marginBottom: "24px",
+ }}>
+ <p style={{ color: "#93c5fd", margin: "0", fontSize: "14px", lineHeight: "1.6" }}>
+ {t("emailVerificationCheckEmailDesc").replace("{email}", emailVerificationUserEmail || "")}
+ </p>
+ </div>
+
+ {/* Message */}
+ {emailVerificationMessage && (
+ <p style={{ color: "#cbd5e1", fontSize: "14px", margin: "0 0 24px 0", lineHeight: "1.6", textAlign: "center" }}>
+ {emailVerificationMessage}
+ </p>
+ )}
+
+ {/* Buttons */}
+ <div style={{ display: "flex", gap: "12px", marginTop: "24px", flexDirection: "column" }}>
+ <button
+ onClick={async () => {
+ setEmailVerificationResending(true);
+ try {
+ await resendEmailVerification();
+ setEmailVerificationMessage(t("emailVerificationResendSuccess"));
+ } catch (error: any) {
+ setEmailVerificationMessage(t("emailVerificationResendError"));
+ } finally {
+ setEmailVerificationResending(false);
+ }
+ }}
+ disabled={emailVerificationResending}
+ style={{
+ width: "100%",
+ padding: "12px",
+ backgroundColor: emailVerificationResending ? "#6b7280" : "#6366f1",
+ border: "none",
+ borderRadius: "6px",
+ color: "#fff",
+ fontSize: "14px",
+ cursor: emailVerificationResending ? "not-allowed" : "pointer",
+ fontWeight: "600",
+ transition: "background-color 0.2s",
+ opacity: emailVerificationResending ? 0.7 : 1,
+ }}
+ >
+ {emailVerificationResending ? t("emailVerificationResending") : t("emailVerificationResendBtn")}
+ </button>
+
+ <button
+ onClick={() => setShowEmailVerificationModal(false)}
+ style={{
+ width: "100%",
+ padding: "12px",
+ backgroundColor: "transparent",
+ border: "1px solid rgba(255, 255, 255, 0.2)",
+ borderRadius: "6px",
+ color: "#cbd5e1",
+ fontSize: "14px",
+ cursor: "pointer",
+ fontWeight: "500",
+ transition: "background-color 0.2s",
+ }}
+ onMouseEnter={(e) => {
+ (e.target as HTMLButtonElement).style.backgroundColor = "rgba(255, 255, 255, 0.05)";
+ }}
+ onMouseLeave={(e) => {
+ (e.target as HTMLButtonElement).style.backgroundColor = "transparent";
+ }}
+ >
+ {t("cancelBtn")}
+ </button>
+
+ <button
+ onClick={async () => {
+ setEmailVerificationResending(true);
+ try {
+ await refreshUserData();
+ const currentUser = getCurrentUser();
+ if (currentUser?.emailVerified) {
+ // 이메일이 확인됨
+ setShowEmailVerificationModal(false);
+ setShowLoginModal(false);
+ setUserEmail(emailVerificationUserEmail);
+ // 로그인 완료 처리
+ setUserStatusLocal("loggedIn");
+ localStorage.setItem("userStatus", "loggedIn");
+ localStorage.setItem("userName", emailVerificationUserEmail?.split("@")[0] || "");
+ localStorage.setItem("problemCountDate", new Date().toISOString().split("T")[0]);
+ } else {
+ setEmailVerificationMessage(t("emailVerificationPending"));
+ }
+ } catch (error: any) {
+ console.error("Error refreshing user data:", error);
+ } finally {
+ setEmailVerificationResending(false);
+ }
+ }}
+ disabled={emailVerificationResending}
+ style={{
+ width: "100%",
+ padding: "12px",
+ backgroundColor: emailVerificationResending ? "#6b7280" : "rgba(34, 197, 94, 0.7)",
+ border: "1px solid rgba(34, 197, 94, 0.3)",
+ borderRadius: "6px",
+ color: "#fff",
+ fontSize: "14px",
+ cursor: emailVerificationResending ? "not-allowed" : "pointer",
+ fontWeight: "600",
+ transition: "background-color 0.2s",
+ opacity: emailVerificationResending ? 0.7 : 1,
+ }}
+ onMouseEnter={(e) => {
+ if (!emailVerificationResending) {
+ (e.target as HTMLButtonElement).style.backgroundColor = "rgba(34, 197, 94, 0.9)";
+ }
+ }}
+ onMouseLeave={(e) => {
+ if (!emailVerificationResending) {
+ (e.target as HTMLButtonElement).style.backgroundColor = "rgba(34, 197, 94, 0.7)";
+ }
+ }}
+ >
+ {emailVerificationResending ? t("emailVerificationRefreshing") : t("emailVerificationRefreshBtn")}
+ </button>
+ </div>
+ </div>
+ </div>
+ )}
 
  {/* 인증 모달 */}
  {showAuthModal && (

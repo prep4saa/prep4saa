@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocale } from '../../LocaleContext';
 
 interface PaymentModalProps {
@@ -10,6 +10,9 @@ interface PaymentModalProps {
 
 const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, onSuccess, userEmail, userId }) => {
   const { locale } = useLocale();
+  useEffect(() => {
+    setEmail(userEmail || '');
+  }, [userEmail]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // userEmail이 있으면 그걸 사용, 없으면 빈 값 (사용자 입력 필요)
@@ -84,12 +87,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, onSuccess, userEma
 
     if (storeId && productId) {
       // custom_data에 userId와 email 전달 (webhook에서 받을 데이터)
-      const customData = {
-        user_id: userId || '',
-        email: email
-      };
-
-      const checkoutUrl = `https://${storeId}.lemonsqueezy.com/checkout/buy/${productId}?checkout[email]=${encodeURIComponent(email)}&checkout[custom][user_id]=${encodeURIComponent(userId || '')}&checkout[custom][email]=${encodeURIComponent(email)}`;
+      const checkoutEmail = email.trim();
+      const checkoutUrl = `https://${storeId}.lemonsqueezy.com/checkout/buy/${productId}?checkout[email]=${encodeURIComponent(checkoutEmail)}&checkout[custom][user_id]=${encodeURIComponent(userId || '')}&checkout[custom][email]=${encodeURIComponent(checkoutEmail)}`;
+      console.log('[PaymentModal] Lemon Squeezy checkout', { userEmail, checkoutEmail, userId: userId || '', checkoutUrl });
       window.location.href = checkoutUrl;
     } else {
       setError(currentLabels.errorMessage);

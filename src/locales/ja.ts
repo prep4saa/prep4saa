@@ -422,6 +422,20 @@ export const ja: Strings = {
   consoleHideAnswer: "答えを隠す",
   consoleWrongAnswer: "不正解です。もう一度確認してください。ヒント: ",
 
+  // Email Verification
+  emailVerificationTitle: "メール認証が必要です",
+  emailVerificationMessage: "確認リンクが{email}に送信されました。メールを確認してアカウントを有効化してください。",
+  emailVerificationPending: "メールはまだ確認されていません。",
+  emailVerificationSent: "✅ 確認リンクを送信しました。メールをご確認ください。",
+  emailVerificationResendBtn: "確認リンクを再送信",
+  emailVerificationResending: "再送信中...",
+  emailVerificationResendSuccess: "✅ 確認リンクを再送信しました。メールをご確認ください。",
+  emailVerificationResendError: "⚠️ 再送信に失敗しました。後でもう一度お試しください。",
+  emailVerificationCheckEmail: "📧 メールをご確認ください",
+  emailVerificationCheckEmailDesc: "{email}に送信された確認リンクをクリックしてアカウントを有効化してください。",
+  emailVerificationRefreshBtn: "更新",
+  emailVerificationRefreshing: "認証ステータスを確認中...",
+
   // CLI Lab - Scenario Console
   cliLabSelectTypeMsg: "上のボタンを選択してください",
   cliLabInputHint: "コマンドを入力して送信ボタンをクリックしてください。",

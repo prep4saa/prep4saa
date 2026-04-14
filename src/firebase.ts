@@ -12,7 +12,9 @@ import {
   signInWithPopup,
   EmailAuthProvider,
   fetchSignInMethodsForEmail,
-  linkWithCredential
+  linkWithCredential,
+  sendEmailVerification,
+  reload
 } from "firebase/auth";
 import {
   getFirestore,
@@ -164,7 +166,18 @@ export async function signUp(email: string, password: string, displayName: strin
     }
 
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    return userCredential.user;
+    const user = userCredential.user;
+
+    // ✅ 이메일 확인 링크 발송
+    try {
+      await sendEmailVerification(user);
+      console.log('✅ 이메일 확인 링크 발송 완료:', email);
+    } catch (error: any) {
+      console.warn('⚠️ 이메일 확인 링크 발송 실패:', error.message);
+      // 이메일 발송 실패해도 계정은 생성됨
+    }
+
+    return user;
   } catch (error: any) {
     if (error?.code === "auth/email-already-in-use") {
       const methods = await getSignInMethodsSafely(email);
@@ -225,6 +238,26 @@ export async function signOut(): Promise<void> {
  */
 export function getCurrentUser(): User | null {
   return auth.currentUser;
+}
+
+/**
+ * 사용자 정보 새로고침 (이메일 검증 상태 확인용)
+ */
+export async function refreshUserData(): Promise<void> {
+  const user = auth.currentUser;
+  if (user) {
+    await reload(user);
+  }
+}
+
+/**
+ * 이메일 검증 링크 재발송
+ */
+export async function resendEmailVerification(): Promise<void> {
+  const user = auth.currentUser;
+  if (user) {
+    await sendEmailVerification(user);
+  }
 }
 
 /**
