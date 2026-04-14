@@ -3096,17 +3096,17 @@ function App() {
                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                    <button
                      onClick={handleScenarioSubmit}
-                     disabled={!consoleInput.trim()}
+                     disabled={!consoleInput.trim() || userStatus !== "paid"}
                      style={{
                        padding: "10px 16px",
-                       background: consoleInput.trim() ? "#3fb950" : "#1a3a2a",
-                       color: consoleInput.trim() ? "#000" : "#666",
+                       background: consoleInput.trim() && userStatus === "paid" ? "#3fb950" : "#1a3a2a",
+                       color: consoleInput.trim() && userStatus === "paid" ? "#000" : "#666",
                        border: "none",
                        borderRadius: "6px",
-                       cursor: consoleInput.trim() ? "pointer" : "not-allowed",
+                       cursor: consoleInput.trim() && userStatus === "paid" ? "pointer" : "not-allowed",
                        fontSize: "12px",
                        fontWeight: 600,
-                       opacity: consoleInput.trim() ? 1 : 0.5
+                       opacity: consoleInput.trim() && userStatus === "paid" ? 1 : 0.5
                      }}
                    >
                      {t("cliLabSubmitBtn")}
@@ -3114,15 +3114,17 @@ function App() {
 
                    <button
                      onClick={() => setShowScenarioAnswer(!showScenarioAnswer)}
+                     disabled={userStatus !== "paid"}
                      style={{
                        padding: "10px 16px",
-                       background: showScenarioAnswer ? "#ff9900" : "#2a344a",
-                       color: showScenarioAnswer ? "#000" : "#e6edf3",
-                       border: "1px solid #ff9900",
+                       background: userStatus === "paid" ? (showScenarioAnswer ? "#ff9900" : "#2a344a") : "#1a3a2a",
+                       color: userStatus === "paid" ? (showScenarioAnswer ? "#000" : "#e6edf3") : "#666",
+                       border: userStatus === "paid" ? "1px solid #ff9900" : "1px solid #444",
                        borderRadius: "6px",
-                       cursor: "pointer",
+                       cursor: userStatus === "paid" ? "pointer" : "not-allowed",
                        fontSize: "12px",
-                       fontWeight: 600
+                       fontWeight: 600,
+                       opacity: userStatus === "paid" ? 1 : 0.5
                      }}
                    >
                      {showScenarioAnswer ? t("cliLabHideAnswerBtn") : t("cliLabShowAnswerBtn")}
