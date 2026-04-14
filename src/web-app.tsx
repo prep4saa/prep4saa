@@ -1975,32 +1975,16 @@ function App() {
  if (isSignUp) {
  console.log('[SignUp] Starting signup with email:', email);
  await signUp(email, password, displayName);
- console.log('[SignUp] Signup successful, showing email verification modal');
-
- // ✅ 검증 이메일 발송 (백엔드)
- try {
- const response = await fetch('/api/send-verification-email', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ email, userName: displayName || email.split('@')[0] })
- });
- if (response.ok) {
- console.log('[SignUp] Verification email sent successfully');
- } else {
- console.warn('[SignUp] Failed to send verification email:', response.status);
- }
- } catch (emailError) {
- console.warn('[SignUp] Error sending verification email:', emailError);
- // 메일 발송 실패해도 계속 진행
- }
+ console.log('[SignUp] Signup successful - Firebase verification email sent');
 
  // ✅ 회원가입 완료 - 이메일 검증 모달 표시
+ // Firebase가 자동으로 확인 메일을 발송했습니다
  setEmailVerificationMessage(t("emailVerificationMessage").replace("{email}", email));
  setEmailVerificationUserEmail(email);
  setShowEmailVerificationModal(true);
  setLoginError(null);
  setShowLoginModal(false);
- console.log('[SignUp] Email verification modal should now be visible');
+ console.log('[SignUp] Email verification modal displayed');
  return; // 여기서 끝내고 이메일 검증을 기다림
  } else {
  await signIn(email, password);
