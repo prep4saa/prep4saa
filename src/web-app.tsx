@@ -1973,13 +1973,16 @@ function App() {
 
  try {
  if (isSignUp) {
+ console.log('[SignUp] Starting signup with email:', email);
  await signUp(email, password, displayName);
+ console.log('[SignUp] Signup successful, showing email verification modal');
  // ✅ 회원가입 완료 - 이메일 검증 모달 표시
  setEmailVerificationMessage(t("emailVerificationMessage").replace("{email}", email));
  setEmailVerificationUserEmail(email);
  setShowEmailVerificationModal(true);
  setLoginError(null);
  setShowLoginModal(false);
+ console.log('[SignUp] Email verification modal should now be visible');
  return; // 여기서 끝내고 이메일 검증을 기다림
  } else {
  await signIn(email, password);
@@ -2078,6 +2081,7 @@ function App() {
  }
  }
  } catch (err: any) {
+ console.error('[LoginForm] Error during signup/login:', err);
  setLoginError(translateAuthError(err.message));
  } finally {
  setLoginLoading(false);
