@@ -436,10 +436,14 @@ export const en: Strings = {
   emailVerificationResending: "Resending...",
   emailVerificationResendSuccess: "✅ Confirmation link resent. Please check your email.",
   emailVerificationResendError: "⚠️ Resend failed. Please try again later.",
+  emailVerificationTooManyRequests: "⚠️ Too many resend requests. Please try again in 3 minutes.",
   emailVerificationCheckEmail: "📧 Please check your email",
   emailVerificationCheckEmailDesc: "Click the confirmation link sent to {email} to activate your account.",
   emailVerificationRefreshBtn: "Refresh",
   emailVerificationRefreshing: "Checking verification status...",
+  emailVerificationGoogleOnly: "This email is currently connected only via Google login. Please sign in with Google and then connect a password.",
+  emailVerificationUserNotFound: "User not found. Please try again.",
+  emailVerificationCancelBtn: "Cancel",
 
   // CLI Lab - Scenario Console
   cliLabSelectTypeMsg: "Select a type button above",

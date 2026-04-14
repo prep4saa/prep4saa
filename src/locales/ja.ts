@@ -431,10 +431,14 @@ export const ja: Strings = {
   emailVerificationResending: "再送信中...",
   emailVerificationResendSuccess: "✅ 確認リンクを再送信しました。メールをご確認ください。",
   emailVerificationResendError: "⚠️ 再送信に失敗しました。後でもう一度お試しください。",
+  emailVerificationTooManyRequests: "⚠️ 再送信リクエストが多すぎます。3分後にもう一度お試しください。",
   emailVerificationCheckEmail: "📧 メールをご確認ください",
   emailVerificationCheckEmailDesc: "{email}に送信された確認リンクをクリックしてアカウントを有効化してください。",
   emailVerificationRefreshBtn: "更新",
   emailVerificationRefreshing: "認証ステータスを確認中...",
+  emailVerificationGoogleOnly: "このメールは現在Googleログインのみで接続されています。Googleでログインしてからパスワードを接続してください。",
+  emailVerificationUserNotFound: "ユーザーが見つかりません。もう一度お試しください。",
+  emailVerificationCancelBtn: "キャンセル",
 
   // CLI Lab - Scenario Console
   cliLabSelectTypeMsg: "上のボタンを選択してください",
