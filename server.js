@@ -585,7 +585,13 @@ app.post('/api/send-verification-email', async (req, res) => {
       `
     });
 
-    console.log('✅ 이메일 검증 메일 발송 완료:', email);
+    // ✅ Resend API 응답 확인
+    if (response.error) {
+      console.error('❌ Resend API 오류:', response.error);
+      return res.status(500).json({ error: `Resend API 오류: ${response.error}` });
+    }
+
+    console.log('✅ 이메일 검증 메일 발송 완료:', email, 'ID:', response.id);
     res.json({ success: true, message: '이메일이 발송되었습니다.' });
   } catch (error) {
     console.error('❌ 이메일 발송 실패:', error);
