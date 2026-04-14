@@ -165,6 +165,12 @@ export async function signUp(email: string, password: string, displayName: strin
       return await signInWithGoogleAndLinkPassword(email, password);
     }
 
+    if (signInMethods.includes("password")) {
+      const err = new Error("email-already-in-use");
+      (err as any).code = "auth/email-already-in-use";
+      throw err;
+    }
+
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 

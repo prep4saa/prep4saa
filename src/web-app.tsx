@@ -2474,14 +2474,33 @@ function App() {
      setShowLanding(true);
    }}
    onCancelSubscription={async () => {
-     // 구독 취소: Firebase에서 isPaid를 false로 변경
      const currentUser = getCurrentUser();
      if (currentUser) {
        try {
-         await updateUserPaidStatus(currentUser.uid, false);
-         setUserStatusLocal("loggedIn");
-         localStorage.setItem("userStatus", "loggedIn");
-         alert(locale === 'ko' ? '구독이 취소되었습니다.' : locale === 'ja' ? '購読がキャンセルされました。' : 'Subscription cancelled.');
+         const backendBaseUrl = env?.VITE_API_BASE_URL || 'http://localhost:5000';
+         const response = await fetch(`${backendBaseUrl}/api/lemonsqueezy/cancel-subscription`, {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({
+             userId: currentUser.uid,
+             email: currentUser.email || userEmail || ''
+           })
+         });
+
+         if (!response.ok) {
+           const errorData = await response.json().catch(() => ({}));
+           throw new Error(errorData.error || 'Failed to cancel subscription');
+         }
+
+         setUserStatusLocal("paid");
+         localStorage.setItem("userStatus", "paid");
+         alert(
+           locale === 'ko'
+             ? '구독이 취소되었습니다. 현재 결제 기간 종료일까지는 이용하실 수 있습니다.'
+             : locale === 'ja'
+               ? '購読がキャンセルされました。現在の請求期間が終わるまではご利用いただけます。'
+               : 'Subscription cancelled. You can keep using it until the current billing period ends.'
+         );
        } catch (error) {
          alert(locale === 'ko' ? '구독 취소에 실패했습니다.' : locale === 'ja' ? '購読のキャンセルに失敗しました。' : 'Failed to cancel subscription.');
        }

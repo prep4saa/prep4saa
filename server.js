@@ -560,6 +560,82 @@ app.post('/api/send-verification-email', async (req, res) => {
   }
 });
 
+app.post('/api/lemonsqueezy/cancel-subscription', async (req, res) => {
+  try {
+    const { userId, email } = req.body || {};
+    const apiKey = process.env.LEMON_SQUEEZY_API_KEY;
+
+    if (!apiKey) {
+      return res.status(500).json({ error: 'LEMON_SQUEEZY_API_KEY not configured' });
+    }
+
+    let userRef = null;
+    let userData = null;
+
+    if (userId) {
+      userRef = db.collection('users').doc(userId);
+      const snap = await userRef.get();
+      if (snap.exists) {
+        userData = snap.data();
+      }
+    } else if (email) {
+      const snap = await db.collection('users').where('email', '==', email).limit(1).get();
+      if (!snap.empty) {
+        const docSnap = snap.docs[0];
+        userRef = docSnap.ref;
+        userData = docSnap.data();
+      }
+    }
+
+    if (!userRef || !userData) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const subscriptionId = userData.lemonSqueezySubscriptionId;
+    if (!subscriptionId) {
+      return res.status(404).json({ error: 'No Lemon Squeezy subscription found for this user' });
+    }
+
+    const response = await fetch(`https://api.lemonsqueezy.com/v1/subscriptions/${subscriptionId}`, {
+      method: 'DELETE',
+      headers: {
+        'Accept': 'application/vnd.api+json',
+        'Content-Type': 'application/vnd.api+json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.status(response.status).json({ error: errorText || 'Failed to cancel subscription' });
+    }
+
+    const result = await response.json();
+    const attributes = result?.data?.attributes || {};
+    const isPaid = attributes.status === 'active' || attributes.status === 'on_trial' || attributes.status === 'cancelled';
+
+    await userRef.set({
+      isPaid,
+      userStatus: isPaid ? 'paid' : 'loggedIn',
+      subscriptionStatus: attributes.status || 'cancelled',
+      subscriptionCancelledAt: new Date().toISOString(),
+      subscriptionEndsAt: attributes.ends_at || null,
+      subscriptionRenewsAt: attributes.renews_at || null,
+      lemonSqueezySubscriptionId: subscriptionId,
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+
+    return res.json({
+      success: true,
+      subscriptionStatus: attributes.status || 'cancelled',
+      subscriptionEndsAt: attributes.ends_at || null,
+    });
+  } catch (error) {
+    console.error('Cancel subscription failed:', error);
+    return res.status(500).json({ error: error.message || 'Cancel subscription failed' });
+  }
+});
+
 app.post('/api/webhooks/lemon-squeezy', async (req, res) => {
   try {
     const signature = req.headers['x-signature'] || req.headers['x-lemon-squeezy-signature'] || req.headers['X-Signature'] || req.headers['X-Lemon-Squeezy-Signature'];
@@ -653,10 +729,16 @@ app.post('/api/webhooks/lemon-squeezy', async (req, res) => {
           userRef = db.collection('users').doc(userRecord.uid);
         }
 
+        const isPaid = subscription.status === 'active' || subscription.status === 'on_trial' || subscription.status === 'cancelled';
+
         await userRef.set({
-          isPaid: false,
-          subscriptionStatus: 'cancelled',
+          isPaid,
+          userStatus: isPaid ? 'paid' : 'loggedIn',
+          subscriptionStatus: subscription.status || 'cancelled',
           subscriptionCancelledAt: new Date().toISOString(),
+          subscriptionEndsAt: subscription.ends_at || null,
+          subscriptionRenewsAt: subscription.renews_at || null,
+          lemonSqueezySubscriptionId: data.id,
           updatedAt: new Date().toISOString()
         }, { merge: true });
 
@@ -691,4 +773,3 @@ const server = app.listen(PORT, () => {
     process.exit(1);
   }
 });
-

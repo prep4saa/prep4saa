@@ -91,12 +91,17 @@ exports.handler = async (event) => {
     }
 
     if (cancelEvents.includes(eventName)) {
+      const isPaid = attributes.status === 'active' || attributes.status === 'on_trial' || attributes.status === 'cancelled';
+
       await resolved.userRef.set(
         {
-          isPaid: false,
-          userStatus: 'loggedIn',
-          subscriptionStatus: 'cancelled',
+          isPaid,
+          userStatus: isPaid ? 'paid' : 'loggedIn',
+          subscriptionStatus: attributes.status || 'cancelled',
           subscriptionCancelledAt: new Date().toISOString(),
+          subscriptionEndsAt: attributes.ends_at || null,
+          subscriptionRenewsAt: attributes.renews_at || null,
+          lemonSqueezySubscriptionId: data.id,
           updatedAt: new Date().toISOString(),
         },
         { merge: true }
