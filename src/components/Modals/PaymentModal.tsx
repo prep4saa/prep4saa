@@ -17,7 +17,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, onSuccess, userEma
   const [error, setError] = useState<string | null>(null);
   // userEmail이 있으면 그걸 사용, 없으면 빈 값 (사용자 입력 필요)
   const [email, setEmail] = useState(userEmail || '');
-  const [isComingSoon] = useState(false); // Lemon Squeezy 모드 활성화
+  const [isComingSoon] = useState(true); // Coming Soon 모드 활성화
 
   const labels = {
     ko: {
