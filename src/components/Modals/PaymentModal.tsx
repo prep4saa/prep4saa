@@ -82,13 +82,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, onSuccess, userEma
     setLoading(true);
 
     const env = (import.meta as any).env;
-    const storeId = env?.VITE_LEMON_SQUEEZY_STORE_ID;
+    const storeSlug = "prep4saa";
     const productId = env?.VITE_LEMON_SQUEEZY_PRODUCT_ID;
 
-    if (storeId && productId) {
+    if (productId) {
       // custom_data에 userId와 email 전달 (webhook에서 받을 데이터)
       const checkoutEmail = email.trim();
-      const checkoutUrl = `https://${storeId}.lemonsqueezy.com/checkout/buy/${productId}?checkout[email]=${encodeURIComponent(checkoutEmail)}&checkout[custom][user_id]=${encodeURIComponent(userId || '')}&checkout[custom][email]=${encodeURIComponent(checkoutEmail)}`;
+      const checkoutUrl = `https://${storeSlug}.lemonsqueezy.com/checkout/buy/${productId}?checkout[email]=${encodeURIComponent(checkoutEmail)}&checkout[custom][user_id]=${encodeURIComponent(userId || '')}&checkout[custom][email]=${encodeURIComponent(checkoutEmail)}`;
       window.location.href = checkoutUrl;
     } else {
       setError(currentLabels.errorMessage);
