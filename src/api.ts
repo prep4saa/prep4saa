@@ -1,6 +1,20 @@
 import { generatePrompt } from "./prompts";
 import examAnalysis from "../constants/saa-c03-exam-analysis.json";
 
+export function resolveBackendUrl(): string {
+  const env = (import.meta as any)?.env;
+  const hostname =
+    typeof window !== "undefined" && window.location?.hostname
+      ? window.location.hostname
+      : "";
+
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return "http://localhost:5000";
+  }
+
+  return env?.VITE_API_BASE_URL || env?.VITE_BACKEND_URL || "http://localhost:5000";
+}
+
 /**
  * 분석 데이터를 기반으로 AWS 서비스를 선택
  */
@@ -47,7 +61,7 @@ async function callGeminiAPI(
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
       // ✅ 서버 프록시로 호출 (API 키는 서버에만 있음)
-      const backendUrl = (import.meta as any).env.VITE_BACKEND_URL || "http://localhost:5000";
+      const backendUrl = resolveBackendUrl();
       const response = await fetch(`${backendUrl}/api/gemini`, {
         method: "POST",
         headers: {
@@ -170,7 +184,7 @@ export async function generateSAAProblem(
     // 🚨 오류 알림: Firebase Cloud Function으로 메일 발송
     try {
       const adminEmail = env?.VITE_ADMIN_EMAIL;
-      const backendUrl = env?.VITE_BACKEND_URL || "http://localhost:5000";
+      const backendUrl = resolveBackendUrl();
 
       if (adminEmail) {
         const errorMsg = geminiError instanceof Error ? geminiError.message : String(geminiError);
@@ -195,7 +209,7 @@ export async function generateSAAProblem(
 
     try {
       // 1단계: Claude API 시도 (폴백)
-      const backendUrl = env?.VITE_BACKEND_URL || "http://localhost:5000";
+      const backendUrl = resolveBackendUrl();
       const response = await fetch(`${backendUrl}/api/claudeProxy`, {
         method: "POST",
         headers: {
@@ -224,7 +238,7 @@ export async function generateSAAProblem(
       // 🚨 오류 알림: Claude API 오류 메일 발송
       try {
         const adminEmail = env?.VITE_ADMIN_EMAIL;
-        const backendUrl = env?.VITE_BACKEND_URL || "http://localhost:5000";
+        const backendUrl = resolveBackendUrl();
 
         if (adminEmail) {
           const errorMsg = claudeError instanceof Error ? claudeError.message : String(claudeError);
@@ -358,7 +372,7 @@ Output (JSON only):`;
     // 폴백: 실패 시 Claude API 시도
     try {
       // 1단계: Claude API 시도 (폴백)
-      const backendUrl = env?.VITE_BACKEND_URL || "http://localhost:5000";
+      const backendUrl = resolveBackendUrl();
       const response = await fetch(`${backendUrl}/api/claudeProxy`, {
         method: "POST",
         headers: {
@@ -387,7 +401,7 @@ Output (JSON only):`;
       // 🚨 오류 알림: Claude API 오류 메일 발송
       try {
         const adminEmail = env?.VITE_ADMIN_EMAIL;
-        const backendUrl = env?.VITE_BACKEND_URL || "http://localhost:5000";
+        const backendUrl = resolveBackendUrl();
 
         if (adminEmail) {
           const errorMsg = claudeError instanceof Error ? claudeError.message : String(claudeError);

@@ -62,27 +62,36 @@ async function resolveUserRef(customData, attributes, requestId) {
 async function handleCancelSubscription(rawBody, requestId) {
   try {
     const payload = JSON.parse(rawBody);
-    const { userId } = payload;
+    const { userId, email } = payload;
 
-    if (!userId) {
-      console.error(`[${requestId}] Missing userId in cancel request`);
-      return { statusCode: 400, body: JSON.stringify({ error: 'userId is required' }) };
+    let userRef = null;
+    let userData = null;
+
+    if (userId) {
+      console.log(`[${requestId}] Processing cancel subscription for userId: ${userId}`);
+      userRef = db.collection('users').doc(userId);
+      const userDoc = await userRef.get();
+      if (userDoc.exists) {
+        userData = userDoc.data();
+      }
+    } else if (email) {
+      console.log(`[${requestId}] Processing cancel subscription for email: ${email}`);
+      const snap = await db.collection('users').where('email', '==', email).limit(1).get();
+      if (!snap.empty) {
+        userRef = snap.docs[0].ref;
+        userData = snap.docs[0].data();
+      }
     }
 
-    console.log(`[${requestId}] Processing cancel subscription for user: ${userId}`);
-
-    // Get user data from Firestore
-    const userDoc = await db.collection('users').doc(userId).get();
-    if (!userDoc.exists) {
-      console.error(`[${requestId}] User not found: ${userId}`);
+    if (!userRef || !userData) {
+      console.error(`[${requestId}] User not found for cancel request`, { userId, email });
       return { statusCode: 404, body: JSON.stringify({ error: 'User not found' }) };
     }
 
-    const userData = userDoc.data();
     const subscriptionId = userData?.lemonSqueezySubscriptionId;
 
     if (!subscriptionId) {
-      console.error(`[${requestId}] No subscription found for user: ${userId}`);
+      console.error(`[${requestId}] No subscription found for user`, { userId, email });
       return { statusCode: 400, body: JSON.stringify({ error: 'No active subscription' }) };
     }
 
@@ -96,20 +105,12 @@ async function handleCancelSubscription(rawBody, requestId) {
     }
 
     const lsResponse = await fetch(`https://api.lemonsqueezy.com/v1/subscriptions/${subscriptionId}`, {
-      method: 'PATCH',
+      method: 'DELETE',
       headers: {
-        'Content-Type': 'application/json',
+        'Accept': 'application/vnd.api+json',
+        'Content-Type': 'application/vnd.api+json',
         'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        data: {
-          type: 'subscriptions',
-          id: subscriptionId,
-          attributes: {
-            cancelled: true
-          }
-        }
-      })
+      }
     });
 
     if (!lsResponse.ok) {
@@ -121,15 +122,25 @@ async function handleCancelSubscription(rawBody, requestId) {
       };
     }
 
-    console.log(`[${requestId}] Subscription cancelled successfully: ${subscriptionId}`);
+    const result = await lsResponse.json();
+    const attributes = result?.data?.attributes || {};
+    const isPaid = attributes.status === 'active' || attributes.status === 'on_trial' || attributes.status === 'cancelled';
+
+    console.log(`[${requestId}] Subscription cancelled successfully: ${subscriptionId}`, {
+      status: attributes.status,
+      endsAt: attributes.ends_at || null,
+    });
 
     // Update Firestore to mark as cancelled locally
-    await db.collection('users').doc(userId).set(
+    await userRef.set(
       {
-        isPaid: false,
-        userStatus: 'loggedIn',
-        subscriptionStatus: 'cancelled',
+        isPaid,
+        userStatus: isPaid ? 'paid' : 'loggedIn',
+        subscriptionStatus: attributes.status || 'cancelled',
         subscriptionCancelledAt: new Date().toISOString(),
+        subscriptionEndsAt: attributes.ends_at || null,
+        subscriptionRenewsAt: attributes.renews_at || null,
+        lemonSqueezySubscriptionId: subscriptionId,
         updatedAt: new Date().toISOString(),
       },
       { merge: true }
@@ -137,7 +148,12 @@ async function handleCancelSubscription(rawBody, requestId) {
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ success: true, message: 'Subscription cancelled' })
+      body: JSON.stringify({
+        success: true,
+        message: 'Subscription cancelled',
+        subscriptionStatus: attributes.status || 'cancelled',
+        subscriptionEndsAt: attributes.ends_at || null,
+      })
     };
   } catch (error) {
     console.error(`[${requestId}] Error in handleCancelSubscription:`, error?.stack || error?.message || error);
