@@ -1,7 +1,7 @@
 import html2pdf from "html2pdf.js/dist/html2pdf.js";
 import { useEffect, useRef, useState } from "react";
 import { getDailyVisitorsForMonth, getMonthlyVisitors, getTodayPurchaseCount, getTotalVisitorCount, getWeeklyVisitorsForMonth, trackVisitor } from "./analytics";
-import { Concept, generateSAAProblem, Problem } from "./api";
+import { Concept, generateSAAProblem, Problem, resolveBackendUrl } from "./api";
 import CookieConsent from "./components/CookieConsent";
 import Footer from "./components/Footer";
 import LandingPage from "./components/LandingPage";
@@ -2477,10 +2477,7 @@ function App() {
      const currentUser = getCurrentUser();
      if (currentUser) {
        try {
-         const backendBaseUrl =
-           env?.VITE_API_BASE_URL ||
-           env?.VITE_BACKEND_URL ||
-           'http://localhost:5000';
+         const backendBaseUrl = resolveBackendUrl();
          const response = await fetch(`${backendBaseUrl}/api/lemonsqueezy/cancel-subscription`, {
            method: 'POST',
            headers: { 'Content-Type': 'application/json' },
