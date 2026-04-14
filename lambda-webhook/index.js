@@ -59,22 +59,118 @@ async function resolveUserRef(customData, attributes, requestId) {
   return { userRef: null, userKey: null };
 }
 
+async function handleCancelSubscription(rawBody, requestId) {
+  try {
+    const payload = JSON.parse(rawBody);
+    const { userId } = payload;
+
+    if (!userId) {
+      console.error(`[${requestId}] Missing userId in cancel request`);
+      return { statusCode: 400, body: JSON.stringify({ error: 'userId is required' }) };
+    }
+
+    console.log(`[${requestId}] Processing cancel subscription for user: ${userId}`);
+
+    // Get user data from Firestore
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      console.error(`[${requestId}] User not found: ${userId}`);
+      return { statusCode: 404, body: JSON.stringify({ error: 'User not found' }) };
+    }
+
+    const userData = userDoc.data();
+    const subscriptionId = userData?.lemonSqueezySubscriptionId;
+
+    if (!subscriptionId) {
+      console.error(`[${requestId}] No subscription found for user: ${userId}`);
+      return { statusCode: 400, body: JSON.stringify({ error: 'No active subscription' }) };
+    }
+
+    console.log(`[${requestId}] Found subscription: ${subscriptionId}`);
+
+    // Cancel subscription via Lemon Squeezy API
+    const apiKey = process.env.LEMON_SQUEEZY_API_KEY;
+    if (!apiKey) {
+      console.error(`[${requestId}] LEMON_SQUEEZY_API_KEY not configured`);
+      return { statusCode: 500, body: JSON.stringify({ error: 'API key not configured' }) };
+    }
+
+    const lsResponse = await fetch(`https://api.lemonsqueezy.com/v1/subscriptions/${subscriptionId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        data: {
+          type: 'subscriptions',
+          id: subscriptionId,
+          attributes: {
+            cancelled: true
+          }
+        }
+      })
+    });
+
+    if (!lsResponse.ok) {
+      const errorText = await lsResponse.text();
+      console.error(`[${requestId}] Lemon Squeezy API error: ${lsResponse.status}`, errorText);
+      return {
+        statusCode: lsResponse.status,
+        body: JSON.stringify({ error: `Lemon Squeezy API error: ${lsResponse.status}` })
+      };
+    }
+
+    console.log(`[${requestId}] Subscription cancelled successfully: ${subscriptionId}`);
+
+    // Update Firestore to mark as cancelled locally
+    await db.collection('users').doc(userId).set(
+      {
+        isPaid: false,
+        userStatus: 'loggedIn',
+        subscriptionStatus: 'cancelled',
+        subscriptionCancelledAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true }
+    );
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ success: true, message: 'Subscription cancelled' })
+    };
+  } catch (error) {
+    console.error(`[${requestId}] Error in handleCancelSubscription:`, error?.stack || error?.message || error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: error?.message || 'Internal Server Error' })
+    };
+  }
+}
+
 exports.handler = async (event, context) => {
   context.callbackWaitsForEmptyEventLoop = false;
 
   const requestId = context.awsRequestId || event?.requestContext?.requestId || 'unknown-request';
   const method = event?.requestContext?.http?.method || event?.httpMethod || 'unknown-method';
+  const path = event?.path || event?.rawPath || 'unknown-path';
   const rawBody = getRawBody(event);
   const headers = event?.headers || {};
 
-  console.log(`[${requestId}] Webhook received`, {
+  console.log(`[${requestId}] Request received`, {
     method,
-    path: event?.path || event?.rawPath || 'unknown-path',
+    path,
     hasBody: Boolean(rawBody),
     bodyLength: rawBody.length,
     headerKeys: Object.keys(headers),
   });
 
+  // Handle REST API endpoints
+  if (method === 'POST' && path?.includes('/api/lemonsqueezy/cancel-subscription')) {
+    return handleCancelSubscription(rawBody, requestId);
+  }
+
+  // Handle Lemon Squeezy webhooks
   try {
     const signature =
       getHeader(headers, 'x-signature') ||
