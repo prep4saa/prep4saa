@@ -182,7 +182,7 @@ exports.handler = async (event, context) => {
   });
 
   // Handle REST API endpoints
-  if (method === 'POST' && path?.includes('/api/lemonsqueezy/cancel-subscription')) {
+  if (method === 'POST' && path?.includes('cancel-subscription')) {
     return handleCancelSubscription(rawBody, requestId);
   }
 
