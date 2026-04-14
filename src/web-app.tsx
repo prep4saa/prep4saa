@@ -1976,6 +1976,24 @@ function App() {
  console.log('[SignUp] Starting signup with email:', email);
  await signUp(email, password, displayName);
  console.log('[SignUp] Signup successful, showing email verification modal');
+
+ // ✅ 검증 이메일 발송 (백엔드)
+ try {
+ const response = await fetch('/api/send-verification-email', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({ email, userName: displayName || email.split('@')[0] })
+ });
+ if (response.ok) {
+ console.log('[SignUp] Verification email sent successfully');
+ } else {
+ console.warn('[SignUp] Failed to send verification email:', response.status);
+ }
+ } catch (emailError) {
+ console.warn('[SignUp] Error sending verification email:', emailError);
+ // 메일 발송 실패해도 계속 진행
+ }
+
  // ✅ 회원가입 완료 - 이메일 검증 모달 표시
  setEmailVerificationMessage(t("emailVerificationMessage").replace("{email}", email));
  setEmailVerificationUserEmail(email);

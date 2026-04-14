@@ -533,6 +533,67 @@ app.post('/api/lemonsqueezy/checkout', async (req, res) => {
 });
 
 /**
+ * ✅ 이메일 검증 링크 발송
+ * 회원가입 후 사용자에게 확인 메일 발송
+ */
+app.post('/api/send-verification-email', async (req, res) => {
+  try {
+    const { email, userName } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Resend API로 메일 발송
+    const response = await resend.emails.send({
+      from: 'noreply@prep4saa.com',
+      to: email,
+      subject: '📧 AWS SAA-C03 - 이메일 확인이 필요합니다',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px; text-align: center; border-radius: 12px 12px 0 0;">
+            <h1 style="color: white; margin: 0;">AWS SAA-C03 준비</h1>
+          </div>
+
+          <div style="background: #f7f7f7; padding: 40px; border-radius: 0 0 12px 12px;">
+            <h2 style="color: #333;">안녕하세요${userName ? `, ${userName}님` : ''}!</h2>
+
+            <p style="color: #666; font-size: 16px; line-height: 1.6;">
+              AWS SAA-C03 플랫폼에 가입해주셔서 감사합니다.
+            </p>
+
+            <p style="color: #666; font-size: 16px; line-height: 1.6;">
+              계정을 활성화하려면 아래 링크를 클릭하여 이메일을 확인해주세요:
+            </p>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="https://prep4saa.com" style="display: inline-block; background: #667eea; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                📧 이메일 확인하기
+              </a>
+            </div>
+
+            <p style="color: #999; font-size: 14px;">
+              또는 이메일을 받으신 후 "확인" 링크를 클릭하세요.
+            </p>
+
+            <p style="color: #999; font-size: 12px; margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px;">
+              이 이메일을 받으신 이유: ${email}로 AWS SAA-C03에 가입하셨습니다.<br>
+              문제가 있으시면 support@prep4saa.com으로 문의해주세요.
+            </p>
+          </div>
+        </div>
+      `
+    });
+
+    console.log('✅ 이메일 검증 메일 발송 완료:', email);
+    res.json({ success: true, message: '이메일이 발송되었습니다.' });
+  } catch (error) {
+    console.error('❌ 이메일 발송 실패:', error);
+    res.status(500).json({ error: '이메일 발송에 실패했습니다.' });
+  }
+});
+
+/**
  * ✅ Lemon Squeezy Webhook Handler
  * Webhook 서명 검증 후 구독 정보 Firebase에 저장
  */
