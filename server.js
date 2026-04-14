@@ -663,7 +663,8 @@ app.post('/api/webhooks/lemon-squeezy', async (req, res) => {
     console.log(`🧭 Lemon Squeezy Webhook: ${event}`);
 
     const paidEvents = ['order_created', 'subscription_created', 'subscription_payment_success'];
-    const cancelEvents = ['subscription_cancelled', 'subscription_expired'];
+    const cancelEvents = ['subscription_cancelled'];
+    const expiredEvents = ['subscription_expired'];
 
     if (paidEvents.includes(event)) {
       const subscription = data.attributes;
@@ -743,6 +744,44 @@ app.post('/api/webhooks/lemon-squeezy', async (req, res) => {
         }, { merge: true });
 
         console.log(`✅ Subscription cancelled for user ${userId || email}`);
+        return res.json({ received: true });
+      } catch (error) {
+        console.error('❌ Firebase update error:', error);
+        return res.status(500).json({ error: 'Firebase update failed' });
+      }
+    }
+
+    if (expiredEvents.includes(event)) {
+      const subscription = data.attributes;
+      const userId = customData.user_id;
+      const email = customData.email || subscription.user_email || subscription.customer_email;
+
+      if (!userId && !email) {
+        console.warn('⚠️  No user_id or email in webhook data');
+        return res.json({ received: true });
+      }
+
+      try {
+        let userRef;
+        if (userId) {
+          userRef = db.collection('users').doc(userId);
+        } else {
+          const userRecord = await admin.auth().getUserByEmail(email);
+          userRef = db.collection('users').doc(userRecord.uid);
+        }
+
+        await userRef.set({
+          isPaid: false,
+          userStatus: 'loggedIn',
+          subscriptionStatus: subscription.status || 'expired',
+          subscriptionExpiredAt: new Date().toISOString(),
+          subscriptionEndsAt: subscription.ends_at || null,
+          subscriptionRenewsAt: subscription.renews_at || null,
+          lemonSqueezySubscriptionId: data.id,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+
+        console.log(`✅ Subscription expired for user ${userId || email}`);
         return res.json({ received: true });
       } catch (error) {
         console.error('❌ Firebase update error:', error);
