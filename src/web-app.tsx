@@ -2641,7 +2641,7 @@ function App() {
  )}
 
  {/* Console Tab - CLI 실습 (ConsoleChallenge) */}
- {tab === "console" && isAdmin && (
+ {tab === "console" && (
    <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-start", height: "100%", padding: "20px", overflowY: "auto" }}>
      <div style={{ display: "flex", flexDirection: "column", maxWidth: "900px", width: "100%", gap: "16px" }}>
      {/* Challenge Selector */}
