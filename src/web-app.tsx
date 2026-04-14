@@ -35,8 +35,26 @@ import "./styles.css";
 
 // ===== 입력값 검증 함수 =====
 function validateEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email) && email.length <= 254;
+  // RFC 5322 기반 이메일 검증 (더 엄격함)
+  const emailRegex = /^[a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+  // 기본 형식 검증
+  if (!emailRegex.test(email) || email.length > 254) {
+    return false;
+  }
+
+  // @ 앞뒤로 빈 문자열이 없는지 확인
+  const [localPart, domain] = email.split('@');
+  if (!localPart || !domain || localPart.length > 64) {
+    return false;
+  }
+
+  // 연속된 점(.) 확인
+  if (email.includes('..') || email.startsWith('.') || email.endsWith('.')) {
+    return false;
+  }
+
+  return true;
 }
 
 function validatePassword(password: string): { valid: boolean; error?: string } {
