@@ -2208,6 +2208,8 @@ function App() {
      setUserEmail(null);
      setUserStatusLocal("guest");
      localStorage.removeItem("userStatus");
+     localStorage.removeItem("userName");
+     localStorage.removeItem("examStartDate");
      setShowLanding(true);
    }}
    onCancelSubscription={async () => {
