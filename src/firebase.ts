@@ -1307,13 +1307,16 @@ export async function updateMockExamProblemsProgressively(
     const mockExamRef = doc(db, "mockExamProblems", docKey);
     const existingDoc = await getDoc(mockExamRef);
 
-    let allProblems = [];
-    if (existingDoc.exists()) {
-      allProblems = existingDoc.data().problems || [];
+    // 호출자가 누적 배열을 전달하므로 그대로 덮어쓰기
+    // 단, Firebase에 더 많이 저장되어 있으면 (다른 사용자가 먼저 생성) 그 쪽을 우선
+    const existingCount = existingDoc.exists() ? (existingDoc.data().problems || []).length : 0;
+    let allProblems: Problem[];
+    if (existingCount >= newProblems.length) {
+      // 다른 사용자가 이미 더 많이 저장함 - 저장 스킵
+      return;
+    } else {
+      allProblems = newProblems.slice(0, 50);
     }
-
-    // 기존 문제 + 새 문제 합치기
-    allProblems = [...allProblems, ...newProblems].slice(0, 50); // 최대 50개
 
     // 1️⃣ Firebase에 저장
     await setDoc(

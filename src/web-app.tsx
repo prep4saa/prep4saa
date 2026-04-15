@@ -1522,7 +1522,7 @@ function App() {
      const user = auth.currentUser;
      let lastMockExamDate: string | null = null;
 
-     if (user) {
+     if (user && !isAdmin) {
        lastMockExamDate = await getUserMockExamDate(user.uid);
      }
 
@@ -5261,6 +5261,23 @@ function App() {
  if (p.question.includes("Hard")) return "hard";
  return "medium";
  });
+ // 50개가 안되면 남은 자리만큼 난이도 추가 생성 (백그라운드 로더가 참조)
+ const remainingCount = 50 - difficulties.length;
+ if (remainingCount > 0) {
+ const mediumCount = Math.round(remainingCount * 0.4);
+ const hardCount = Math.round(remainingCount * 0.4);
+ const challengeCount = remainingCount - mediumCount - hardCount;
+ const extraDifficulties = [
+ ...Array(mediumCount).fill("medium"),
+ ...Array(hardCount).fill("hard"),
+ ...Array(challengeCount).fill("challenge")
+ ];
+ for (let i = extraDifficulties.length - 1; i > 0; i--) {
+ const j = Math.floor(Math.random() * (i + 1));
+ [extraDifficulties[i], extraDifficulties[j]] = [extraDifficulties[j], extraDifficulties[i]];
+ }
+ difficulties = [...difficulties, ...extraDifficulties];
+ }
  // 기존 문제의 도메인은 알 수 없으므로 균등 분배
  domains = [
  ...Array(15).fill("security"),
@@ -5354,8 +5371,8 @@ function App() {
  // ✅ 시험 시작 시 언어 고정 (시험 중 언어 변경 방지)
  localStorage.setItem("mockExamStartedLocale", locale);
 
- // ✅ 오늘 시험 시작했음을 Firebase에 기록 (모든 로그인 사용자)
- if (auth.currentUser) {
+ // ✅ 오늘 시험 시작했음을 Firebase에 기록 (관리자 제외)
+ if (auth.currentUser && !isAdmin) {
    await recordMockExamDate(auth.currentUser.uid);
    setMockExamAlreadyTaken(true);
  }
