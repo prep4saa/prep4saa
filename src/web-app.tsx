@@ -1780,16 +1780,24 @@ function App() {
  <!-- 이지 모드 (쉬운 설명) -->
  <div style="margin-left: 20px; margin-bottom: 0;">
  <strong style="color: #333; font-size: 13px;">Easy Mode (Simplified Explanation):</strong>
- <div class="no-break" style="color: black; font-size: 12px; margin-top: 6px; line-height: 1.8; background: #fafafa; padding: 10px; border-radius: 4px; break-inside: avoid; page-break-inside: avoid;">
- <div style="margin-bottom: 6px;"><strong>Simple Explanation:</strong> ${problem.easyMode?.explanation || 'N/A'}</div>
- <div style="margin-bottom: 6px;"><strong>Option A (Easy):</strong> ${problem.easyMode?.A || 'N/A'}</div>
- <div style="margin-bottom: 6px;"><strong>Option B (Easy):</strong> ${problem.easyMode?.B || 'N/A'}</div>
- <div style="margin-bottom: 6px;"><strong>Option C (Easy):</strong> ${problem.easyMode?.C || 'N/A'}</div>
- <div style="margin-bottom: 0;"><strong>Option D (Easy):</strong> ${problem.easyMode?.D || 'N/A'}</div>
+ <div class="no-break" style="color: black; font-size: 12px; margin-top: 6px; line-height: 1.8; background: #fafafa; padding: 8px 10px; border-radius: 4px; break-inside: avoid; page-break-inside: avoid;">
+ <strong>Simple Explanation:</strong> ${problem.easyMode?.explanation || 'N/A'}
+ </div>
+ <div class="no-break" style="color: black; font-size: 12px; line-height: 1.8; background: #fafafa; padding: 6px 10px; break-inside: avoid; page-break-inside: avoid;">
+ <strong>Option A (Easy):</strong> ${problem.easyMode?.A || 'N/A'}
+ </div>
+ <div class="no-break" style="color: black; font-size: 12px; line-height: 1.8; background: #fafafa; padding: 6px 10px; break-inside: avoid; page-break-inside: avoid;">
+ <strong>Option B (Easy):</strong> ${problem.easyMode?.B || 'N/A'}
+ </div>
+ <div class="no-break" style="color: black; font-size: 12px; line-height: 1.8; background: #fafafa; padding: 6px 10px; break-inside: avoid; page-break-inside: avoid;">
+ <strong>Option C (Easy):</strong> ${problem.easyMode?.C || 'N/A'}
+ </div>
+ <div class="no-break" style="color: black; font-size: 12px; line-height: 1.8; background: #fafafa; padding: 6px 10px 8px 10px; border-radius: 0 0 4px 4px; break-inside: avoid; page-break-inside: avoid;">
+ <strong>Option D (Easy):</strong> ${problem.easyMode?.D || 'N/A'}
  </div>
  </div>
 
- <hr style="border: 1px solid #ddd; margin-top: 20px; break-after: avoid; page-break-after: avoid;">
+ <hr style="border: 1px solid #ddd; margin-top: 20px;">
  </div>
  `).join('')}
  `;
@@ -1798,12 +1806,12 @@ function App() {
 
  // html2pdf 옵션
  const options = {
- margin: [12, 12, 12, 12],
+ margin: [15, 12, 15, 12],
  filename: fileName,
  image: { type: 'jpeg', quality: 0.98 },
- html2canvas: { scale: 2, useCORS: true, logging: false },
+ html2canvas: { scale: 2, useCORS: true, logging: false, letterRendering: true },
  jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' },
- pagebreak: { mode: ['css', 'legacy'], avoid: ['.no-break'] }
+ pagebreak: { mode: ['avoid-all', 'css', 'legacy'], avoid: '.no-break' }
  };
 
  // PDF Blob 생성 (native Promise 래핑 - html2pdf Worker의 await 호환 문제 해결)
