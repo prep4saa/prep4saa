@@ -6,7 +6,25 @@ const crypto = require('crypto');
 const admin = require('firebase-admin');
 require('dotenv').config();
 
-const serviceAccount = require('./firebase-key.json');
+function loadFirebaseServiceAccount() {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    try {
+      return JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    } catch (error) {
+      console.error('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT:', error?.message || error);
+      throw error;
+    }
+  }
+
+  return require('./firebase-key.json');
+}
+
+const serviceAccount = loadFirebaseServiceAccount();
+console.log('🔐 Firebase service account loaded:', {
+  projectId: serviceAccount.project_id,
+  clientEmail: serviceAccount.client_email,
+});
+
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   databaseURL: process.env.FIREBASE_DATABASE_URL
@@ -563,9 +581,18 @@ app.post('/api/send-verification-email', async (req, res) => {
 app.post('/api/lemonsqueezy/cancel-subscription', async (req, res) => {
   try {
     const { userId, email } = req.body || {};
-    const apiKey = process.env.LEMON_SQUEEZY_API_KEY;
+    const apiKey = process.env.LEMON_SQUEEZY_API_KEY || process.env.VITE_LEMON_SQUEEZY_API_KEY || '';
+
+    console.log('🧾 Cancel subscription request received', {
+      hasUserId: !!userId,
+      hasEmail: !!email,
+      hasApiKey: !!apiKey,
+      userId,
+      email,
+    });
 
     if (!apiKey) {
+      console.error('❌ LEMON_SQUEEZY_API_KEY not configured');
       return res.status(500).json({ error: 'LEMON_SQUEEZY_API_KEY not configured' });
     }
 
@@ -588,13 +615,26 @@ app.post('/api/lemonsqueezy/cancel-subscription', async (req, res) => {
     }
 
     if (!userRef || !userData) {
+      console.warn('⚠️ Cancel subscription user not found', { userId, email });
       return res.status(404).json({ error: 'User not found' });
     }
 
     const subscriptionId = userData.lemonSqueezySubscriptionId;
     if (!subscriptionId) {
+      console.warn('⚠️ No Lemon Squeezy subscription found for user', {
+        userId,
+        email,
+        docId: userRef.id,
+      });
       return res.status(404).json({ error: 'No Lemon Squeezy subscription found for this user' });
     }
+
+    console.log('🧾 Cancelling Lemon Squeezy subscription', {
+      subscriptionId,
+      userId,
+      email,
+      docId: userRef.id,
+    });
 
     const response = await fetch(`https://api.lemonsqueezy.com/v1/subscriptions/${subscriptionId}`, {
       method: 'DELETE',
@@ -605,12 +645,29 @@ app.post('/api/lemonsqueezy/cancel-subscription', async (req, res) => {
       },
     });
 
+    const responseText = await response.text();
+
     if (!response.ok) {
-      const errorText = await response.text();
-      return res.status(response.status).json({ error: errorText || 'Failed to cancel subscription' });
+      console.error('❌ Lemon Squeezy cancel API error', {
+        status: response.status,
+        errorText: responseText,
+        subscriptionId,
+      });
+      return res.status(response.status).json({ error: responseText || 'Failed to cancel subscription' });
     }
 
-    const result = await response.json();
+    let result = {};
+    if (responseText) {
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.warn('⚠️ Lemon Squeezy cancel response was not JSON', {
+          subscriptionId,
+          responseTextPreview: responseText.slice(0, 300),
+        });
+      }
+    }
+
     const attributes = result?.data?.attributes || {};
     const isPaid = attributes.status === 'active' || attributes.status === 'on_trial' || attributes.status === 'cancelled';
 
@@ -631,7 +688,7 @@ app.post('/api/lemonsqueezy/cancel-subscription', async (req, res) => {
       subscriptionEndsAt: attributes.ends_at || null,
     });
   } catch (error) {
-    console.error('Cancel subscription failed:', error);
+    console.error('Cancel subscription failed:', error?.stack || error);
     return res.status(500).json({ error: error.message || 'Cancel subscription failed' });
   }
 });
