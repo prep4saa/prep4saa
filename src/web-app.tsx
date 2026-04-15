@@ -6136,13 +6136,25 @@ function App() {
  }}>
  로그인
  </button>
- <button onClick={() => {
- setUserStatus("paid");
- setUserStatusLocal("paid");
- setDailyCount(0);
- localStorage.setItem("problemCountDate", new Date().toISOString().split("T")[0]);
- localStorage.setItem("problemCount", "0");
- setShowAuthModal(false);
+ <button onClick={async () => {
+ try {
+ const backendBaseUrl = resolveBackendUrl();
+ const response = await fetch(`${backendBaseUrl}/api/lemonsqueezy/checkout`, {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({
+ email: userEmail,
+ returnUrl: window.location.href
+ })
+ });
+ const data = await response.json();
+ if (data.checkoutUrl) {
+ window.location.href = data.checkoutUrl;
+ }
+ } catch (error) {
+ console.error('Checkout error:', error);
+ alert('결제 페이지를 열 수 없습니다.');
+ }
  }} style={{
  flex: 1, padding: "12px", background: "#FF9900", color: "#0F1629",
  border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold"
@@ -6152,13 +6164,25 @@ function App() {
  </>
  )}
  {userStatus === "loggedIn" && (
- <button onClick={() => {
- setUserStatus("paid");
- setUserStatusLocal("paid");
- setDailyCount(0);
- localStorage.setItem("problemCountDate", new Date().toISOString().split("T")[0]);
- localStorage.setItem("problemCount", "0");
- setShowAuthModal(false);
+ <button onClick={async () => {
+ try {
+ const backendBaseUrl = resolveBackendUrl();
+ const response = await fetch(`${backendBaseUrl}/api/lemonsqueezy/checkout`, {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({
+ email: userEmail,
+ returnUrl: window.location.href
+ })
+ });
+ const data = await response.json();
+ if (data.checkoutUrl) {
+ window.location.href = data.checkoutUrl;
+ }
+ } catch (error) {
+ console.error('Checkout error:', error);
+ alert('결제 페이지를 열 수 없습니다.');
+ }
  }} style={{
  flex: 1, padding: "12px", background: "#FF9900", color: "#0F1629",
  border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold"
