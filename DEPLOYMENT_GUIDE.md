@@ -237,3 +237,4 @@ For issues or questions:
 1. Check App Runner logs: `aws logs tail /aws/apprunner/prep4saa-server --follow`
 2. Review GitHub Actions workflow logs
 3. Verify all environment variables are set in GitHub Secrets
+# App Runner Deployment Started
