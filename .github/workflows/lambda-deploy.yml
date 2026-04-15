@@ -1,0 +1,53 @@
+name: Deploy Lambda
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'lambda-webhook/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Lambda dependencies
+        working-directory: lambda-webhook
+        run: npm install --production
+
+      - name: Create deployment package
+        working-directory: lambda-webhook
+        run: |
+          zip -r ../lambda-webhook.zip . -x "*.git*"
+
+      - name: Deploy to AWS Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name lemonSqueezyWebhook \
+            --zip-file fileb://lambda-webhook.zip \
+            --region us-east-1
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+
+      - name: Wait for Lambda update
+        run: sleep 5
+
+      - name: Verify Lambda deployment
+        run: |
+          aws lambda get-function-configuration \
+            --function-name lemonSqueezyWebhook \
+            --region us-east-1
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
