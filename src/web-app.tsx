@@ -7,10 +7,11 @@ import Footer from "./components/organisms/Footer";
 import LandingPage from "./components/pages/LandingPage";
 import Navigator from "./components/organisms/Navigator";
 import PaymentModal from "./components/Modals/PaymentModal";
+import ExamDateModal from "./components/Modals/ExamDateModal";
 import { CAT, CONCEPTS_KO, LINKS, NODES } from "./data";
 import { CONCEPTS_EN } from "./CONCEPTS_EN";
 import { CONCEPTS_JA } from "./concepts_ja";
-import { auth, createPost, deleteExpiredResults, deleteOldMockExamProblems, deletePost, getAdminStatsSecure, getAllUsersForAdminSecure, getCurrentUser, getExamStartDate, getPostById, getPosts, getTodayMockExamProblems, getUserPaidStatus, getUserProblemSessions, getUserProblemSessionsSecure, getUserQuizStats, isPasswordLinked, linkEmailPasswordToCurrentUser, onAuthStateChange, saveExamStartDate, saveTodayMockExamProblems, saveUserInfoToFirebase, signIn, signInWithGoogle, signOut, signUp, updateMockExamProblemsProgressively, updateStreakInFirebase, updateUserPaidStatus, uploadPDFToStorage, refreshUserData, resendEmailVerification } from "./firebase";
+import { auth, createPost, deleteExpiredResults, deleteOldMockExamProblems, deletePost, getAdminStatsSecure, getAllUsersForAdminSecure, getCurrentUser, getExamStartDate, getPostById, getPosts, getTodayMockExamProblems, getUserPaidStatus, getUserProblemSessions, getUserProblemSessionsSecure, getUserQuizStats, isPasswordLinked, linkEmailPasswordToCurrentUser, onAuthStateChange, saveTodayMockExamProblems, saveUserInfoToFirebase, signIn, signInWithGoogle, signOut, signUp, updateMockExamProblemsProgressively, updateStreakInFirebase, updateUserPaidStatus, uploadPDFToStorage, refreshUserData, resendEmailVerification } from "./firebase";
 import { useLocale } from "./LocaleContext";
 import { useTheme } from "./ThemeContext";
 // SEC Challenges
@@ -1933,73 +1934,11 @@ function App() {
         isAdmin={isAdmin}
       />
       {/* 시험 시작일 설정 모달 (랜딩페이지에서도 사용) */}
-      {showExamDateModal && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-          background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center",
-          zIndex: 1001
-        }} onClick={() => setShowExamDateModal(false)}>
-          <div style={{
-            background: "#0F1629", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px",
-            padding: "32px", maxWidth: "450px", width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.5)"
-          }} onClick={e => e.stopPropagation()}>
-            <h2 style={{ color: "#fff", marginBottom: "24px", fontSize: "20px", textAlign: "center" }}>{t("examStartDateSetting")}</h2>
-            <div style={{ marginBottom: "24px" }}>
-              <input type="date"
-                defaultValue={localStorage.getItem("examStartDate") || new Date().toISOString().split("T")[0]}
-                id="examDateInputLanding"
-                onChange={(e) => {
-                  const examDate = new Date(e.target.value);
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  examDate.setHours(0, 0, 0, 0);
-                  const diff = examDate.getTime() - today.getTime();
-                  const daysLeft = Math.floor(diff / (1000 * 60 * 60 * 24));
-                  const resultDiv = document.getElementById("examDaysResultLanding");
-                  if (resultDiv) {
-                    resultDiv.textContent = daysLeft > 0 ? t("examDaysRemaining").replace("{n}", daysLeft.toString()) : daysLeft === 0 ? t("examToday") : t("examDatePassed");
-                  }
-                }}
-                style={{
-                  width: "100%", padding: "10px", background: "rgba(255,255,255,0.05)",
-                  border: "1px solid #2A344A", borderRadius: "6px",
-                  color: "#D1D5DB", fontSize: "14px", boxSizing: "border-box"
-                }} />
-              <div id="examDaysResultLanding" style={{
-                marginTop: "16px", padding: "12px", background: "rgba(255,153,0,0.1)",
-                border: "1px solid rgba(255,153,0,0.3)", borderRadius: "6px", fontSize: "14px", color: "var(--accent)", textAlign: "center", fontWeight: 600
-              }}>
-                {t("examSelectDate")}
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: "12px" }}>
-              <button onClick={async () => {
-                const selectedDate = (document.getElementById("examDateInputLanding") as HTMLInputElement).value;
-                localStorage.setItem("examStartDate", selectedDate);
-                setDday(getExamDday());
-                const user = getCurrentUser();
-                if (user) {
-                  try {
-                    await saveExamStartDate(user.uid, selectedDate);
-                  } catch (error) { /* 에러 처리 */ }
-                }
-                setShowExamDateModal(false);
-              }} style={{
-                flex: 1, padding: "12px", background: "#FF9900", color: "#0F1629",
-                border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold"
-              }}>
-                ✅ 설정 완료
-              </button>
-              <button onClick={() => setShowExamDateModal(false)} style={{
-                flex: 1, padding: "12px", background: "rgba(255,255,255,0.05)", color: "#D1D5DB",
-                border: "1px solid #2A344A", borderRadius: "6px", cursor: "pointer"
-              }}>
-                취소
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ExamDateModal
+        open={showExamDateModal}
+        onClose={() => setShowExamDateModal(false)}
+        onSaved={() => setDday(getExamDday())}
+      />
       {renderLoginModal()}
       {renderPaymentModal()}
 
@@ -5507,84 +5446,11 @@ function App() {
  )}
 
  {/* 시험 시작일 설정 모달 */}
- {showExamDateModal && (
- <div style={{
- position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
- background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center",
- zIndex: 1001
- }} onClick={() => setShowExamDateModal(false)}>
- <div style={{
- background: "#0F1629", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px",
- padding: "32px", maxWidth: "450px", width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.5)"
- }} onClick={e => e.stopPropagation()}>
- <h2 style={{ color: "#fff", marginBottom: "24px", fontSize: "20px", textAlign: "center" }}>{t("examStartDateSetting")}</h2>
-
- <div style={{ marginBottom: "24px" }}>
- <input type="date"
- defaultValue={localStorage.getItem("examStartDate") || new Date().toISOString().split("T")[0]}
- id="examDateInput"
- onChange={(e) => {
- const examDate = new Date(e.target.value);
-
- const today = new Date();
- today.setHours(0, 0, 0, 0);
- examDate.setHours(0, 0, 0, 0);
-
- const diff = examDate.getTime() - today.getTime();
- const daysLeft = Math.floor(diff / (1000 * 60 * 60 * 24));
-
- const resultDiv = document.getElementById("examDaysResult");
- if (resultDiv) {
- resultDiv.textContent = daysLeft > 0 ? t("examDaysRemaining").replace("{n}", daysLeft.toString()) : daysLeft === 0 ? t("examToday") : t("examDatePassed");
- }
- }}
- style={{
- width: "100%", padding: "10px", background: "rgba(255,255,255,0.05)",
- border: "1px solid #2A344A", borderRadius: "6px",
- color: "#D1D5DB", fontSize: "14px", boxSizing: "border-box"
- }} />
-
- <div id="examDaysResult" style={{
- marginTop: "16px", padding: "12px", background: "rgba(255,153,0,0.1)",
- border: "1px solid rgba(255,153,0,0.3)", borderRadius: "6px", fontSize: "14px", color: "var(--accent)", textAlign: "center", fontWeight: 600
- }}>
- {t("examSelectDate")}
- </div>
- </div>
-
- <div style={{ display: "flex", gap: "12px" }}>
- <button onClick={async () => {
- const selectedDate = (document.getElementById("examDateInput") as HTMLInputElement).value;
- localStorage.setItem("examStartDate", selectedDate);
- setDday(getExamDday());
-
- // Firebase에 저장
- const user = getCurrentUser();
- if (user) {
- try {
- await saveExamStartDate(user.uid, selectedDate);
- } catch (error) {
- // 에러 처리만 수행 (로깅 제거)
- }
- }
-
- setShowExamDateModal(false);
- }} style={{
- flex: 1, padding: "12px", background: "#FF9900", color: "#0F1629",
- border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold"
- }}>
- ✅ 설정 완료
- </button>
- <button onClick={() => setShowExamDateModal(false)} style={{
- flex: 1, padding: "12px", background: "rgba(255,255,255,0.05)", color: "#D1D5DB",
- border: "1px solid #2A344A", borderRadius: "6px", cursor: "pointer"
- }}>
- 취소
- </button>
- </div>
- </div>
- </div>
- )}
+ <ExamDateModal
+ open={showExamDateModal}
+ onClose={() => setShowExamDateModal(false)}
+ onSaved={() => setDday(getExamDday())}
+ />
 
  {/* Firebase 로그인/회원가입 모달 */}
  {showLinkPasswordModal && (
