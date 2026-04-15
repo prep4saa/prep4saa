@@ -23,6 +23,8 @@ interface LandingPageProps {
   currentLocale?: Locale;
   onLocaleChange?: (locale: Locale) => void;
   isAdmin?: boolean;
+  isAuthChecked?: boolean;
+  emailVerified?: boolean;
 }
 
 export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, onProClick, userEmail, dday, streak, onDdayClick, userStatus, onLogout, onCancelSubscription, currentLocale = 'ko', onLocaleChange, isAdmin = false }: LandingPageProps) {

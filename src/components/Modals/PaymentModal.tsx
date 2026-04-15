@@ -8,7 +8,7 @@ interface PaymentModalProps {
   userId?: string;
 }
 
-const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, onSuccess, userEmail, userId }) => {
+const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, onSuccess: _onSuccess, userEmail, userId }) => {
   const { locale } = useLocale();
   useEffect(() => {
     setEmail(userEmail || '');

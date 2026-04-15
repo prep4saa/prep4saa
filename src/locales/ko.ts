@@ -54,6 +54,7 @@ export const ko = {
   btnGenerate: "SAA-C03 문제 생성",
   btnGenerating: " 생성 중...",
   btnNextProblem: "다른 문제 생성",
+  loginRequired: "로그인이 필요합니다",
 
   // Problem labels
   labelConstraints: "제약 조건:",

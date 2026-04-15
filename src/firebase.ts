@@ -13,7 +13,6 @@ import {
   EmailAuthProvider,
   fetchSignInMethodsForEmail,
   linkWithCredential,
-  sendEmailVerification,
   reload
 } from "firebase/auth";
 import {
@@ -26,16 +25,13 @@ import {
   getDocs,
   addDoc,
   deleteDoc,
-  query,
-  where,
   Timestamp
 } from "firebase/firestore";
 import { Problem } from "./api";
 import {
   getStorage,
   ref,
-  uploadBytes,
-  getBytes
+  uploadBytes
 } from "firebase/storage";
 
 // Firebase 설정 (환경변수에서 가져오기)
@@ -65,28 +61,10 @@ if (typeof window !== 'undefined') {
 // Admin functions are verified on server.js via /api/admin/* endpoints
 
 /**
- * 서버를 통한 admin 검증
- */
-async function verifyAdminAccess(email: string | null): Promise<boolean> {
-  if (!email) return false;
-  try {
-    const response = await fetch('http://localhost:5000/api/checkAdmin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
-    });
-    const data = await response.json();
-    return data.isAdmin || false;
-  } catch (error) {
-    return false;
-  }
-}
-
-/**
  * Admin 통계 조회
  * 주: 클라이언트는 이미 isAdmin 상태로 검증되었으므로 서버 재검증 불필요
  */
-export async function getAdminStatsSecure(email: string | null): Promise<{
+export async function getAdminStatsSecure(_email: string | null): Promise<{
   totalUsers: number;
   paidUsers: number;
   freeUsers: number;
@@ -106,7 +84,7 @@ export async function getAdminStatsSecure(email: string | null): Promise<{
  * 모든 사용자 목록 조회
  * 주: 클라이언트는 이미 isAdmin 상태로 검증되었으므로 서버 재검증 불필요
  */
-export async function getAllUsersForAdminSecure(email: string | null): Promise<Array<{
+export async function getAllUsersForAdminSecure(_email: string | null): Promise<Array<{
   userId: string;
   email: string;
   userStatus: string;
@@ -123,7 +101,7 @@ export async function getAllUsersForAdminSecure(email: string | null): Promise<A
  * 특정 사용자의 문제 세션 조회
  * 주: 클라이언트는 이미 isAdmin 상태로 검증되었으므로 서버 재검증 불필요
  */
-export async function getUserProblemSessionsSecure(email: string | null, userId: string): Promise<Array<{
+export async function getUserProblemSessionsSecure(_email: string | null, userId: string): Promise<Array<{
   date: string;
   time: string;
   problemCount: number;

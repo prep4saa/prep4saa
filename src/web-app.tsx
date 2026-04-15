@@ -10,7 +10,7 @@ import PaymentModal from "./components/Modals/PaymentModal";
 import { CAT, CONCEPTS_KO, LINKS, NODES } from "./data";
 import { CONCEPTS_EN } from "./CONCEPTS_EN";
 import { CONCEPTS_JA } from "./concepts_ja";
-import { auth, createPost, deleteExpiredResults, deleteOldMockExamProblems, deletePost, getAdminStatsSecure, getAllUsersForAdminSecure, getCurrentUser, getExamStartDate, getPostById, getPosts, getTodayMockExamProblems, getUserPaidStatus, getUserProblemSessions, getUserProblemSessionsSecure, getUserQuizStats, isPasswordLinked, linkEmailPasswordToCurrentUser, onAuthStateChange, recordQuizResult, saveExamStartDate, saveTodayMockExamProblems, saveUserInfoToFirebase, signIn, signInWithGoogle, signOut, signUp, updateMockExamProblemsProgressively, updateStreakInFirebase, updateUserPaidStatus, uploadPDFToStorage, refreshUserData, resendEmailVerification } from "./firebase";
+import { auth, createPost, deleteExpiredResults, deleteOldMockExamProblems, deletePost, getAdminStatsSecure, getAllUsersForAdminSecure, getCurrentUser, getExamStartDate, getPostById, getPosts, getTodayMockExamProblems, getUserPaidStatus, getUserProblemSessions, getUserProblemSessionsSecure, getUserQuizStats, isPasswordLinked, linkEmailPasswordToCurrentUser, onAuthStateChange, saveExamStartDate, saveTodayMockExamProblems, saveUserInfoToFirebase, signIn, signInWithGoogle, signOut, signUp, updateMockExamProblemsProgressively, updateStreakInFirebase, updateUserPaidStatus, uploadPDFToStorage, refreshUserData, resendEmailVerification } from "./firebase";
 import { useLocale } from "./LocaleContext";
 import { useTheme } from "./ThemeContext";
 // SEC Challenges
@@ -30,7 +30,7 @@ import { COST_CHALLENGES_I18N as COST_KO } from "./locales/cost-ko";
 import { COST_CHALLENGES_I18N as COST_EN } from "./locales/cost-en";
 import { COST_CHALLENGES_I18N as COST_JA } from "./locales/cost-ja";
 import { SEC_ANSWERS, RES_ANSWERS, PERF_ANSWERS, COST_ANSWERS, isAnswerCorrect } from "./scenario-answers";
-import { canGenerateProblemToday, recordProblemGeneration, getUserMockExamDate, recordMockExamDate } from "./firebase";
+import { canGenerateProblemToday, getUserMockExamDate, recordMockExamDate } from "./firebase";
 import "./styles.css";
 
 // ===== 입력값 검증 함수 =====
@@ -63,10 +63,6 @@ function validatePassword(password: string): { valid: boolean; error?: string } 
   return { valid: true };
 }
 
-function validateDate(dateString: string): boolean {
-  const date = new Date(dateString);
-  return !isNaN(date.getTime()) && date > new Date();
-}
 
 function sanitizeInput(input: string): string {
   return input.trim().slice(0, 500); // XSS 방지: 길이 제한
@@ -199,12 +195,6 @@ function resetSessionTimeout(callback: () => void) {
   }, SESSION_TIMEOUT);
 }
 
-function clearSessionTimeout() {
-  if (sessionTimeoutId) {
- clearTimeout(sessionTimeoutId);
- sessionTimeoutId = null;
-  }
-}
 
 /**
  * 운영자 계정 확인 (서버 API를 통해 검증, 실패 시 localStorage 사용)
@@ -306,11 +296,6 @@ function getExamDday(): string {
   return `D-${daysLeft}`;
 }
 
-function setExamStartDate() {
-  const today = new Date().toISOString().split("T")[0];
-  localStorage.setItem("examStartDate", today);
-}
-
 // CW/CH = total canvas, VW/VH = visible viewport
 const CW = 1800, CH = 1100, VW = 900, VH = 580;
 // Legacy alias used by background dots
@@ -367,7 +352,7 @@ function useForce() {
   return { pos, setPos, posRef, dragRef, pan, setPan, zoom, setZoom };
 }
 
-function GraphSVG({ pos, setPos, posRef, dragRef, pan, setPan, zoom, setZoom, selected, slots, onNodeClick, catFilter, theme }: {
+function GraphSVG({ pos, setPos, posRef: _posRef, dragRef, pan, setPan, zoom, setZoom, selected, slots, onNodeClick, catFilter, theme }: {
   pos: Record<string, any>;
   setPos: any;
   posRef: any;
@@ -588,97 +573,9 @@ function GraphSVG({ pos, setPos, posRef, dragRef, pan, setPan, zoom, setZoom, se
   );
 }
 
-function ConsolePanel({ backendUrl, userEmail }: { backendUrl: string; userEmail: string }) {
-  const [input, setInput] = useState("");
-  const [history, setHistory] = useState<{ cmd: string; stdout: string; stderr: string; exitCode: number; ts: string }[]>([]);
-  const [running, setRunning] = useState(false);
-  const [cmdHistory, setCmdHistory] = useState<string[]>([]);
-  const [cmdHistoryIdx, setCmdHistoryIdx] = useState(-1);
-  const outputRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (outputRef.current) outputRef.current.scrollTop = outputRef.current.scrollHeight;
-  }, [history]);
-
-  const runCommand = async () => {
-    const cmd = input.trim();
-    if (!cmd || running) return;
-    setRunning(true);
-    setCmdHistory(prev => [cmd, ...prev.slice(0, 49)]);
-    setCmdHistoryIdx(-1);
-    setInput("");
-    try {
-      const res = await fetch(`${backendUrl}/api/admin/console`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: userEmail, command: cmd }),
-      });
-      const data = await res.json();
-      setHistory(prev => [...prev, { cmd, stdout: data.stdout || "", stderr: data.stderr || data.error || "", exitCode: data.exitCode ?? 0, ts: data.timestamp || new Date().toISOString() }]);
-    } catch (e: any) {
-      setHistory(prev => [...prev, { cmd, stdout: "", stderr: e.message, exitCode: 1, ts: new Date().toISOString() }]);
-    }
-    setRunning(false);
-  };
-
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") { runCommand(); return; }
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      const idx = Math.min(cmdHistoryIdx + 1, cmdHistory.length - 1);
-      setCmdHistoryIdx(idx);
-      setInput(cmdHistory[idx] || "");
-    }
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      const idx = Math.max(cmdHistoryIdx - 1, -1);
-      setCmdHistoryIdx(idx);
-      setInput(idx === -1 ? "" : cmdHistory[idx]);
-    }
-  };
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#0d1117", borderRadius: "8px", overflow: "hidden", fontFamily: "monospace" }}>
-      <div style={{ padding: "10px 16px", background: "#161b22", borderBottom: "1px solid #30363d", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ color: "#58a6ff", fontWeight: 700, fontSize: "14px" }}>⚡ 서버 콘솔</span>
-        <button onClick={() => setHistory([])} style={{ background: "none", border: "1px solid #30363d", color: "#8b949e", fontSize: "11px", padding: "2px 8px", borderRadius: "4px", cursor: "pointer" }}>지우기</button>
-      </div>
-      <div ref={outputRef} style={{ flex: 1, overflowY: "auto", padding: "12px 16px", fontSize: "13px", lineHeight: "1.6" }}>
-        {history.length === 0 && (
-          <div style={{ color: "#484f58" }}>명령어를 입력하세요. (↑↓ 히스토리)</div>
-        )}
-        {history.map((entry, i) => (
-          <div key={i} style={{ marginBottom: "12px" }}>
-            <div style={{ color: "#58a6ff" }}>$ {entry.cmd}</div>
-            {entry.stdout && <pre style={{ margin: "2px 0", color: "#e6edf3", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{entry.stdout}</pre>}
-            {entry.stderr && <pre style={{ margin: "2px 0", color: "#f85149", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{entry.stderr}</pre>}
-            <div style={{ color: "#484f58", fontSize: "11px" }}>exit {entry.exitCode} · {new Date(entry.ts).toLocaleTimeString()}</div>
-          </div>
-        ))}
-        {running && <div style={{ color: "#f0883e" }}>실행 중...</div>}
-      </div>
-      <div style={{ padding: "10px 16px", borderTop: "1px solid #30363d", display: "flex", gap: "8px" }}>
-        <span style={{ color: "#3fb950", alignSelf: "center" }}>$</span>
-        <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={running}
-          placeholder="명령어 입력..."
-          autoFocus
-          style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "#e6edf3", fontSize: "13px", fontFamily: "monospace" }}
-        />
-        <button onClick={runCommand} disabled={running || !input.trim()} style={{ background: "#238636", border: "none", color: "#fff", padding: "4px 14px", borderRadius: "4px", cursor: "pointer", fontSize: "13px", opacity: running || !input.trim() ? 0.5 : 1 }}>
-          실행
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function App() {
   const { locale, setLocale, t } = useLocale();
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   // Fixed node positions for instant page load and immediate footer interactivity
   const { pos, setPos, posRef, dragRef, pan, setPan, zoom, setZoom } = useForce();
 
@@ -698,7 +595,7 @@ function App() {
   const ADMIN_EMAILS = (env.VITE_ADMIN_EMAILS || '').split(',').map((e: string) => e.trim()).filter(Boolean);
   const TEST_PAID_EMAILS = (env.VITE_TEST_PAID_EMAILS || '').split(',').map((e: string) => e.trim()).filter(Boolean);
   // Hero banner state
-  const [showHero, setShowHero] = useState(() => {
+  const [, setShowHero] = useState(() => {
  const hideUntil = localStorage.getItem('heroHideUntil');
  if (hideUntil) {
  const now = Date.now();
@@ -740,7 +637,7 @@ function App() {
   const [graphPanelWidth, setGraphPanelWidth] = useState(50); // 비율 (%)
   const [isResizing, setIsResizing] = useState(false);
   const resizeStartPosRef = useRef<{ startX: number; startWidth: number } | null>(null);
-  const [purchaseCount, setPurchaseCount] = useState(0);
+  const [, setPurchaseCount] = useState(0);
   const [paidUsers, setPaidUsers] = useState(0);
   const [freeUsers, setFreeUsers] = useState(0);
   const [allUsers, setAllUsers] = useState<Array<{ userId: string; email: string; userStatus: string; createdAt: string }>>([]);
@@ -751,8 +648,7 @@ function App() {
   const [graphWeekIndex, setGraphWeekIndex] = useState(0);
   const [graphData, setGraphData] = useState<Array<{ label: string; count: number }>>([]);
   const [graphZoom, setGraphZoom] = useState(1);
-  const [conceptCache, setConceptCache] = useState<Map<string, Concept>>(new Map());
-  const [conceptTranslating, setConceptTranslating] = useState(false);
+  const [conceptTranslating] = useState(false);
 
   // 모의시험
   const [mockExamRunning, setMockExamRunning] = useState(false);
@@ -772,7 +668,7 @@ function App() {
   const [mockExamIsLoading, setMockExamIsLoading] = useState(false); // 문제 로딩 중 표시
   const [mockExamAlreadyTaken, setMockExamAlreadyTaken] = useState(false); // 오늘 이미 본 여부
   const [mockExamDateChecking, setMockExamDateChecking] = useState(true); // Firebase 날짜 확인 중
-  const [mockExamNextAvailableTime, setMockExamNextAvailableTime] = useState<string>(""); // 다시 볼 수 있는 시간
+  const [, setMockExamNextAvailableTime] = useState<string>(""); // 다시 볼 수 있는 시간
   const [mockExamPdfCreatedAt, setMockExamPdfCreatedAt] = useState<number | null>(null); // PDF 생성 시간
   const [currentUtcTime, setCurrentUtcTime] = useState<string>(""); // 현재 UTC 시간 (실시간)
   const [nextUtcDate, setNextUtcDate] = useState<string>(""); // 내일 UTC 날짜
@@ -782,11 +678,6 @@ function App() {
  totalAttempts: number;
  correctCount: number;
  accuracy: number;
- byDifficulty: {
- medium: { total: number; correct: number; accuracy: number };
- hard: { total: number; correct: number; accuracy: number };
- challenge: { total: number; correct: number; accuracy: number };
- };
  byService: { [service: string]: { total: number; correct: number; accuracy: number } };
   } | null>(null);
 
@@ -808,7 +699,7 @@ function App() {
   const [scenarioStepIdx, setScenarioStepIdx] = useState(0);
   const [consoleInput, setConsoleInput] = useState('');
   const [consoleHistory, setConsoleHistory] = useState<Array<{type: 'cmd' | 'output' | 'error' | 'hint'; text: string; isCorrect?: boolean}>>([]);
-  const [scenarioAttempts, setScenarioAttempts] = useState(0);
+  const [, setScenarioAttempts] = useState(0);
   const [showScenarioAnswer, setShowScenarioAnswer] = useState(false);
   const [scenarioSubmitFeedback, setScenarioSubmitFeedback] = useState<string | null>(null);
 
@@ -832,7 +723,7 @@ function App() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [isPasswordLoginLinked, setIsPasswordLoginLinked] = useState(false);
+  const [, setIsPasswordLoginLinked] = useState(false);
   const [showLinkPasswordModal, setShowLinkPasswordModal] = useState(false);
   const [linkPasswordValue, setLinkPasswordValue] = useState("");
   const [linkPasswordLoading, setLinkPasswordLoading] = useState(false);
@@ -841,10 +732,10 @@ function App() {
   const [emailVerificationMessage, setEmailVerificationMessage] = useState<string | null>(null);
   const [emailVerificationUserEmail, setEmailVerificationUserEmail] = useState<string | null>(null);
   const [emailVerificationResending, setEmailVerificationResending] = useState(false);
-  const [isWaitingEmailVerification, setIsWaitingEmailVerification] = useState(false);
+  const [, setIsWaitingEmailVerification] = useState(false);
   const [streak, setStreak] = useState(0);
-  const [sessionId, setSessionId] = useState<string>(`${Date.now()}`); // 현재 세션 ID
-  const [pdfGeneratingId, setPdfGeneratingId] = useState<string | null>(null); // PDF 생성 중인 세션
+  const [sessionId] = useState<string>(`${Date.now()}`); // 현재 세션 ID
+  const [pdfGeneratingId, setPdfGeneratingId] = useState<string | number | null>(null); // PDF 생성 중인 세션
 
   // 문제 세션 (PDF 다운로드용)
   const [problemSessions, setProblemSessions] = useState<Array<{
@@ -1005,7 +896,7 @@ function App() {
  let isPaid = await getUserPaidStatus(user.uid);
 
  // ✅ 테스트 사용자: 환경변수에서 읽은 이메일은 자동으로 paid 처리
- if (TEST_PAID_EMAILS.includes(user.email)) {
+ if (user.email && TEST_PAID_EMAILS.includes(user.email)) {
  isPaid = true;
  await updateUserPaidStatus(user.uid, true); // Firebase에도 저장
  }
@@ -1044,7 +935,7 @@ function App() {
   useEffect(() => {
  (async () => {
  try {
- const deleted = await deleteOldMockExamProblems();
+ await deleteOldMockExamProblems();
  // 오래된 문제 정리 완료
  } catch (error) {
  // Error cleaning up old problems
@@ -1101,7 +992,10 @@ function App() {
  }
  }, 60000); // 1분마다 확인
 
- return () => clearInterval(interval);
+ return () => {
+ clearInterval(interval);
+ clearInterval(dateCheckInterval);
+ };
   }, []);
 
   // Check if user is admin (server verification)
@@ -1428,7 +1322,6 @@ function App() {
 
   // 할당량 메시지 생성
   function getQuotaMessage(status: UserStatus, limit: number, current: number): string {
- const remaining = Math.max(0, limit - current);
  if (status === "guest") {
  return t("quotaFullGuest");
  }
@@ -1604,7 +1497,7 @@ function App() {
  const storedAllProblems = localStorage.getItem("mockExamAllProblems");
  const storedConceptServices = localStorage.getItem("mockExamConceptServices");
  // ✅ 시험 시작 시 고정된 언어 사용 (시험 중 언어 변경 방지)
- const mockExamLocale = localStorage.getItem("mockExamStartedLocale") || "ko";
+ const mockExamLocale = (localStorage.getItem("mockExamStartedLocale") || "ko") as "ko" | "en" | "ja";
 
  if (!storedDifficulties || !storedDomains || !storedAllProblems) return;
 
@@ -1913,12 +1806,12 @@ function App() {
  setIsPasswordLoginLinked(isPasswordLinked(user));
 
  // 사용자 정보 저장 및 결제 상태 로드
- await saveUserInfoToFirebase(user.uid, user.email);
+ await saveUserInfoToFirebase(user.uid, user.email || "");
  let isPaid = await getUserPaidStatus(user.uid);
 
  // ✅ 임시 테스트: 특정 이메일은 자동으로 paid 처리
  // 환경변수에서 읽은 테스트 이메일 목록 사용
- if (TEST_PAID_EMAILS.includes(user.email)) {
+ if (user.email && TEST_PAID_EMAILS.includes(user.email)) {
  isPaid = true;
  await updateUserPaidStatus(user.uid, true); // ✅ Firebase에도 저장
  }
@@ -3449,7 +3342,7 @@ function App() {
  {(() => {
  const pdfExpiresAt = mockExamPdfCreatedAt ? mockExamPdfCreatedAt + 24 * 60 * 60 * 1000 : null;
  const now = Date.now();
- const isPdfExpired = pdfExpiresAt && now > pdfExpiresAt;
+ const isPdfExpired: boolean = !!(pdfExpiresAt && now > pdfExpiresAt);
  const hoursRemaining = pdfExpiresAt ? Math.floor((pdfExpiresAt - now) / (60 * 60 * 1000)) : 0;
 
  return (
@@ -3536,9 +3429,9 @@ function App() {
  </div>
 
  <!-- 함정 설명 -->
- ${userAnswer && userAnswer !== problem.answer && problem.explanation[`trap_${userAnswer}`] ? `
+ ${userAnswer && userAnswer !== problem.answer && (problem.explanation as any)[`trap_${userAnswer}`] ? `
  <div style="margin: 8px 0; padding: 6px; background: #fff3e0; border-radius: 4px; page-break-inside: avoid; font-size: 13px; line-height: 1.5;">
- <strong>${pdfLabels.trap}</strong> ${problem.explanation[`trap_${userAnswer}`]}
+ <strong>${pdfLabels.trap}</strong> ${(problem.explanation as any)[`trap_${userAnswer}`]}
  </div>
  ` : ''}
 
@@ -3749,8 +3642,8 @@ function App() {
  <div style="padding: 20px; color: #000; background: #fff; font-family: Arial, sans-serif;">
  <h1 style="text-align: center; margin-bottom: 20px;">SAA-C03 ${pdfHeaderLabels.title}</h1>
  <div style="margin-bottom: 20px; padding: 15px; background: #f0f0f0; border-radius: 8px;">
- <h2 style="font-size: 32px; text-align: center; margin: 10px 0;">${t("pdfTotalScore")}: ${mockExamResults?.totalScore || 0}</h2>
- <p style="text-align: center; font-size: 16px; margin: 10px 0;">${pdfHeaderLabels.status}: ${mockExamResults?.passed ? pdfHeaderLabels.pass : pdfHeaderLabels.retry}</p>
+ <h2 style="font-size: 32px; text-align: center; margin: 10px 0;">${t("pdfTotalScore")}: ${(mockExamResults as any)?.totalScore || 0}</h2>
+ <p style="text-align: center; font-size: 16px; margin: 10px 0;">${pdfHeaderLabels.status}: ${(mockExamResults as any)?.passed ? pdfHeaderLabels.pass : pdfHeaderLabels.retry}</p>
  </div>
 
  <h2 style="margin-top: 30px; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px;">${pdfHeaderLabels.analysis}</h2>
@@ -5544,8 +5437,7 @@ function App() {
  onClick={async () => {
  try {
  const user = getCurrentUser();
- const post_data = await getPostById(post.id, user?.uid || "");
- setSelectedPost(post_data);
+ await getPostById(post.id, user?.uid || "");
  } catch (error: any) {
  alert(error.message);
  }

@@ -56,6 +56,7 @@ export const ja: Strings = {
   btnGenerate: "SAA-C03問題を生成",
   btnGenerating: " 生成中...",
   btnNextProblem: "別の問題を生成",
+  loginRequired: "ログインが必要です",
 
   // Problem labels
   labelConstraints: "制約条件:",
@@ -420,6 +421,11 @@ export const ja: Strings = {
   consoleShowAnswer: "答えを見る",
   consoleHideAnswer: "答えを隠す",
   consoleWrongAnswer: "不正解です。もう一度確認してください。ヒント: ",
+  consoleSelectScenario: "番号を選択するとシナリオが始まります",
+  consoleAnswerLabel: "正解: ",
+  consoleExplanationLabel: "解説",
+  consoleNextBtn: "次へ →",
+  consoleNextStep: "次のステップに移動中...",
 
   // Email Verification
   emailVerificationTitle: "メール認証が必要です",

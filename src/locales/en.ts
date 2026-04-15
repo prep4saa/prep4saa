@@ -56,6 +56,7 @@ export const en: Strings = {
   btnGenerate: "Generate SAA-C03 Problem",
   btnGenerating: " Generating...",
   btnNextProblem: "Generate Another Problem",
+  loginRequired: "Login required",
 
   // Problem labels
   labelConstraints: "Constraints:",
