@@ -1,0 +1,151 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'API Gateway configuration for Lemon Squeezy webhook Lambda'
+
+Resources:
+  # API Gateway REST API
+  LemonSqueezyAPI:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: lemon-squeezy-api
+      Description: API for Lemon Squeezy webhook processing and subscription management
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # API Resource: /api
+  ApiResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref LemonSqueezyAPI
+      ParentId: !GetAtt LemonSqueezyAPI.RootResourceId
+      PathPart: api
+
+  # API Resource: /api/lemonsqueezy
+  LemonSqueezyResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref LemonSqueezyAPI
+      ParentId: !Ref ApiResource
+      PathPart: lemonsqueezy
+
+  # API Resource: /api/lemonsqueezy/cancel-subscription
+  CancelSubscriptionResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref LemonSqueezyAPI
+      ParentId: !Ref LemonSqueezyResource
+      PathPart: cancel-subscription
+
+  # Catch-all resource for other Lemon Squeezy endpoints
+  LemonSqueezyProxyResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref LemonSqueezyAPI
+      ParentId: !Ref LemonSqueezyResource
+      PathPart: '{proxy+}'
+
+  # Lambda Permission for API Gateway
+  ApiGatewayInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: lemon-squeezy-webhook
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${LemonSqueezyAPI}/*/*'
+
+  # POST method for /api/lemonsqueezy/cancel-subscription
+  CancelSubscriptionPostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref LemonSqueezyAPI
+      ResourceId: !Ref CancelSubscriptionResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:lemon-squeezy-webhook/invocations'
+
+  # OPTIONS method for /api/lemonsqueezy/cancel-subscription (CORS preflight)
+  CancelSubscriptionOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref LemonSqueezyAPI
+      ResourceId: !Ref CancelSubscriptionResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Signature,X-Lemon-Squeezy-Signature'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: '{"statusCode": 200}'
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  # Catch-all proxy method for other endpoints
+  LemonSqueezyProxyPostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref LemonSqueezyAPI
+      ResourceId: !Ref LemonSqueezyProxyResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      RequestParameters:
+        method.request.path.proxy: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:lemon-squeezy-webhook/invocations'
+        RequestParameters:
+          integration.request.path.proxy: 'method.request.path.proxy'
+
+  # API Gateway Deployment
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - CancelSubscriptionPostMethod
+      - CancelSubscriptionOptionsMethod
+      - LemonSqueezyProxyPostMethod
+    Properties:
+      RestApiId: !Ref LemonSqueezyAPI
+      StageName: default
+
+  # CORS Configuration at API level
+  ApiCorsPolicy:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref LemonSqueezyAPI
+      DeploymentId: !Ref ApiDeployment
+      StageName: default
+      MethodSettings:
+        - ResourcePath: '/*'
+          HttpMethod: '*'
+          LoggingLevel: INFO
+          DataTraceEnabled: true
+          MetricsEnabled: true
+          ThrottlingBurstLimit: 5000
+          ThrottlingRateLimit: 2000
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${LemonSqueezyAPI}.execute-api.${AWS::Region}.amazonaws.com/default'
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiEndpoint'
+
+  LemonSqueezyAPIId:
+    Description: API Gateway REST API ID
+    Value: !Ref LemonSqueezyAPI
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiId'

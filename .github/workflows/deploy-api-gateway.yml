@@ -1,0 +1,46 @@
+name: Deploy API Gateway
+
+on:
+  workflow_dispatch:  # Manual trigger
+  push:
+    branches:
+      - main
+    paths:
+      - 'lambda-webhook/api-gateway-config.yaml'
+
+jobs:
+  deploy-api-gateway:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Deploy API Gateway CloudFormation Stack
+        run: |
+          aws cloudformation deploy \
+            --template-file lambda-webhook/api-gateway-config.yaml \
+            --stack-name lemon-squeezy-api-gateway \
+            --region us-east-1 \
+            --no-fail-on-empty-changeset \
+            --capabilities CAPABILITY_IAM
+
+      - name: Get API Gateway Endpoint
+        run: |
+          API_ENDPOINT=$(aws cloudformation describe-stacks \
+            --stack-name lemon-squeezy-api-gateway \
+            --region us-east-1 \
+            --query 'Stacks[0].Outputs[?OutputKey==`ApiEndpoint`].OutputValue' \
+            --output text)
+
+          echo "✅ API Gateway deployed successfully!"
+          echo "API Endpoint: $API_ENDPOINT"
+          echo ""
+          echo "📝 To update your GitHub Secrets, set VITE_BACKEND_URL to:"
+          echo "$API_ENDPOINT"
