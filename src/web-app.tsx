@@ -8,6 +8,7 @@ import LandingPage from "./components/pages/LandingPage";
 import Navigator from "./components/organisms/Navigator";
 import PaymentModal from "./components/Modals/PaymentModal";
 import ExamDateModal from "./components/Modals/ExamDateModal";
+import EmailVerificationModal from "./components/Modals/EmailVerificationModal";
 import { CAT, CONCEPTS_KO, LINKS, NODES } from "./data";
 import { CONCEPTS_EN } from "./CONCEPTS_EN";
 import { CONCEPTS_JA } from "./concepts_ja";
@@ -1526,6 +1527,41 @@ function App() {
  }
   };
 
+  // 이메일 인증 모달 닫기 + 부수 정리
+  const closeEmailVerificationModal = () => {
+    setShowEmailVerificationModal(false);
+    setIsWaitingEmailVerification(false);
+    localStorage.removeItem("pendingVerificationEmail");
+  };
+
+  // 이메일 인증 메일 재발송 핸들러
+  const handleResendEmailVerification = async () => {
+    setEmailVerificationResending(true);
+    try {
+      await resendEmailVerification();
+      setEmailVerificationMessage(t("emailVerificationResendSuccess"));
+    } catch (error: any) {
+      if (error.message === "email-verification-too-many-requests" || error.code === "email-verification-too-many-requests") {
+        setEmailVerificationMessage(t("emailVerificationTooManyRequests"));
+      } else {
+        setEmailVerificationMessage(t("emailVerificationResendError"));
+      }
+    } finally {
+      setEmailVerificationResending(false);
+    }
+  };
+
+  const renderEmailVerificationModal = () => (
+    <EmailVerificationModal
+      open={showEmailVerificationModal}
+      email={emailVerificationUserEmail || ""}
+      message={emailVerificationMessage}
+      resending={emailVerificationResending}
+      onResendClick={handleResendEmailVerification}
+      onClose={closeEmailVerificationModal}
+    />
+  );
+
   const renderPaymentModal = () => {
     const currentUser = getCurrentUser();
     return !showPaymentModal ? null : (
@@ -1943,143 +1979,7 @@ function App() {
       {renderPaymentModal()}
 
       {/* 이메일 검증 모달 - 랜딩 페이지에서도 표시 */}
-      {showEmailVerificationModal && (
- <div style={{
- position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
- backgroundColor: "rgba(0, 0, 0, 0.7)",
- display: "flex",
- justifyContent: "center",
- alignItems: "center",
- zIndex: 99999,
- backdropFilter: "blur(4px)",
- }}>
- <div style={{
- backgroundColor: "#1e293b",
- borderRadius: "12px",
- padding: "40px",
- maxWidth: "500px",
- width: "90%",
- boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
- border: "1px solid rgba(255, 255, 255, 0.1)",
- }}>
- {/* Close Button */}
- <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "20px" }}>
- <button
- onClick={() => {
- setShowEmailVerificationModal(false);
- setIsWaitingEmailVerification(false);
- localStorage.removeItem("pendingVerificationEmail");
- }}
- style={{
- background: "none",
- border: "none",
- color: "#94a3b8",
- cursor: "pointer",
- fontSize: "24px",
- padding: "0",
- width: "32px",
- height: "32px",
- display: "flex",
- alignItems: "center",
- justifyContent: "center",
- }}
- >
- ×
- </button>
- </div>
-
- {/* Content */}
- <h2 style={{ color: "#fff", margin: "0 0 12px 0", fontSize: "24px", textAlign: "center" }}>
- {t("emailVerificationCheckEmail")}
- </h2>
-
- <div style={{
- backgroundColor: "rgba(59, 130, 246, 0.1)",
- border: "1px solid rgba(59, 130, 246, 0.3)",
- borderRadius: "8px",
- padding: "20px",
- marginBottom: "24px",
- }}>
- <p style={{ color: "#93c5fd", margin: "0", fontSize: "14px", lineHeight: "1.6" }}>
- {t("emailVerificationCheckEmailDesc").replace("{email}", emailVerificationUserEmail || "")}
- </p>
- </div>
-
- {/* Message */}
- {emailVerificationMessage && (
- <p style={{ color: "#cbd5e1", fontSize: "14px", margin: "0 0 24px 0", lineHeight: "1.6", textAlign: "center" }}>
- {emailVerificationMessage}
- </p>
- )}
-
- {/* Buttons */}
- <div style={{ display: "flex", gap: "12px", marginTop: "24px", flexDirection: "column" }}>
- <button
- onClick={async () => {
- setEmailVerificationResending(true);
- try {
- await resendEmailVerification();
- setEmailVerificationMessage(t("emailVerificationResendSuccess"));
- } catch (error: any) {
- // Firebase rate limiting 오류
- if (error.message === "email-verification-too-many-requests" || error.code === "email-verification-too-many-requests") {
- setEmailVerificationMessage(t("emailVerificationTooManyRequests"));
- } else {
- setEmailVerificationMessage(t("emailVerificationResendError"));
- }
- } finally {
- setEmailVerificationResending(false);
- }
- }}
- disabled={emailVerificationResending}
- style={{
- width: "100%",
- padding: "12px",
- backgroundColor: emailVerificationResending ? "#6b7280" : "#6366f1",
- border: "none",
- borderRadius: "6px",
- color: "#fff",
- fontSize: "14px",
- cursor: emailVerificationResending ? "not-allowed" : "pointer",
- fontWeight: "600",
- transition: "background-color 0.2s",
- opacity: emailVerificationResending ? 0.7 : 1,
- }}
- >
- {emailVerificationResending ? t("emailVerificationResending") : t("emailVerificationResendBtn")}
- </button>
-
- <button
- onClick={() => {
- setShowEmailVerificationModal(false);
- setIsWaitingEmailVerification(false);
- localStorage.removeItem("pendingVerificationEmail");
- }}
- style={{
- width: "100%",
- padding: "12px",
- backgroundColor: "transparent",
- border: "1px solid rgba(255, 255, 255, 0.2)",
- borderRadius: "6px",
- color: "#cbd5e1",
- fontSize: "14px",
- cursor: "pointer",
- fontWeight: "500",
- transition: "background-color 0.2s",
- }}
- onMouseEnter={(e) => {
- (e.target as HTMLButtonElement).style.backgroundColor = "rgba(255, 255, 255, 0.05)";
- }}
- onMouseLeave={(e) => {
- (e.target as HTMLButtonElement).style.backgroundColor = "transparent";
- }}
- >
- {t("cancelBtn")}
- </button>
- </div>
- </div>
- </div>
-      )}
+      {renderEmailVerificationModal()}
 
       <CookieConsent />
     </>;
@@ -5573,144 +5473,8 @@ function App() {
 
  {renderLoginModal()}
 
- {/* 이메일 검증 모달 - 랜딩 화면에서도 표시 */}
- {showEmailVerificationModal && (
- <div style={{
- position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
- backgroundColor: "rgba(0, 0, 0, 0.7)",
- display: "flex",
- justifyContent: "center",
- alignItems: "center",
- zIndex: 99999,
- backdropFilter: "blur(4px)",
- }}>
- <div style={{
- backgroundColor: "#1e293b",
- borderRadius: "12px",
- padding: "40px",
- maxWidth: "500px",
- width: "90%",
- boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
- border: "1px solid rgba(255, 255, 255, 0.1)",
- }}>
- {/* Close Button */}
- <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "20px" }}>
- <button
- onClick={() => {
- setShowEmailVerificationModal(false);
- setIsWaitingEmailVerification(false);
- localStorage.removeItem("pendingVerificationEmail");
- }}
- style={{
- background: "none",
- border: "none",
- color: "#94a3b8",
- cursor: "pointer",
- fontSize: "24px",
- padding: "0",
- width: "32px",
- height: "32px",
- display: "flex",
- alignItems: "center",
- justifyContent: "center",
- }}
- >
- ×
- </button>
- </div>
-
- {/* Content */}
- <h2 style={{ color: "#fff", margin: "0 0 12px 0", fontSize: "24px", textAlign: "center" }}>
- {t("emailVerificationCheckEmail")}
- </h2>
-
- <div style={{
- backgroundColor: "rgba(59, 130, 246, 0.1)",
- border: "1px solid rgba(59, 130, 246, 0.3)",
- borderRadius: "8px",
- padding: "20px",
- marginBottom: "24px",
- }}>
- <p style={{ color: "#93c5fd", margin: "0", fontSize: "14px", lineHeight: "1.6" }}>
- {t("emailVerificationCheckEmailDesc").replace("{email}", emailVerificationUserEmail || "")}
- </p>
- </div>
-
- {/* Message */}
- {emailVerificationMessage && (
- <p style={{ color: "#cbd5e1", fontSize: "14px", margin: "0 0 24px 0", lineHeight: "1.6", textAlign: "center" }}>
- {emailVerificationMessage}
- </p>
- )}
-
- {/* Buttons */}
- <div style={{ display: "flex", gap: "12px", marginTop: "24px", flexDirection: "column" }}>
- <button
- onClick={async () => {
- setEmailVerificationResending(true);
- try {
- await resendEmailVerification();
- setEmailVerificationMessage(t("emailVerificationResendSuccess"));
- } catch (error: any) {
- // Firebase rate limiting 오류
- if (error.message === "email-verification-too-many-requests" || error.code === "email-verification-too-many-requests") {
- setEmailVerificationMessage(t("emailVerificationTooManyRequests"));
- } else {
- setEmailVerificationMessage(t("emailVerificationResendError"));
- }
- } finally {
- setEmailVerificationResending(false);
- }
- }}
- disabled={emailVerificationResending}
- style={{
- width: "100%",
- padding: "12px",
- backgroundColor: emailVerificationResending ? "#6b7280" : "#6366f1",
- border: "none",
- borderRadius: "6px",
- color: "#fff",
- fontSize: "14px",
- cursor: emailVerificationResending ? "not-allowed" : "pointer",
- fontWeight: "600",
- transition: "background-color 0.2s",
- opacity: emailVerificationResending ? 0.7 : 1,
- }}
- >
- {emailVerificationResending ? t("emailVerificationResending") : t("emailVerificationResendBtn")}
- </button>
-
- <button
- onClick={() => {
- setShowEmailVerificationModal(false);
- setIsWaitingEmailVerification(false);
- localStorage.removeItem("pendingVerificationEmail");
- }}
- style={{
- width: "100%",
- padding: "12px",
- backgroundColor: "transparent",
- border: "1px solid rgba(255, 255, 255, 0.2)",
- borderRadius: "6px",
- color: "#cbd5e1",
- fontSize: "14px",
- cursor: "pointer",
- fontWeight: "500",
- transition: "background-color 0.2s",
- }}
- onMouseEnter={(e) => {
- (e.target as HTMLButtonElement).style.backgroundColor = "rgba(255, 255, 255, 0.05)";
- }}
- onMouseLeave={(e) => {
- (e.target as HTMLButtonElement).style.backgroundColor = "transparent";
- }}
- >
- {t("cancelBtn")}
- </button>
- </div>
- </div>
- </div>
- )}
+ {/* 이메일 검증 모달 */}
+ {renderEmailVerificationModal()}
 
  {/* 인증 모달 */}
  {showAuthModal && (
