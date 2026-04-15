@@ -59,6 +59,15 @@ async function resolveUserRef(customData, attributes, requestId) {
   return { userRef: null, userKey: null };
 }
 
+function getCorsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Signature, X-Lemon-Squeezy-Signature',
+    'Content-Type': 'application/json',
+  };
+}
+
 async function handleCancelSubscription(rawBody, requestId) {
   try {
     const payload = JSON.parse(rawBody);
@@ -85,14 +94,22 @@ async function handleCancelSubscription(rawBody, requestId) {
 
     if (!userRef || !userData) {
       console.error(`[${requestId}] User not found for cancel request`, { userId, email });
-      return { statusCode: 404, body: JSON.stringify({ error: 'User not found' }) };
+      return {
+        statusCode: 404,
+        headers: getCorsHeaders(),
+        body: JSON.stringify({ error: 'User not found' })
+      };
     }
 
     const subscriptionId = userData?.lemonSqueezySubscriptionId;
 
     if (!subscriptionId) {
       console.error(`[${requestId}] No subscription found for user`, { userId, email });
-      return { statusCode: 400, body: JSON.stringify({ error: 'No active subscription' }) };
+      return {
+        statusCode: 400,
+        headers: getCorsHeaders(),
+        body: JSON.stringify({ error: 'No active subscription' })
+      };
     }
 
     console.log(`[${requestId}] Found subscription: ${subscriptionId}`);
@@ -101,7 +118,11 @@ async function handleCancelSubscription(rawBody, requestId) {
     const apiKey = process.env.LEMON_SQUEEZY_API_KEY;
     if (!apiKey) {
       console.error(`[${requestId}] LEMON_SQUEEZY_API_KEY not configured`);
-      return { statusCode: 500, body: JSON.stringify({ error: 'API key not configured' }) };
+      return {
+        statusCode: 500,
+        headers: getCorsHeaders(),
+        body: JSON.stringify({ error: 'API key not configured' })
+      };
     }
 
     const lsResponse = await fetch(`https://api.lemonsqueezy.com/v1/subscriptions/${subscriptionId}`, {
@@ -118,6 +139,7 @@ async function handleCancelSubscription(rawBody, requestId) {
       console.error(`[${requestId}] Lemon Squeezy API error: ${lsResponse.status}`, errorText);
       return {
         statusCode: lsResponse.status,
+        headers: getCorsHeaders(),
         body: JSON.stringify({ error: `Lemon Squeezy API error: ${lsResponse.status}` })
       };
     }
@@ -148,6 +170,7 @@ async function handleCancelSubscription(rawBody, requestId) {
 
     return {
       statusCode: 200,
+      headers: getCorsHeaders(),
       body: JSON.stringify({
         success: true,
         message: 'Subscription cancelled',
@@ -159,6 +182,7 @@ async function handleCancelSubscription(rawBody, requestId) {
     console.error(`[${requestId}] Error in handleCancelSubscription:`, error?.stack || error?.message || error);
     return {
       statusCode: 500,
+      headers: getCorsHeaders(),
       body: JSON.stringify({ error: error?.message || 'Internal Server Error' })
     };
   }
@@ -169,7 +193,7 @@ exports.handler = async (event, context) => {
 
   const requestId = context.awsRequestId || event?.requestContext?.requestId || 'unknown-request';
   const method = event?.requestContext?.http?.method || event?.httpMethod || 'unknown-method';
-  const path = event?.path || event?.rawPath || 'unknown-path';
+  const path = event?.requestContext?.http?.path || event?.path || event?.rawPath || 'unknown-path';
   const rawBody = getRawBody(event);
   const headers = event?.headers || {};
 
@@ -180,6 +204,20 @@ exports.handler = async (event, context) => {
     bodyLength: rawBody.length,
     headerKeys: Object.keys(headers),
   });
+
+  // Handle CORS preflight requests
+  if (method === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Signature, X-Lemon-Squeezy-Signature',
+        'Access-Control-Max-Age': '86400',
+      },
+      body: '',
+    };
+  }
 
   // Handle REST API endpoints
   if (method === 'POST' && path?.includes('cancel-subscription')) {
@@ -198,7 +236,11 @@ exports.handler = async (event, context) => {
         hasSignature: Boolean(signature),
         hasSecret: Boolean(secret),
       });
-      return { statusCode: 401, body: 'Unauthorized' };
+      return {
+        statusCode: 401,
+        headers: getCorsHeaders(),
+        body: JSON.stringify({ error: 'Unauthorized' })
+      };
     }
 
     const verifyStartedAt = Date.now();
@@ -207,7 +249,11 @@ exports.handler = async (event, context) => {
 
     if (signature !== digest) {
       console.error(`[${requestId}] Invalid signature`, { signature, digest });
-      return { statusCode: 401, body: 'Invalid signature' };
+      return {
+        statusCode: 401,
+        headers: getCorsHeaders(),
+        body: JSON.stringify({ error: 'Invalid signature' })
+      };
     }
 
     const parseStartedAt = Date.now();
@@ -235,7 +281,11 @@ exports.handler = async (event, context) => {
       !expiredEvents.includes(eventName)
     ) {
       console.log(`[${requestId}] Ignored event: ${eventName}`);
-      return { statusCode: 200, body: 'Ignored' };
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(),
+        body: JSON.stringify({ message: 'Ignored' })
+      };
     }
 
     const resolveStartedAt = Date.now();
@@ -245,7 +295,11 @@ exports.handler = async (event, context) => {
 
     if (!resolved.userRef) {
       console.error(`[${requestId}] No user reference resolved from webhook payload`, { resolved });
-      return { statusCode: 400, body: 'No user found' };
+      return {
+        statusCode: 400,
+        headers: getCorsHeaders(),
+        body: JSON.stringify({ error: 'No user found' })
+      };
     }
     console.log(`[${requestId}] User ref found: ${resolved.userKey}`);
 
@@ -280,7 +334,11 @@ exports.handler = async (event, context) => {
       );
 
       console.log(`[${requestId}] Paid state saved in ${Date.now() - updateStartedAt}ms for ${resolved.userKey}`);
-      return { statusCode: 200, body: 'OK' };
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(),
+        body: JSON.stringify({ message: 'OK' })
+      };
     }
 
     if (cancelledEvents.includes(eventName)) {
@@ -314,7 +372,11 @@ exports.handler = async (event, context) => {
       console.log(
         `[${requestId}] Cancel state saved in ${Date.now() - updateStartedAt}ms for ${resolved.userKey}`
       );
-      return { statusCode: 200, body: 'OK' };
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(),
+        body: JSON.stringify({ message: 'OK' })
+      };
     }
 
     if (expiredEvents.includes(eventName)) {
@@ -343,12 +405,24 @@ exports.handler = async (event, context) => {
       console.log(
         `[${requestId}] Expired state saved in ${Date.now() - updateStartedAt}ms for ${resolved.userKey}`
       );
-      return { statusCode: 200, body: 'OK' };
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(),
+        body: JSON.stringify({ message: 'OK' })
+      };
     }
 
-    return { statusCode: 200, body: 'Ignored' };
+    return {
+      statusCode: 200,
+      headers: getCorsHeaders(),
+      body: JSON.stringify({ message: 'Ignored' })
+    };
   } catch (error) {
     console.error(`[${requestId}] Error:`, error?.stack || error?.message || error);
-    return { statusCode: 500, body: error.message || 'Internal Server Error' };
+    return {
+      statusCode: 500,
+      headers: getCorsHeaders(),
+      body: JSON.stringify({ error: error?.message || 'Internal Server Error' })
+    };
   }
 };
