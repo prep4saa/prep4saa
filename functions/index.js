@@ -2,6 +2,53 @@ const functions = require("firebase-functions");
 const cors = require("cors")({ origin: true });
 const fetch = require("node-fetch");
 
+// Gemini API 프록시
+exports.gemini = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      if (req.method !== "POST") {
+        return res.status(405).json({ error: "Method not allowed" });
+      }
+
+      const { prompt, maxTokens } = req.body;
+      const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
+
+      if (!apiKey) {
+        return res.status(400).json({ error: { message: "Gemini API key not configured" } });
+      }
+
+      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + apiKey, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }],
+          generationConfig: {
+            maxOutputTokens: maxTokens || 3500,
+            temperature: 1.0,
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        return res.status(response.status).json({ error });
+      }
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error("Gemini Proxy error:", error);
+      res.status(500).json({ error: { message: error.message } });
+    }
+  });
+});
+
 // Claude API 프록시
 exports.claudeProxy = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {

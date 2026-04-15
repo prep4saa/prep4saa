@@ -306,7 +306,6 @@ export const en: Strings = {
   landingNote: "Mock exams included · Cancel anytime · 3 languages",
   mockExamQCount: "Question",
   mockExamOf: "of",
-  mockExamTimeRemaining: "Remaining",
   mockExamQuestion: "A company wants to host a web application on AWS that requires high availability and scalable compute capacity. The architecture should handle sudden traffic spikes without manual intervention. Which combination of services should a solutions architect recommend?",
   mockExamOption1: "Amazon EC2 Auto Scaling and Elastic Load Balancing",
   mockExamOption2: "Amazon ECS with AWS Fargate and Application Load Balancer",

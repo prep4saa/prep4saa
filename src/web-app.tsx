@@ -1310,7 +1310,9 @@ function App() {
  return;
  }
 
- if (slots.length === 0) return;
+ if (slots.length === 0) {
+ return;
+ }
 
  // 일일 제한 확인 (운영자는 제한 없음)
  if (!isAdmin) {
@@ -1372,12 +1374,29 @@ function App() {
 
  const generatedProblem = await generateSAAProblem(serviceNames, difficulty, locale);
 
- // Firebase에 문제 생성 기록 저장 (클라이언트 수정 불가)
- await recordProblemGeneration(auth.currentUser.uid);
+ // 서버 API로 문제 생성 기록 저장 (보안: 서버에서 검증)
+ try {
+ const backendUrl = resolveBackendUrl();
+ await fetch(`${backendUrl}/api/recordProblemGeneration`, {
+ method: "POST",
+ headers: {
+ "Content-Type": "application/json",
+ },
+ body: JSON.stringify({
+ userId: auth.currentUser.uid,
+ problem: generatedProblem
+ })
+ });
+ } catch (error) {
+ console.error("❌ Failed to record problem generation:", error);
+ }
 
  setProblem(generatedProblem);
 
  //  보안: Firebase에서 최신 카운트를 다시 읽어옴 (localStorage 우회 방지)
+ // 서버에서 저장한 후 약간의 지연을 두어 읽기 일관성 확보
+ await new Promise(resolve => setTimeout(resolve, 300));
+
  const { count: updatedCount } = await canGenerateProblemToday(
  auth.currentUser.uid,
  userStatus
@@ -2457,7 +2476,7 @@ function App() {
    currentLocale={locale}
    onLocaleChange={setLocale}
    onLoginClick={() => setShowLoginModal(true)}
-   showLoginButton={isAuthChecked && (!userEmail || !emailVerified)}
+   showLoginButton={!userEmail}
    onLogoClick={() => setShowLanding(true)}
    userEmail={userEmail}
    dday={dday}
@@ -2754,20 +2773,42 @@ function App() {
  setIsSubmitted(true);
  // 로그인된 사용자면 결과 저장
  const user = getCurrentUser();
+ console.log(`📝 Submit button clicked: user=${user?.uid}, problem=${!!problem}, selectedAnswer=${selectedAnswer}, difficulty=${difficulty}, sessionId=${sessionId}, slots=${slots?.join(',')}`);
+
  if (user && problem) {
  try {
- await recordQuizResult(
- user.uid,
- problem,
- selectedAnswer,
- difficulty as "medium" | "hard" | "challenge",
- sessionId,
- slots // 선택된 서비스 목록 전달
- );
+ console.log(`💾 Calling recordQuizResult via server...`);
+ const backendUrl = resolveBackendUrl();
+ const response = await fetch(`${backendUrl}/api/recordQuizResult`, {
+ method: "POST",
+ headers: {
+ "Content-Type": "application/json",
+ },
+ body: JSON.stringify({
+ userId: user.uid,
+ problem: problem,
+ selectedAnswer: selectedAnswer,
+ difficulty: difficulty as "medium" | "hard" | "challenge",
+ sessionId: sessionId,
+ selectedServices: slots // 선택된 서비스 목록 전달
+ })
+ });
+
+ if (!response.ok) {
+ throw new Error(`Server returned ${response.status}`);
+ }
+
+ const result = await response.json();
+ console.log(`✅ recordQuizResult completed: isCorrect=${result.isCorrect}`);
+
  // 세션 목록 즉시 갱신 (현황 탭 PDF 다운로드 반영)
  const sessions = await getUserProblemSessions(user.uid);
  setProblemSessions(sessions);
- } catch (error) {}
+ } catch (error) {
+ console.error(`❌ Error in recordQuizResult:`, error);
+ }
+ } else {
+ console.warn(`⚠️ Cannot save result: user=${!!user}, problem=${!!problem}`);
  }
  }}
  style={{
@@ -3407,7 +3448,25 @@ function App() {
  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
  <button
  onClick={() => {
- if (!mockExamResults || !mockExamProblems) return;
+ if (!mockExamResults) return;
+
+ // mockExamProblems가 없으면 localStorage에서 복구
+ let problems = mockExamProblems;
+ if (!problems || problems.length === 0) {
+   const savedProblems = localStorage.getItem("mockExamProblems");
+   if (savedProblems) {
+     try {
+       problems = JSON.parse(savedProblems);
+     } catch (e) {
+       console.error('Failed to parse mock exam problems:', e);
+       alert(locale === 'en' ? 'Failed to load problems. Please try again.' : locale === 'ja' ? '問題の読み込みに失敗しました。もう一度お試しください。' : '문제 불러오기에 실패했습니다. 다시 시도해주세요.');
+       return;
+     }
+   } else {
+     alert(locale === 'en' ? 'No problems found. Please take the mock exam again.' : locale === 'ja' ? '問題が見つかりません。もう一度模擬試験を受けてください。' : '문제를 찾을 수 없습니다. 모의시험을 다시 진행해주세요.');
+     return;
+   }
+ }
 
  const element = document.createElement("div");
 
@@ -3427,7 +3486,7 @@ function App() {
  };
 
  // 문제별 분석 HTML 생성
- const problemsHTML = mockExamProblems.map((problem, idx) => {
+ const problemsHTML = problems.map((problem, idx) => {
  const userAnswer = mockExamAnswers[idx];
  const isCorrect = userAnswer === problem.answer;
  return `
@@ -3594,7 +3653,25 @@ function App() {
  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
  <button
  onClick={() => {
- if (!mockExamResults || !mockExamProblems) return;
+ if (!mockExamResults) return;
+
+ // mockExamProblems가 없으면 localStorage에서 복구
+ let problems = mockExamProblems;
+ if (!problems || problems.length === 0) {
+   const savedProblems = localStorage.getItem("mockExamProblems");
+   if (savedProblems) {
+     try {
+       problems = JSON.parse(savedProblems);
+     } catch (e) {
+       console.error('Failed to parse mock exam problems:', e);
+       alert(locale === 'en' ? 'Failed to load problems. Please try again.' : locale === 'ja' ? '問題の読み込みに失敗しました。もう一度お試しください。' : '문제 불러오기에 실패했습니다. 다시 시도해주세요.');
+       return;
+     }
+   } else {
+     alert(locale === 'en' ? 'No problems found. Please take the mock exam again.' : locale === 'ja' ? '問題が見つかりません。もう一度模擬試験を受けてください。' : '문제를 찾을 수 없습니다. 모의시험을 다시 진행해주세요.');
+     return;
+   }
+ }
 
  const element = document.createElement("div");
  element.style.width = "190mm";
@@ -3615,7 +3692,7 @@ function App() {
  };
 
  // 문제별 분석 HTML 생성
- const problemsHTML = mockExamProblems.map((problem, idx) => {
+ const problemsHTML = problems.map((problem, idx) => {
  const userAnswer = mockExamAnswers[idx];
  const isCorrect = userAnswer === problem.answer;
  return `

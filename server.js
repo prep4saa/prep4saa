@@ -41,10 +41,10 @@ const app = express();
 const PORT = 5000;
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-// ??蹂댁븞 ?ㅻ뜑 ?ㅼ젙 (XSS, Clickjacking, MIME-sniffing 諛⑹?)
+// 보안 헤더 설정 (XSS, Clickjacking, MIME-sniffing 방지)
 app.use(helmet());
 
-// ??CORS ?ㅼ젙
+// CORS 설정
 app.use(cors({
   origin: [
     'https://prep4saa.com',
@@ -62,9 +62,10 @@ app.use(cors({
   maxAge: 86400
 }));
 
-// ????꾩븘???ㅼ젙
+//??요청븘//설정
 app.use((req, res, next) => {
-  req.setTimeout(30000);  // 30珥?  res.setTimeout(30000);
+  req.setTimeout(30000);  // 30초
+  res.setTimeout(30000);
   next();
 });
 
@@ -80,11 +81,11 @@ async function handleClaudeProxy(req, res) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
 
     if (!apiKey) {
-      console.error('??ANTHROPIC_API_KEY not found in environment');
+      console.error('⚠️ ANTHROPIC_API_KEY not found in environment');
       return res.status(400).json({ error: { message: 'ANTHROPIC_API_KEY not found' } });
     }
 
-    console.log('?뱾 Sending request to Claude API:', { model, max_tokens });
+    console.log('🚀  Sending request to Claude API:', { model, max_tokens });
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -102,34 +103,34 @@ async function handleClaudeProxy(req, res) {
 
     if (!response.ok) {
       const error = await response.json();
-      console.error('??Claude API Error:', error);
+      console.error('⚠️ Claude API Error:', error);
       return res.status(response.status).json({ error });
     }
 
     const data = await response.json();
-    console.log('??Claude API Success');
+    console.log('✅ Claude API Success');
     res.json(data);
   } catch (error) {
-    console.error('??Proxy error:', error);
+    console.error('⚠️ Proxy error:', error);
     res.status(500).json({ error: { message: error.message } });
   }
 }
 
-// ?묒そ ?붾뱶?ъ씤??吏??app.post('/api/claude', handleClaudeProxy);
+// 추そ 메메서드사씤//吏//app.post('/api/claude', handleClaudeProxy);
 app.post('/api/claudeProxy', handleClaudeProxy);
 
-// ??Gemini API ?꾨줉???몃뱾??(蹂댁븞: API ?ㅻ뒗 ?쒕쾭?먮쭔 ?덉쓬)
+// Gemini API 프록시 (보안: API 키는 서버에만 저장)
 async function handleGeminiProxy(req, res) {
   try {
     const { prompt, maxTokens = 2000 } = req.body;
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-      console.error('??GEMINI_API_KEY not found in environment');
+      console.error('⚠️ GEMINI_API_KEY not found in environment');
       return res.status(400).json({ error: { message: 'GEMINI_API_KEY not found' } });
     }
 
-    console.log('?뱾 Sending request to Gemini API');
+    console.log('🚀  Sending request to Gemini API');
 
     const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent', {
       method: 'POST',
@@ -156,32 +157,32 @@ async function handleGeminiProxy(req, res) {
 
     if (!response.ok) {
       const error = await response.json();
-      console.error('??Gemini API Error:', error);
+      console.error('⚠️ Gemini API Error:', error);
       return res.status(response.status).json({ error });
     }
 
     const data = await response.json();
-    console.log('??Gemini API Success');
+    console.log('✅ Gemini API Success');
     res.json(data);
   } catch (error) {
-    console.error('??Gemini Proxy error:', error);
+    console.error('⚠️ Gemini Proxy error:', error);
     res.status(500).json({ error: { message: error.message } });
   }
 }
 
-// Gemini API ?붾뱶?ъ씤??app.post('/api/gemini', handleGeminiProxy);
+app.post('/api/gemini', handleGeminiProxy);
 
 app.post('/api/process2CheckoutPayment', async (req, res) => {
   try {
     const { email, fullName, amount, currency } = req.body;
 
-    // ?㎦ ?뚯뒪??紐⑤뱶: 2Checkout API ???놁씠???묐룞
-    // ?꾨줈?뺤뀡: 2Checkout API ???꾩슂
+    // ?㎦ 푸뒪//紐⑤메서드: 2Checkout API //?놁씠//응룞
+    // ?꾨줈?뺤뀡: 2Checkout API //?요청슂
     const twoCheckoutApiKey = process.env.TWO_CHECKOUT_API_KEY;
 
-    console.log('?뱾 Processing 2Checkout payment:', { email, fullName, amount, currency });
+    console.log('🚀  Processing 2Checkout payment:', { email, fullName, amount, currency });
 
-    // ???뚯뒪??紐⑤뱶: ??긽 ?깃났
+    //푸뒪//紐⑤메서드: //긽 성공났
     if (!twoCheckoutApiKey) {
       console.log('?㎦ Test Mode: Simulating 2Checkout payment');
       return res.json({
@@ -191,7 +192,7 @@ app.post('/api/process2CheckoutPayment', async (req, res) => {
       });
     }
 
-    // ?꾨줈?뺤뀡: ?ㅼ젣 2Checkout API ?몄텧
+    // ?꾨줈?뺤뀡: 설젣 2Checkout API ?몄텧
     // const response = await fetch('https://api.2checkout.com/v1/orders', {
     //   method: 'POST',
     //   headers: {
@@ -221,7 +222,7 @@ app.post('/api/process2CheckoutPayment', async (req, res) => {
     // res.json({ success: true, transactionId: data.orderId });
 
   } catch (error) {
-    console.error('??2Checkout Payment Error:', error);
+    console.error('⚠️ 2Checkout Payment Error:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Payment processing failed',
@@ -229,16 +230,16 @@ app.post('/api/process2CheckoutPayment', async (req, res) => {
   }
 });
 
-// Payment Intent Handler (Stripe - ?덇굅??
+// Payment Intent Handler (Stripe - ?덇굅//
 app.post('/api/createPaymentIntent', async (req, res) => {
   try {
     const { email, fullName, amount, currency } = req.body;
 
-    // ?뚯뒪??紐⑤뱶: ?ㅼ젣 Stripe ?듯빀 ???쒕??덉씠??    // ?꾨줈?뺤뀡: Stripe SDK ?꾩슂
+    // 푸뒪//紐⑤메서드: 설젣 Stripe ?듯빀 //백//덉씠//    // ?꾨줈?뺤뀡: Stripe SDK ?요청슂
     const stripeSecretKey = process.env.VITE_STRIPE_SECRET_KEY;
 
     if (!stripeSecretKey) {
-      // ?뚯뒪??紐⑤뱶: ?붾? clientSecret 諛섑솚
+      // 푸뒪//紐⑤메서드: 메? clientSecret 諛섑솚
       const dummyClientSecret = `pi_test_${Date.now()}_secret_${Math.random().toString(36).substr(2, 9)}`;
 
       return res.json({
@@ -248,7 +249,7 @@ app.post('/api/createPaymentIntent', async (req, res) => {
       });
     }
 
-    // ?꾨줈?뺤뀡?먯꽌???ㅼ젣 Stripe API ?몄텧
+    // ?꾨줈?뺤뀡에꽌//설젣 Stripe API ?몄텧
     // const stripe = require('stripe')(stripeSecretKey);
     // const paymentIntent = await stripe.paymentIntents.create({
     //   amount: amount,
@@ -270,7 +271,7 @@ app.post('/api/notifyError', async (req, res) => {
   try {
     const { to, subject, error, apiType, timestamp, difficulty, services, locale } = req.body;
 
-    // ?뚯뒪??紐⑤뱶: ?먮윭 濡쒓퉭留??섑뻾
+    // 푸뒪//紐⑤메서드: ?먮윭 濡쒓퉭留//섑뻾
     const errorLog = {
       to,
       subject,
@@ -283,7 +284,7 @@ app.post('/api/notifyError', async (req, res) => {
       receivedAt: new Date().toISOString()
     };
 
-    // ?ㅼ젣 ?섍꼍?먯꽌??Firebase Cloud Function?대굹 ?대찓???쒕퉬???몄텧
+    // 설젣 연꼍에꽌//Firebase Cloud Function이굹 이찓//백퉬//?몄텧
     console.log('?벁 Error notification:', errorLog);
 
     res.json({
@@ -304,7 +305,7 @@ app.post('/api/contact', async (req, res) => {
       return res.status(400).json({ error: { message: 'Missing required fields' } });
     }
 
-    // ?섍꼍蹂?섏뿉???섏떊 ?대찓??媛?몄삤湲?(濡쒖쭅???몄텧 X)
+    // 연꼍蹂?섏뿉//?섏떊 이찓//媛?몄삤湲?(濡쒖쭅//?몄텧 X)
     const contactEmail = process.env.CONTACT_EMAIL;
 
     const contactData = {
@@ -316,23 +317,23 @@ app.post('/api/contact', async (req, res) => {
       receivedAt: new Date().toISOString()
     };
 
-    console.log('?? ??:', {
+    console.log('✅  //:', {
       senderName: contactData.name,
       senderEmail: contactData.email,
       subject: contactData.subject,
       timestamp: contactData.timestamp
     });
 
-    // ?벁 Resend API瑜??ъ슜?섏뿬 ?대찓???꾩넚
+    // ?벁 Resend API瑜//ъ슜?섏뿬 이찓//?요청넚
     if (contactEmail && process.env.RESEND_API_KEY) {
       try {
         const htmlContent = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #333;">?덈줈??臾몄쓽媛 ?꾩갑?덉뒿?덈떎</h2>
+            <h2 style="color: #333;">습줈//臾몄쓽媛 ?요청갑?덉뒿습떎</h2>
             <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p><strong>諛쒖떊??</strong> ${contactData.name}</p>
-              <p><strong>?대찓??</strong> ${contactData.email}</p>
-              <p><strong>?쒕ぉ:</strong> ${contactData.subject}</p>
+              <p><strong>諛쒖떊//</strong> ${contactData.name}</p>
+              <p><strong>이찓//</strong> ${contactData.email}</p>
+              <p><strong>백ぉ:</strong> ${contactData.subject}</p>
               <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;" />
               <p><strong>硫붿떆吏:</strong></p>
               <p style="white-space: pre-wrap;">${contactData.message}</p>
@@ -345,44 +346,44 @@ app.post('/api/contact', async (req, res) => {
         await resend.emails.send({
           from: 'onboarding@resend.dev',
           to: contactEmail,
-          subject: `??臾몄쓽: ${contactData.subject}`,
+          subject: `//臾몄쓽: ${contactData.subject}`,
           html: htmlContent,
         });
 
-        console.log(`?됵툘 Resend ?대찓??諛쒖넚 ?꾨즺: ${contactEmail}`);
+        console.log(`?됵툘 Resend 이찓//諛쒖넚 ?꾨즺: ${contactEmail}`);
       } catch (emailError) {
-        console.error('?좑툘 Resend ?대찓??諛쒖넚 ?ㅽ뙣:', emailError.message);
-        // ?대찓??諛쒖넚 ?ㅽ뙣?대룄 ?대씪?댁뼵?몄뿉???깃났 ?묐떟 ?꾩넚
+        console.error('🚀송툘 Resend 이찓//諛쒖넚 실뙣:', emailError.message);
+        // 이찓//諛쒖넚 실뙣이룄 이씪?댁뼵?몄뿉//성공났 응떟 ?요청넚
       }
     }
 
-    // ?뾼截?Firebase??臾몄쓽 ???(?좏깮?ы빆)
+    // ?뾼截?Firebase//臾몄쓽 ?//(?좏깮?ы빆)
     // await saveContactToFirebase(contactData);
 
-    // ?깃났 ?묐떟
+    // 성공났 응떟
     res.json({
       status: 'success',
       message: 'Contact message received. We will reply soon.',
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('??Contact form error:', error);
+    console.error('⚠️ Contact form error:', error);
     res.status(500).json({ error: { message: error.message } });
   }
 });
 
 // ===== Admin 寃利?=====
 
-// Admin check (蹂댁븞: ?쒕쾭?먯꽌留?泥섎━)
+// Admin check (보안: 백쾭에꽌留?泥섎━)
 app.post('/api/checkAdmin', (req, res) => {
   try {
     const { email } = req.body;
     const adminEmail = process.env.VITE_ADMIN_EMAIL;
 
-    // ?쒕쾭?먯꽌留?admin ?대찓??鍮꾧탳
+    // 백쾭에꽌留?admin 이찓//鍮꾧탳
     const isAdmin = email && adminEmail && email === adminEmail;
 
-    // ?붾쾭洹?濡쒓렇
+    // 메쾭洹?濡쒓렇
     console.log('?뵇 Admin check:', {
       receivedEmail: email,
       adminEmail: adminEmail,
@@ -395,7 +396,7 @@ app.post('/api/checkAdmin', (req, res) => {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('??Admin check error:', error);
+    console.error('⚠️ Admin check error:', error);
     res.status(500).json({ error: { message: error.message } });
   }
 });
@@ -412,20 +413,20 @@ app.use('/api/admin/', (req, res, next) => {
       });
     }
 
-    // Admin ?뺤씤 ?꾨즺, ?ㅼ쓬 ?몃뱾?щ줈
+    // Admin ?뺤씤 ?꾨즺, 설쓬 ?몃뱾?щ줈
     next();
   } catch (error) {
     res.status(500).json({ error: { message: error.message } });
   }
 });
 
-// Admin ?듦퀎 議고쉶 (愿由ъ옄 ?꾩슜)
+// Admin ?듦퀎 議고쉶 (愿由ъ옄 ?요청슜)
 app.post('/api/admin/stats', (req, res) => {
   try {
     const { email } = req.body;
-    // 誘몃뱾?⑥뼱?먯꽌 ?대? 寃利앸맖
+    // 誘몃뱾?⑥뼱에꽌 이? 寃利앸맖
 
-    // ?뚯뒪?몄슜 ?묐떟 (?ㅼ젣濡쒕뒗 Firebase getAdminStats() ?몄텧)
+    // 푸뒪?몄슜 응떟 (설젣濡백뒗 Firebase getAdminStats() ?몄텧)
     res.json({
       totalUsers: 0,
       paidUsers: 0,
@@ -437,13 +438,13 @@ app.post('/api/admin/stats', (req, res) => {
   }
 });
 
-// Admin - 紐⑤뱺 ?ъ슜??紐⑸줉 議고쉶 (愿由ъ옄 ?꾩슜)
+// Admin - 紐⑤뱺 사슜//紐⑸줉 議고쉶 (愿由ъ옄 ?요청슜)
 app.post('/api/admin/users', (req, res) => {
   try {
     const { email } = req.body;
-    // 誘몃뱾?⑥뼱?먯꽌 ?대? 寃利앸맖
+    // 誘몃뱾?⑥뼱에꽌 이? 寃利앸맖
 
-    // ?뚯뒪?몄슜 ?묐떟 (?ㅼ젣濡쒕뒗 Firebase getAllUsersForAdmin() ?몄텧)
+    // 푸뒪?몄슜 응떟 (설젣濡백뒗 Firebase getAllUsersForAdmin() ?몄텧)
     res.json({
       users: [],
       timestamp: new Date().toISOString()
@@ -453,17 +454,17 @@ app.post('/api/admin/users', (req, res) => {
   }
 });
 
-// Admin - ?뱀젙 ?ъ슜?먯쓽 臾몄젣 ?몄뀡 議고쉶 (愿由ъ옄 ?꾩슜)
+// Admin - ?뱀젙 사슜에쓽 臾몄젣 ?몄뀡 議고쉶 (愿由ъ옄 ?요청슜)
 app.post('/api/admin/user/sessions', (req, res) => {
   try {
     const { email, userId } = req.body;
-    // 誘몃뱾?⑥뼱?먯꽌 ?대? 寃利앸맖
+    // 誘몃뱾?⑥뼱에꽌 이? 寃利앸맖
 
     if (!userId) {
       return res.status(400).json({ error: { message: 'userId is required' } });
     }
 
-    // ?뚯뒪?몄슜 ?묐떟 (?ㅼ젣濡쒕뒗 Firebase getUserProblemSessions() ?몄텧)
+    // 푸뒪?몄슜 응떟 (설젣濡백뒗 Firebase getUserProblemSessions() ?몄텧)
     res.json({
       sessions: [],
       timestamp: new Date().toISOString()
@@ -473,7 +474,7 @@ app.post('/api/admin/user/sessions', (req, res) => {
   }
 });
 
-// Admin Console: ?쒕쾭 紐낅졊???ㅽ뻾 (admin ?꾩슜)
+// Admin Console: 백쾭 紐낅졊//실뻾 (admin ?요청슜)
 app.post('/api/admin/console', (req, res) => {
   const { exec } = require('child_process');
   try {
@@ -481,7 +482,7 @@ app.post('/api/admin/console', (req, res) => {
     if (!command || typeof command !== 'string') {
       return res.status(400).json({ error: 'command is required' });
     }
-    // 紐낅졊??湲몄씠 ?쒗븳
+    // 紐낅졊//湲몄씠 ?쒗븳
     if (command.length > 500) {
       return res.status(400).json({ error: 'command too long' });
     }
@@ -504,7 +505,451 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', port: PORT });
 });
 
-// ??Lemon Squeezy Checkout API
+// 문제 생성 기록 저장 (백엔드)
+app.post('/api/recordProblemGeneration', async (req, res) => {
+  try {
+    const { userId, problem } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const dailyStatsRef = db.collection('users').doc(userId).collection('dailyStats').doc(today);
+    const dailyStats = await dailyStatsRef.get();
+
+    if (dailyStats.exists) {
+      // 기존 기록 업데이트
+      const newCount = (dailyStats.data().problemCount || 0) + 1;
+      await dailyStatsRef.update({
+        problemCount: newCount,
+        lastGeneratedAt: new Date().toISOString()
+      });
+      console.log(`✅ Problem recorded: ${newCount} problems generated today (userId: ${userId})`);
+    } else {
+      // 새 기록 생성
+      await dailyStatsRef.set({
+        date: today,
+        problemCount: 1,
+        createdAt: new Date().toISOString(),
+        lastGeneratedAt: new Date().toISOString()
+      });
+      console.log(`✅ First problem recorded today (userId: ${userId})`);
+    }
+
+    // 문제를 quizResults에 저장
+    if (problem) {
+      const timestamp = Date.now();
+      const sessionId = `${today}_session`;
+      const quizResultRef = db.collection('users').doc(userId).collection('quizResults').doc(`${timestamp}_${Math.random().toString(36).substr(2, 9)}`);
+
+      await quizResultRef.set({
+        sessionId: sessionId,
+        timestamp: timestamp,
+        date: today,
+        difficulty: 'medium',
+        fullProblem: problem,
+        userAnswer: null,
+        isCorrect: null,
+        timeSpent: 0,
+        expiresAt: new Date().getTime() + 24 * 60 * 60 * 1000  // 1일(24시간) 뒤 삭제
+      });
+      console.log(`✅ Problem saved to quizResults (userId: ${userId})`);
+    }
+
+    return res.json({ success: true, message: 'Problem generation recorded' });
+  } catch (error) {
+    console.error('❌ Error recording problem generation:', error);
+    return res.status(500).json({ error: error.message || 'Failed to record problem generation' });
+  }
+});
+
+// 오늘 생성한 문제 개수 조회 (보안: 서버에서 검증)
+app.post('/api/getProblemCountToday', async (req, res) => {
+  try {
+    const { userId, userStatus } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+
+    // 상태별 제한
+    let limit = 2;
+    if (userStatus === 'paid') {
+      limit = 20;
+    } else if (userStatus === 'loggedIn') {
+      limit = 2;
+    } else {
+      limit = 2;
+    }
+
+    // quizResults 컬렉션에서 오늘 생성된 문제 개수 세기
+    const resultsRef = db.collection('users').doc(userId).collection('quizResults');
+    const snapshot = await resultsRef.where('date', '==', today).get();
+
+    const now = new Date().getTime();
+    const validDocs = snapshot.docs.filter(doc => {
+      const expiresAt = doc.data().expiresAt;
+      return !expiresAt || expiresAt >= now;
+    });
+
+    const count = validDocs.length;
+
+    console.log(`📊 Today's problem count for ${userId}: ${count}/${limit}`);
+
+    return res.json({
+      count: count,
+      limit: limit,
+      canGenerate: count < limit
+    });
+  } catch (error) {
+    console.error('❌ Error getting problem count:', error);
+    // Fallback: 허용하지만 로그에 에러 기록
+    return res.json({
+      count: 0,
+      limit: 20,
+      canGenerate: true
+    });
+  }
+});
+
+// 사용자의 문제 세션 조회 (PDF 다운로드용)
+app.post('/api/getUserProblemSessions', async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
+    const resultsRef = db.collection('users').doc(userId).collection('quizResults');
+    const snapshot = await resultsRef.get();
+
+    const now = new Date().getTime();
+
+    // sessionId별로 그룹화
+    const sessionMap = new Map();
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+
+      // 만료되지 않은 항목만 포함
+      if (data.expiresAt && data.expiresAt < now) {
+        return;
+      }
+
+      const sessionId = data.sessionId;
+      if (!sessionMap.has(sessionId)) {
+        sessionMap.set(sessionId, []);
+      }
+      sessionMap.get(sessionId).push({
+        ...data,
+        docId: doc.id
+      });
+    });
+
+    // 날짜/시간별로 포맷
+    const sessions = Array.from(sessionMap.entries()).map(([sessionId, problems]) => {
+      const timestamp = problems[0].timestamp;
+      const date = new Date(timestamp);
+      const dateStr = date.toLocaleDateString('ko-KR');
+      const timeStr = date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+
+      // fullProblem이 없으면 개별 필드들로부터 문제 객체 재구성
+      const reconstructedProblems = problems.map(p => {
+        if (p.fullProblem) {
+          return p.fullProblem;
+        }
+
+        // fullProblem이 없으면 저장된 필드들로부터 재구성
+        return {
+          question: p.question || '',
+          options: {
+            A: p.optionA || '',
+            B: p.optionB || '',
+            C: p.optionC || '',
+            D: p.optionD || ''
+          },
+          answer: p.correctAnswer || '',
+          keywords: p.keywords || [],
+          goal: p.goal || '',
+          explanation: {
+            correct: p.explanationCorrect || '',
+            trap_A: p.explanationTrapA || '',
+            trap_B: p.explanationTrapB || '',
+            trap_C: p.explanationTrapC || '',
+            trap_D: p.explanationTrapD || ''
+          },
+          easyMode: {
+            explanation: p.easyModeExplanation || '',
+            A: p.easyModeA || '',
+            B: p.easyModeB || '',
+            C: p.easyModeC || '',
+            D: p.easyModeD || ''
+          },
+          patterns: p.patterns || []
+        };
+      });
+
+      return {
+        date: dateStr,
+        time: timeStr,
+        problemCount: problems.length,
+        difficulty: problems[0].difficulty,
+        problems: reconstructedProblems,
+        sessionTimestamp: timestamp
+      };
+    });
+
+    // 최신순 정렬
+    const sortedSessions = sessions.sort((a, b) => b.sessionTimestamp - a.sessionTimestamp);
+
+    console.log(`✅ Retrieved ${sortedSessions.length} problem sessions for user ${userId}`);
+
+    return res.json(sortedSessions);
+  } catch (error) {
+    console.error('❌ Error getting problem sessions:', error);
+    return res.status(500).json({ error: error.message || 'Failed to get problem sessions' });
+  }
+});
+
+// 사용자의 퀴즈 통계 조회 (현황 탭용)
+app.post('/api/getQuizStats', async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
+    const resultsRef = db.collection('users').doc(userId).collection('quizResults');
+    const snapshot = await resultsRef.get();
+
+    let totalAttempts = 0;
+    let correctCount = 0;
+    const byService = {};
+
+    const now = new Date().getTime();
+
+    console.log(`📊 Processing ${snapshot.size} quiz results for user ${userId}`);
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+
+      // 만료되지 않은 항목만 포함
+      if (data.expiresAt && data.expiresAt < now) {
+        console.log(`⏰ Skipping expired result`);
+        return;
+      }
+
+      totalAttempts++;
+
+      // 정답인 경우만 카운트
+      const isCorrect = data.isCorrect === true;
+      if (isCorrect) {
+        correctCount++;
+      }
+
+      console.log(`✏️ Question: ${data.isCorrect ? '✅' : '❌'} - ${data.difficulty}`);
+
+      // 서비스별 통계
+      if (data.fullProblem && data.fullProblem.keywords && data.fullProblem.keywords.length > 0) {
+        const service = data.fullProblem.keywords[0];
+        if (!byService[service]) {
+          byService[service] = { total: 0, correct: 0, accuracy: 0 };
+        }
+        byService[service].total++;
+        if (isCorrect) {
+          byService[service].correct++;
+        }
+      }
+    });
+
+    // 정확도 계산
+    const accuracy = totalAttempts > 0 ? Math.round((correctCount / totalAttempts) * 100) : 0;
+
+    // 서비스별 정확도 계산
+    Object.keys(byService).forEach((service) => {
+      const serviceTotal = byService[service].total;
+      byService[service].accuracy = serviceTotal > 0
+        ? Math.round((byService[service].correct / serviceTotal) * 100)
+        : 0;
+    });
+
+    console.log(`📊 Quiz stats for user ${userId}: ${totalAttempts} attempts, ${accuracy}% accuracy`);
+
+    return res.json({
+      totalAttempts,
+      correctCount,
+      accuracy,
+      byService
+    });
+  } catch (error) {
+    console.error('❌ Error getting quiz stats:', error);
+    return res.json({
+      totalAttempts: 0,
+      correctCount: 0,
+      accuracy: 0,
+      byService: {}
+    });
+  }
+});
+
+// 퀴즈 결과 저장 (정답/오답 기록)
+app.post('/api/recordQuizResult', async (req, res) => {
+  try {
+    const { userId, problem, selectedAnswer, difficulty, sessionId, selectedServices } = req.body;
+
+    if (!userId || !problem) {
+      return res.status(400).json({ error: 'userId and problem are required' });
+    }
+
+    const isCorrect = selectedAnswer === problem.answer;
+    const resultsRef = db.collection('users').doc(userId).collection('quizResults');
+    const today = new Date().toISOString().split('T')[0];
+
+    // 24시간 뒤 만료 타임스탬프
+    const expiresAt = new Date().getTime() + 24 * 60 * 60 * 1000;
+
+    // 1️⃣ quizResults에 저장 (fullProblem은 시도하지만, 실패 시 개별 필드로 저장)
+    const quizResultData = {
+      sessionId: sessionId,
+      question: problem.question || '',
+      correctAnswer: problem.answer || '',
+      selectedAnswer: selectedAnswer || '',
+      userAnswer: selectedAnswer || '',
+      isCorrect: isCorrect,
+      difficulty: difficulty,
+      date: today,
+      createdAt: new Date().toISOString(),
+      timestamp: new Date().getTime(),
+      expiresAt: expiresAt,
+      keywords: problem.keywords || [],
+      goal: problem.goal || '',
+      // 선택지 저장
+      optionA: (problem.options?.A) || '',
+      optionB: (problem.options?.B) || '',
+      optionC: (problem.options?.C) || '',
+      optionD: (problem.options?.D) || '',
+      // 설명 저장
+      explanationCorrect: (problem.explanation?.correct) || '',
+      explanationTrapA: (problem.explanation?.trap_A) || '',
+      explanationTrapB: (problem.explanation?.trap_B) || '',
+      explanationTrapC: (problem.explanation?.trap_C) || '',
+      explanationTrapD: (problem.explanation?.trap_D) || '',
+      // 이지 모드 저장
+      easyModeExplanation: (problem.easyMode?.explanation) || '',
+      easyModeA: (problem.easyMode?.A) || '',
+      easyModeB: (problem.easyMode?.B) || '',
+      easyModeC: (problem.easyMode?.C) || '',
+      easyModeD: (problem.easyMode?.D) || '',
+      patterns: problem.patterns || []
+    };
+
+    try {
+      // fullProblem도 함께 시도
+      await resultsRef.add({
+        ...quizResultData,
+        fullProblem: problem
+      });
+
+      console.log(`📝 Quiz result saved: ${isCorrect ? '✅' : '❌'} (user: ${userId})`);
+    } catch (saveError) {
+      console.error(`❌ Error saving with fullProblem:`, saveError?.message);
+      // fullProblem 없이 재시도
+      console.log(`♻️ Retrying without fullProblem...`);
+      try {
+        await resultsRef.add(quizResultData);
+        console.log(`📝 Quiz result saved (without fullProblem)`);
+      } catch (retryError) {
+        console.error(`❌ Error saving quiz result:`, retryError?.message);
+        throw retryError;
+      }
+    }
+
+    // 2️⃣ aggregatedStats에 누적 통계 저장
+    const userRef = db.collection('users').doc(userId);
+    const statsRef = userRef.collection('userData').doc('aggregatedStats');
+
+    console.log(`📝 Saving stats to: users/${userId}/userData/aggregatedStats`);
+
+    let statsDocExists = false;
+    let currentStats = null;
+
+    try {
+      const statsDoc = await statsRef.get();
+      // 제대로 된 DocumentSnapshot 객체인지 확인
+      if (statsDoc && typeof statsDoc.exists === 'function') {
+        statsDocExists = statsDoc.exists();
+        if (statsDocExists) {
+          currentStats = statsDoc.data() || {};
+        }
+      } else {
+        console.warn(`⚠️ Invalid statsDoc response type`);
+        statsDocExists = false;
+      }
+    } catch (getError) {
+      console.error(`⚠️ Error getting stats doc:`, getError?.message);
+      statsDocExists = false;
+    }
+
+    if (statsDocExists && currentStats) {
+      // 서비스별 통계 업데이트
+      const byService = currentStats.byService || {};
+      (selectedServices || []).forEach(service => {
+        if (!byService[service]) {
+          byService[service] = { total: 0, correct: 0 };
+        }
+        byService[service].total++;
+        if (isCorrect) byService[service].correct++;
+      });
+
+      try {
+        await statsRef.update({
+          totalAttempts: (currentStats.totalAttempts || 0) + 1,
+          correctCount: isCorrect ? (currentStats.correctCount || 0) + 1 : currentStats.correctCount || 0,
+          byService: byService,
+          updatedAt: new Date().getTime()
+        });
+        console.log(`✅ Stats updated (existing doc)`);
+      } catch (updateError) {
+        console.error(`❌ Update error:`, updateError?.message);
+        // 에러가 나도 계속 진행 (통계는 선택사항)
+      }
+    } else {
+      // 첫 문제인 경우 또는 조회 실패한 경우
+      const byService = {};
+      (selectedServices || []).forEach(service => {
+        byService[service] = { total: 1, correct: isCorrect ? 1 : 0 };
+      });
+
+      try {
+        await statsRef.set({
+          totalAttempts: 1,
+          correctCount: isCorrect ? 1 : 0,
+          byService: byService,
+          createdAt: new Date().getTime(),
+          updatedAt: new Date().getTime()
+        });
+        console.log(`✅ Stats created (new doc)`);
+      } catch (setError) {
+        console.error(`❌ Set error:`, setError?.message);
+        // 에러가 나도 계속 진행 (통계는 선택사항)
+      }
+    }
+
+    console.log(`📊 Stats updated for user ${userId}`);
+
+    return res.json({ success: true, isCorrect: isCorrect });
+  } catch (error) {
+    console.error('❌ Error recording quiz result:', error);
+    return res.status(500).json({ error: error.message || 'Failed to record quiz result' });
+  }
+});
+
+//Lemon Squeezy Checkout API
 app.post('/api/lemonsqueezy/checkout', async (req, res) => {
   try {
     const { email, returnUrl } = req.body;
@@ -540,14 +985,14 @@ app.post('/api/lemonsqueezy/checkout', async (req, res) => {
       email,
     });
   } catch (error) {
-    console.error('??Checkout error:', error);
+    console.error('⚠️ Checkout error:', error);
     res.status(500).json({ error: { message: error.message } });
   }
 });
 
 /**
- * ???대찓??寃利?留곹겕 諛쒖넚
- * ?뚯썝媛?????ъ슜?먯뿉寃??뺤씤 硫붿씪 諛쒖넚
+ * //이찓//寃利?留곹겕 諛쒖넚
+ * 푸썝媛////사슜에뿉寃//뺤씤 硫붿씪 諛쒖넚
  */
 app.post('/api/send-verification-email', async (req, res) => {
   try {
@@ -557,29 +1002,60 @@ app.post('/api/send-verification-email', async (req, res) => {
       return res.status(400).json({ error: 'Email is required' });
     }
 
+    // RESEND_API_KEY가 없으면 실패
+    if (!resend) {
+      console.warn('⚠️ RESEND_API_KEY not configured, skipping email send');
+      return res.json({ success: true, message: 'Email service not configured' });
+    }
+
+    // Firebase Admin SDK를 통해 이메일 확인 링크 생성
+    let verificationLink = '';
+    try {
+      verificationLink = await admin.auth().generateEmailVerificationLink(email);
+      console.log(`✅ Generated verification link for ${email}`);
+    } catch (linkError) {
+      console.error('Failed to generate verification link:', linkError?.message);
+      // 링크 생성 실패해도 이메일은 보내기 (링크 없이)
+    }
+
+    // Resend 이메일 (매우 간단한 형식)
+    let greeting = userName ? `안녕하세요, ${userName}!` : '안녕하세요!';
+    let buttonHtml = verificationLink ?
+      `<p><a href="${verificationLink}" style="background: #FF9900; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">✅ 이메일 확인하기</a></p>
+       <p>위 버튼이 작동하지 않으면 아래 링크를 복사하여 브라우저에 붙여넣으세요:</p>
+       <p><a href="${verificationLink}">${verificationLink}</a></p>` :
+      `<p>이메일 확인 링크를 생성할 수 없습니다. 계정 정보로 직접 로그인해주세요.</p>`;
+
+    let htmlContent = `
+<html>
+<body style="font-family: Arial, sans-serif; color: #333;">
+  <p>${greeting}</p>
+  <p>AWS SAA-C03 준비 플랫폼 계정을 생성해주셔서 감사합니다!</p>
+  <p>아래 버튼을 클릭하여 이메일을 확인해주세요:</p>
+  ${buttonHtml}
+  <p>---</p>
+  <p>이 이메일을 요청하지 않았다면 무시해도 됩니다.</p>
+  <p>AWS SAA-C03 Preparation Platform</p>
+</body>
+</html>
+    `;
+
     const response = await resend.emails.send({
-      from: process.env.CONTACT_EMAIL || 'awsarchive06@gmail.com',
+      from: 'onboarding@resend.dev',  // Resend 공식 테스트 도메인 (검증됨)
       to: email,
-      subject: 'AWS SAA-C03 - Email Verification Required',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Hello${userName ? `, ${userName}` : ''}!</h2>
-          <p>Your account verification email has been sent successfully.</p>
-          <p>Please click the link in that email to verify your address.</p>
-          <p>If you did not request this email, you can ignore it.</p>
-        </div>
-      `,
+      subject: '🔒 이메일 확인 - AWS SAA-C03',
+      html: htmlContent,
     });
 
     if (response.error) {
-      console.error('Resend API error:', response.error);
-      return res.status(500).json({ error: `Resend API error: ${response.error}` });
+      console.error('❌ Resend API error:', response.error);
+      return res.status(500).json({ error: `Email send failed: ${response.error}` });
     }
 
-    console.log('Verification email sent:', email, 'ID:', response.id);
+    console.log(`✅ Verification email sent to ${email} (ID: ${response.id})`);
     return res.json({ success: true, message: 'Verification email sent.' });
   } catch (error) {
-    console.error('Verification email send failed:', error);
+    console.error('❌ Verification email send failed:', error?.message);
     return res.status(500).json({ error: 'Verification email send failed.' });
   }
 });
@@ -862,16 +1338,16 @@ app.post('/api/webhooks/lemon-squeezy', async (req, res) => {
 
 // Start server on port 5000
 const server = app.listen(PORT, () => {
-  console.log(`??Proxy server running on http://localhost:${PORT}`);
+  console.log(`//Proxy server running on http://localhost:${PORT}`);
   console.log(`   API: http://localhost:${PORT}/api/checkAdmin`);
   console.log(`   Contact API: http://localhost:${PORT}/api/contact`);
 }).on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
-    console.error(`??Port ${PORT} is already in use`);
+    console.error(`//Port ${PORT} is already in use`);
     console.error('   Try: taskkill /F /IM node.exe');
     process.exit(1);
   } else {
-    console.error(`??Server error: ${err.message}`);
+    console.error(`//Server error: ${err.message}`);
     process.exit(1);
   }
 });

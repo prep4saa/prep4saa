@@ -306,7 +306,6 @@ export const ja: Strings = {
   landingNote: "模擬試験付き · いつでも辞められる · 3言語対応",
   mockExamQCount: "問題",
   mockExamOf: "の中から",
-  mockExamTimeRemaining: "残り時間",
   mockExamQuestion: "ある企業が、高可用性とスケーラブルなコンピュートキャパシティを必要とするAWS上のウェブアプリケーションをホストしたいと考えています。このアーキテクチャは、手動の介入なしに急激なトラフィック急増に対応する必要があります。ソリューションアーキテクトはどのサービスの組み合わせを推奨すべきですか?",
   mockExamOption1: "Amazon EC2 Auto Scaling と Elastic Load Balancing",
   mockExamOption2: "AWS Fargate と Application Load Balancer を備えた Amazon ECS",

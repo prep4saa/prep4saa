@@ -94,6 +94,70 @@ examDateHint: "試験日は開始日の84日後です",
 
 ---
 
+## 🔧 기능 수정 요청 시 작업 절차 (매우 중요!)
+
+**사용자가 기능 수정을 요청할 때마다 반드시 따를 절차:**
+
+### 1️⃣ 영향도 분석 (BEFORE 수정)
+```
+수정 전에 반드시 물어보기:
+- 이 기능과 연결된 다른 파일들은?
+- 이 함수를 호출하는 다른 곳은?
+- 상태(state)나 props 변경이 다른 컴포넌트에 영향을 주나?
+- API 응답 형식 변경이 클라이언트에 영향을 주나?
+```
+
+### 2️⃣ 영향 최소화 원칙
+```
+✅ 해야 할 것:
+- 요청된 기능만 수정
+- 영향도 파악 후 필요한 부분만 변경
+- 기존 동작하는 부분은 절대 건드리지 않기
+- 변경 전 해당 코드를 먼저 읽어서 이해하기
+
+❌ 하면 안 되는 것:
+- "더 나을 것 같아서" 다른 부분 수정하기
+- 주변 코드 정리하기
+- 관련 없는 변수명 바꾸기
+- "혹시 모르니" 여러 곳 수정하기
+```
+
+### 3️⃣ 수정 후 확인사항
+```
+수정 후 반드시 확인:
+1. 요청된 기능만 작동하나?
+2. 다른 기능은 여전히 작동하나?
+3. 헤더, 로그인, 로그아웃은 여전히 작동하나?
+4. 다국어 표시는 여전히 작동하나?
+5. 콘솔 에러가 새로 생겼나?
+```
+
+### 4️⃣ 의존성 맵
+```
+주요 기능별 의존성 (건드릴 때 주의!):
+
+🔐 로그인/회원가입:
+- firebase.ts: signUp(), signIn(), sendEmailVerification()
+- web-app.tsx: showLoginModal, userEmail, emailVerified state
+- Navigator.tsx: showLoginButton prop (주의!)
+
+📝 문제 생성:
+- web-app.tsx: generateSAAProblem(), daily count check
+- server.js: /api/recordProblemGeneration, /api/getProblemCountToday
+- firebase.ts: canGenerateProblemToday()
+
+📊 현황 탭 (Progress):
+- server.js: /api/getUserProblemSessions, /api/getQuizStats
+- firebase.ts: getUserProblemSessions(), getUserQuizStats()
+- web-app.tsx: generatePDF(), mockExamProblems state
+
+🎯 모의시험:
+- web-app.tsx: mockExamProblems, mockExamAnswers, mockExamResults state
+- localStorage: mockExamProblems (PDF 다운로드에 필요!)
+```
+
+---
+
 ## 📝 주의사항
 
 1. **다국어 동시 업데이트**: 새 기능 추가 시 3개 로케일 파일을 동시에 수정
@@ -101,6 +165,7 @@ examDateHint: "試験日は開始日の84日後です",
 3. **키 네이밍**: camelCase 사용, 의미 있는 접두어 (btn, msg, lbl, btn 등)
 4. **이모지 통일**: 각 카테고리별 이모지 일관성 유지
 5. **S3 배포 규칙**: 사용자의 명시적 지시("s3에 올려", "배포해" 등) 전까지는 S3에 올리지 마세요. 로컬에서 변경사항을 먼저 확인한 후 사용자 승인 후 배포하세요.
+6. **기능 수정 시**: 위의 "기능 수정 요청 시 작업 절차"를 반드시 따르기
 
 ---
 

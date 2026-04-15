@@ -174,10 +174,12 @@ export async function signUp(email: string, password: string, displayName: strin
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    // ✅ 이메일 확인 링크 발송
+    // ✅ Firebase 이메일 확인 링크 발송
     try {
       await sendEmailVerification(user);
+      console.log('✅ Firebase verification email sent:', user.email);
     } catch (error: any) {
+      console.warn("⚠️ Firebase email verification failed:", error?.message);
       // 이메일 발송 실패해도 계정은 생성됨
     }
 
@@ -275,10 +277,12 @@ export async function resendEmailVerification(): Promise<void> {
   if (!user) {
     throw new Error("User not found. Please try again.");
   }
+
   try {
     await sendEmailVerification(user, {
       url: `${window.location.origin}/?emailVerified=true`
     });
+    console.log('✅ Firebase verification email resent');
   } catch (error: any) {
     // Firebase rate limiting 오류 처리
     if (error.code === 'auth/too-many-requests') {
@@ -706,6 +710,7 @@ export async function recordQuizResult(
 ): Promise<void> {
   try {
     const isCorrect = selectedAnswer === problem.answer;
+    console.log(`🎯 recordQuizResult called: isCorrect=${isCorrect}, selectedAnswer=${selectedAnswer}, answer=${problem.answer}, userId=${userId}`);
     const resultsRef = collection(db, "users", userId, "quizResults");
 
     // 24시간 뒤 만료 타임스탬프 계산
@@ -713,14 +718,17 @@ export async function recordQuizResult(
     const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 1일 뒤 (24시간)
 
     // quizResults에 임시 저장 (24시간 후 삭제)
+    const today = new Date().toISOString().split("T")[0];
     await addDoc(resultsRef, {
       sessionId, // 같은 세션의 문제들을 그룹화
       fullProblem: problem, // 전체 문제 객체 저장
       question: problem.question,
       correctAnswer: problem.answer,
       selectedAnswer,
+      userAnswer: selectedAnswer, // 서버에서 읽기 용도
       isCorrect,
       difficulty,
+      date: today, // 서버에서 필터링 용도
       createdAt: new Date().toISOString(),
       timestamp: new Date().getTime(),
       expiresAt: expiresAt.getTime() // 24시간 뒤 삭제 타임스탬프
@@ -780,43 +788,31 @@ export async function getUserQuizStats(userId: string): Promise<{
   byService: { [service: string]: { total: number; correct: number; accuracy: number } };
 }> {
   try {
-    // aggregatedStats에서 누적 통계 읽기 (영구 저장)
-    const statsRef = doc(db, "users", userId, "userData", "aggregatedStats");
-    const statsDoc = await getDoc(statsRef);
+    // 서버 API로 통계 조회 (보안: 서버에서 처리)
+    const backendUrl = typeof window !== "undefined" && window.location?.hostname === "localhost"
+      ? "http://localhost:5000"
+      : (import.meta as any).env?.VITE_BACKEND_URL || "http://localhost:5000";
 
-    let totalAttempts = 0;
-    let correctCount = 0;
-    let accuracy = 0;
-    const byService: { [service: string]: { total: number; correct: number; accuracy: number } } = {};
+    console.log(`📊 Fetching quiz stats from server...`);
 
-    // aggregatedStats가 존재하면 데이터 읽기
-    if (statsDoc.exists()) {
-      const stats = statsDoc.data();
-      totalAttempts = stats.totalAttempts || 0;
-      correctCount = stats.correctCount || 0;
-      accuracy = totalAttempts > 0 ? Math.round((correctCount / totalAttempts) * 100) : 0;
+    const response = await fetch(`${backendUrl}/api/getQuizStats`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userId })
+    });
 
-      // 서비스별 통계 계산
-      if (stats.byService) {
-        Object.entries(stats.byService).forEach(([service, data]: any) => {
-          const serviceAccuracy = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0;
-          byService[service] = {
-            total: data.total,
-            correct: data.correct,
-            accuracy: serviceAccuracy
-          };
-        });
-      }
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}`);
     }
 
-    return {
-      totalAttempts,
-      correctCount,
-      accuracy,
-      byService
-    };
-  } catch (error) {
-    // 에러 처리만 수행 (로깅 제거)
+    const stats = await response.json();
+    console.log(`✅ Quiz stats: ${stats.totalAttempts} attempts, ${stats.accuracy}% accuracy`);
+
+    return stats;
+  } catch (error: any) {
+    console.error('❌ Error fetching quiz stats:', error?.message);
     return {
       totalAttempts: 0,
       correctCount: 0,
@@ -827,7 +823,7 @@ export async function getUserQuizStats(userId: string): Promise<{
 }
 
 /**
- * 사용자의 생성 세션별 문제 목록 조회
+ * 사용자의 생성 세션별 문제 목록 조회 (서버 API 사용)
  */
 export async function getUserProblemSessions(userId: string): Promise<Array<{
   date: string;
@@ -838,55 +834,31 @@ export async function getUserProblemSessions(userId: string): Promise<Array<{
   sessionTimestamp: number;
 }>> {
   try {
-    const resultsRef = collection(db, "users", userId, "quizResults");
-    const snapshot = await getDocs(resultsRef);
+    // 서버 API로 세션 조회 (보안: 서버에서 처리)
+    const backendUrl = typeof window !== "undefined" && window.location?.hostname === "localhost"
+      ? "http://localhost:5000"
+      : (import.meta as any).env?.VITE_BACKEND_URL || "http://localhost:5000";
 
-    // 현재 시간
-    const now = new Date().getTime();
+    console.log(`🔍 Fetching problem sessions from server...`);
 
-    // sessionId별로 그룹화 (만료되지 않은 것만)
-    const sessionMap = new Map<string, any[]>();
-
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-
-      // 만료되지 않은 항목만 포함
-      if (data.expiresAt && data.expiresAt < now) {
-        // 만료된 항목은 스킵 (자동 삭제 대기)
-        return;
-      }
-
-      const sessionId = data.sessionId;
-      if (!sessionMap.has(sessionId)) {
-        sessionMap.set(sessionId, []);
-      }
-      sessionMap.get(sessionId)!.push({
-        ...data,
-        docId: doc.id
-      });
+    const response = await fetch(`${backendUrl}/api/getUserProblemSessions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userId })
     });
 
-    // 날짜/시간별로 포맷
-    const sessions = Array.from(sessionMap.entries()).map(([sessionId, problems]) => {
-      const timestamp = problems[0].timestamp;
-      const date = new Date(timestamp);
-      const dateStr = date.toLocaleDateString("ko-KR");
-      const timeStr = date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}`);
+    }
 
-      return {
-        date: dateStr,
-        time: timeStr,
-        problemCount: problems.length,
-        difficulty: problems[0].difficulty,
-        problems: problems.map(p => p.fullProblem),
-        sessionTimestamp: timestamp
-      };
-    });
+    const sessions = await response.json();
+    console.log(`✅ Retrieved ${sessions.length} problem sessions`);
 
-    // 최신순 정렬
-    return sessions.sort((a, b) => b.sessionTimestamp - a.sessionTimestamp);
-  } catch (error) {
-    // 에러 처리만 수행 (로깅 제거)
+    return sessions;
+  } catch (error: any) {
+    console.error('❌ Error fetching problem sessions:', error?.message);
     return [];
   }
 }
@@ -1408,33 +1380,41 @@ export async function canGenerateProblemToday(
       return { canGenerate: false, count: 0, limit: 0 };
     }
 
-    const today = new Date().toISOString().split("T")[0];
-    const dailyStatsRef = doc(db, "users", userId, "dailyStats", today);
-    const dailyStats = await getDoc(dailyStatsRef);
+    // 서버 API로 개수 조회 (보안: 서버에서 처리)
+    const backendUrl = typeof window !== "undefined" && window.location?.hostname === "localhost"
+      ? "http://localhost:5000"
+      : (import.meta as any).env?.VITE_BACKEND_URL || "http://localhost:5000";
 
-    let count = 0;
-    let limit = 2; // 기본값: guest/loggedIn 2회
+    console.log(`🔍 Fetching problem count from server...`);
 
-    // 상태별 제한
-    if (userStatus === "paid") {
-      limit = 20; // 유료: 무제한 (20회)
-    } else if (userStatus === "loggedIn") {
-      limit = 2; // 로그인: 2회
-    } else {
-      limit = 2; // 게스트: 2회
+    const response = await fetch(`${backendUrl}/api/getProblemCountToday`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId,
+        userStatus
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}`);
     }
 
-    if (dailyStats.exists()) {
-      count = dailyStats.data()?.problemCount || 0;
-    }
+    const data = await response.json();
+    console.log(`✅ Today's problem count: ${data.count}/${data.limit}`);
 
     return {
-      canGenerate: count < limit,
-      count,
-      limit
+      canGenerate: data.canGenerate,
+      count: data.count,
+      limit: data.limit
     };
   } catch (error: any) {
-    return { canGenerate: false, count: 0, limit: 0 };
+    console.error('❌ Error checking daily limit:', error?.message);
+    // Fallback: 허용하되 제한은 둔다
+    const limit = userStatus === "paid" ? 20 : 2;
+    return { canGenerate: true, count: 0, limit };
   }
 }
 
@@ -1442,7 +1422,7 @@ export async function canGenerateProblemToday(
  * ⚠️ 보안: 문제 생성 기록 저장 (Firebase 서버에만 저장)
  * 클라이언트에서 수정 불가능
  */
-export async function recordProblemGeneration(userId: string): Promise<void> {
+export async function recordProblemGeneration(userId: string, problem?: Problem): Promise<void> {
   try {
     if (!userId) return;
 
@@ -1452,10 +1432,12 @@ export async function recordProblemGeneration(userId: string): Promise<void> {
 
     if (dailyStats.exists()) {
       // 기존 기록 업데이트
+      const newCount = (dailyStats.data()?.problemCount || 0) + 1;
       await updateDoc(dailyStatsRef, {
-        problemCount: (dailyStats.data()?.problemCount || 0) + 1,
+        problemCount: newCount,
         lastGeneratedAt: new Date().toISOString()
       });
+      console.log(`✅ Problem recorded: ${newCount} problems generated today`);
     } else {
       // 새 기록 생성
       await setDoc(dailyStatsRef, {
@@ -1464,10 +1446,31 @@ export async function recordProblemGeneration(userId: string): Promise<void> {
         createdAt: new Date().toISOString(),
         lastGeneratedAt: new Date().toISOString()
       });
+      console.log(`✅ First problem recorded today`);
+    }
+
+    // 문제를 quizResults에 저장 (현황 탭 PDF 다운로드용)
+    if (problem) {
+      const timestamp = Date.now();
+      const sessionId = `${today}_session`;
+      const quizResultRef = doc(db, "users", userId, "quizResults", `${timestamp}_${Math.random()}`);
+
+      await setDoc(quizResultRef, {
+        sessionId: sessionId,
+        timestamp: timestamp,
+        date: today,
+        difficulty: "medium", // 기본값
+        fullProblem: problem,
+        userAnswer: null,
+        isCorrect: null,
+        timeSpent: 0,
+        expiresAt: new Date().getTime() + 24 * 60 * 60 * 1000 // 1일(24시간) 뒤 삭제
+      });
+      console.log(`✅ Problem saved to quizResults`);
     }
 
   } catch (error: any) {
-    // Error recording problem generation
+    console.error(`❌ Error recording problem generation:`, error?.message || error);
   }
 }
 
