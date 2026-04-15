@@ -197,6 +197,15 @@ exports.handler = async (event, context) => {
   const rawBody = getRawBody(event);
   const headers = event?.headers || {};
 
+  // Debug logging
+  console.log(`[${requestId}] Full event context:`, {
+    'requestContext.http.path': event?.requestContext?.http?.path,
+    'path': event?.path,
+    'rawPath': event?.rawPath,
+    resolvedPath: path,
+    method,
+  });
+
   console.log(`[${requestId}] Request received`, {
     method,
     path,
