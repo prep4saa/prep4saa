@@ -39,7 +39,7 @@ const db = admin.firestore();
 
 const app = express();
 const PORT = 5000;
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 // ??蹂댁븞 ?ㅻ뜑 ?ㅼ젙 (XSS, Clickjacking, MIME-sniffing 諛⑹?)
 app.use(helmet());
