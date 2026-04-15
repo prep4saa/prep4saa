@@ -51,7 +51,7 @@
     "resend": "^6.9.4"
   },
   "devDependencies": {
-    "@aws-sdk/client-cloudfront": "^3.1019.0",
+    "@aws-sdk/client-cloudfront": "^3.1030.0",
     "@aws-sdk/client-s3": "^3.1019.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
