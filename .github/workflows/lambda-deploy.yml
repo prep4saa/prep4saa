@@ -39,6 +39,17 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: us-east-1
 
+      - name: Configure Lambda Environment Variables
+        run: |
+          aws lambda update-function-configuration \
+            --function-name lemon-squeezy-webhook \
+            --environment Variables='{FIREBASE_SERVICE_ACCOUNT="${{ secrets.FIREBASE_SERVICE_ACCOUNT }}",LEMON_SQUEEZY_API_KEY="${{ secrets.LEMON_SQUEEZY_API_KEY }}",LEMON_SQUEEZY_WEBHOOK_SECRET="${{ secrets.LEMON_SQUEEZY_WEBHOOK_SECRET }}"}' \
+            --region us-east-1
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+
       - name: Wait for Lambda update
         run: sleep 5
 
