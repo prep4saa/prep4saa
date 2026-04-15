@@ -237,4 +237,9 @@ For issues or questions:
 1. Check App Runner logs: `aws logs tail /aws/apprunner/prep4saa-server --follow`
 2. Review GitHub Actions workflow logs
 3. Verify all environment variables are set in GitHub Secrets
-# App Runner Deployment Started
+
+## Production Deployment Status
+
+- ✅ Railway Service URL: https://prep4saa-production.up.railway.app
+- ✅ VITE_BACKEND_URL configured in GitHub Secrets
+- ✅ Frontend deployment triggered on 2026-04-15
