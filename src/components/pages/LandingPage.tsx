@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import Navigator from './Navigator';
-import Footer from './Footer';
-import Carousel from './Carousel';
-import { ko } from '../locales/ko';
-import { en } from '../locales/en';
-import { ja } from '../locales/ja';
+import Navigator from '../organisms/Navigator';
+import Footer from '../organisms/Footer';
+import Carousel from '../organisms/Carousel';
+import { ko } from '../../locales/ko';
+import { en } from '../../locales/en';
+import { ja } from '../../locales/ja';
 
 type Locale = 'ko' | 'en' | 'ja';
 

@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect } from 'react';
-import { ko } from '../locales/ko';
-import { en } from '../locales/en';
-import { ja } from '../locales/ja';
+import { ko } from '../../locales/ko';
+import { en } from '../../locales/en';
+import { ja } from '../../locales/ja';
 
 type Locale = 'ko' | 'en' | 'ja';
 

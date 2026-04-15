@@ -1,4 +1,4 @@
-import { useLocale } from "../LocaleContext";
+import { useLocale } from "../../LocaleContext";
 
 const UI_COPY = {
   ko: {

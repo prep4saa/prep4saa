@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useLocale } from '../LocaleContext';
+import { useLocale } from '../../LocaleContext';
 
 type Locale = 'ko' | 'en' | 'ja';
 
