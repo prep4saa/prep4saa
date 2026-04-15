@@ -174,12 +174,23 @@ export async function signUp(email: string, password: string, displayName: strin
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    // ✅ Firebase 이메일 확인 링크 발송
+    // ✅ 백엔드 API로 AWS SES 이메일 발송 (HTML 형식)
     try {
-      await sendEmailVerification(user);
-      console.log('✅ Firebase verification email sent:', user.email);
+      const response = await fetch('/api/send-verification-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: user.email,
+          userName: email.split('@')[0]
+        })
+      });
+      if (response.ok) {
+        console.log('✅ Verification email sent via AWS SES:', user.email);
+      } else {
+        console.warn('⚠️ Failed to send verification email via API');
+      }
     } catch (error: any) {
-      console.warn("⚠️ Firebase email verification failed:", error?.message);
+      console.warn("⚠️ Error calling verification email API:", error?.message);
       // 이메일 발송 실패해도 계정은 생성됨
     }
 
@@ -279,13 +290,25 @@ export async function resendEmailVerification(): Promise<void> {
   }
 
   try {
-    await sendEmailVerification(user, {
-      url: `${window.location.origin}/?emailVerified=true`
+    // 백엔드 API로 AWS SES 이메일 발송 (HTML 형식)
+    const response = await fetch('/api/send-verification-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: user.email,
+        userName: user.email?.split('@')[0]
+      })
     });
-    console.log('✅ Firebase verification email resent');
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to send verification email');
+    }
+
+    console.log('✅ Verification email resent via AWS SES');
   } catch (error: any) {
     // Firebase rate limiting 오류 처리
-    if (error.code === 'auth/too-many-requests') {
+    if (error.message?.includes('too-many-requests')) {
       const err = new Error("email-verification-too-many-requests");
       (err as any).code = "email-verification-too-many-requests";
       throw err;

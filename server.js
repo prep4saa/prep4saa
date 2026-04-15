@@ -1,7 +1,7 @@
 ﻿const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const { Resend } = require('resend');
+const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
 const crypto = require('crypto');
 const admin = require('firebase-admin');
 require('dotenv').config();
@@ -39,7 +39,9 @@ const db = admin.firestore();
 
 const app = express();
 const PORT = 5000;
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+
+// AWS SES 클라이언트 초기화
+const sesClient = new SESClient({ region: process.env.AWS_REGION || 'us-east-1' });
 
 // 보안 헤더 설정 (XSS, Clickjacking, MIME-sniffing 방지)
 app.use(helmet());
@@ -1002,12 +1004,6 @@ app.post('/api/send-verification-email', async (req, res) => {
       return res.status(400).json({ error: 'Email is required' });
     }
 
-    // RESEND_API_KEY가 없으면 실패
-    if (!resend) {
-      console.warn('⚠️ RESEND_API_KEY not configured, skipping email send');
-      return res.json({ success: true, message: 'Email service not configured' });
-    }
-
     // Firebase Admin SDK를 통해 이메일 확인 링크 생성
     let verificationLink = '';
     try {
@@ -1015,48 +1011,72 @@ app.post('/api/send-verification-email', async (req, res) => {
       console.log(`✅ Generated verification link for ${email}`);
     } catch (linkError) {
       console.error('Failed to generate verification link:', linkError?.message);
-      // 링크 생성 실패해도 이메일은 보내기 (링크 없이)
+      return res.status(500).json({ error: 'Failed to generate verification link' });
     }
 
-    // Resend 이메일 (매우 간단한 형식)
+    // HTML 이메일 템플릿 (버튼 포함)
     let greeting = userName ? `안녕하세요, ${userName}!` : '안녕하세요!';
-    let buttonHtml = verificationLink ?
-      `<p><a href="${verificationLink}" style="background: #FF9900; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">✅ 이메일 확인하기</a></p>
-       <p>위 버튼이 작동하지 않으면 아래 링크를 복사하여 브라우저에 붙여넣으세요:</p>
-       <p><a href="${verificationLink}">${verificationLink}</a></p>` :
-      `<p>이메일 확인 링크를 생성할 수 없습니다. 계정 정보로 직접 로그인해주세요.</p>`;
-
     let htmlContent = `
 <html>
-<body style="font-family: Arial, sans-serif; color: #333;">
-  <p>${greeting}</p>
-  <p>AWS SAA-C03 준비 플랫폼 계정을 생성해주셔서 감사합니다!</p>
-  <p>아래 버튼을 클릭하여 이메일을 확인해주세요:</p>
-  ${buttonHtml}
-  <p>---</p>
-  <p>이 이메일을 요청하지 않았다면 무시해도 됩니다.</p>
-  <p>AWS SAA-C03 Preparation Platform</p>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; color: #333; line-height: 1.6; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .button { background: #FF9900; color: white; padding: 14px 32px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold; font-size: 16px; }
+    .footer { color: #999; font-size: 12px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <p>${greeting}</p>
+    <p>AWS SAA-C03 준비 플랫폼 계정을 생성해주셔서 감사합니다!</p>
+    <p>아래 버튼을 클릭하여 이메일을 확인해주세요:</p>
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="${verificationLink}" class="button">✅ 이메일 확인하기</a>
+    </p>
+    <p style="color: #666; font-size: 14px;">
+      위 버튼이 작동하지 않으면 아래 링크를 복사하여 브라우저에 붙여넣으세요:
+    </p>
+    <p style="word-break: break-all; background: #f5f5f5; padding: 10px; border-radius: 4px; font-size: 12px;">
+      <a href="${verificationLink}" style="color: #0066cc;">${verificationLink}</a>
+    </p>
+    <div class="footer">
+      <p>이 이메일을 요청하지 않았다면 무시해도 됩니다.</p>
+      <p>AWS SAA-C03 Preparation Platform</p>
+    </div>
+  </div>
 </body>
 </html>
     `;
 
-    const response = await resend.emails.send({
-      from: 'onboarding@resend.dev',  // Resend 공식 테스트 도메인 (검증됨)
-      to: email,
-      subject: '🔒 이메일 확인 - AWS SAA-C03',
-      html: htmlContent,
+    // AWS SES로 이메일 전송
+    const senderEmail = process.env.SES_FROM_EMAIL || 'noreply@prep4saa.com';
+    const command = new SendEmailCommand({
+      Source: senderEmail,
+      Destination: {
+        ToAddresses: [email],
+      },
+      Message: {
+        Subject: {
+          Data: '🔒 이메일 확인 - AWS SAA-C03',
+          Charset: 'UTF-8',
+        },
+        Body: {
+          Html: {
+            Data: htmlContent,
+            Charset: 'UTF-8',
+          },
+        },
+      },
     });
 
-    if (response.error) {
-      console.error('❌ Resend API error:', response.error);
-      return res.status(500).json({ error: `Email send failed: ${response.error}` });
-    }
-
-    console.log(`✅ Verification email sent to ${email} (ID: ${response.id})`);
+    const response = await sesClient.send(command);
+    console.log(`✅ Verification email sent to ${email} (MessageId: ${response.MessageId})`);
     return res.json({ success: true, message: 'Verification email sent.' });
   } catch (error) {
     console.error('❌ Verification email send failed:', error?.message);
-    return res.status(500).json({ error: 'Verification email send failed.' });
+    return res.status(500).json({ error: error?.message || 'Verification email send failed.' });
   }
 });
 
