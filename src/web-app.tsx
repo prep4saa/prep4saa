@@ -32,98 +32,16 @@ import { COST_CHALLENGES_I18N as COST_JA } from "./locales/cost-ja";
 import { SEC_ANSWERS, RES_ANSWERS, PERF_ANSWERS, COST_ANSWERS, isAnswerCorrect } from "./scenario-answers";
 import { canGenerateProblemToday, getUserMockExamDate, recordMockExamDate } from "./firebase";
 import "./styles.css";
+import { validateEmail, validatePassword, sanitizeInput } from "./utils/validation";
+import { UserStatus, setUserStatus, getTodayProblemCount, incrementProblemCount, getDailyLimit } from "./utils/userStatus";
+import { checkRateLimit, isAdminUser, maskEmail } from "./utils/security";
+import { updateStreak, getExamDday } from "./utils/streak";
 
-// ===== 입력값 검증 함수 =====
-function validateEmail(email: string): boolean {
-  // RFC 5322 기반 이메일 검증 (더 엄격함)
-  const emailRegex = /^[a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-
-  // 기본 형식 검증
-  if (!emailRegex.test(email) || email.length > 254) {
-    return false;
-  }
-
-  // @ 앞뒤로 빈 문자열이 없는지 확인
-  const [localPart, domain] = email.split('@');
-  if (!localPart || !domain || localPart.length > 64) {
-    return false;
-  }
-
-  // 연속된 점(.) 확인
-  if (email.includes('..') || email.startsWith('.') || email.endsWith('.')) {
-    return false;
-  }
-
-  return true;
-}
-
-function validatePassword(password: string): { valid: boolean; error?: string } {
-  if (password.length < 6) return { valid: false, error: "비밀번호는 6자 이상이어야 합니다" };
-  if (password.length > 128) return { valid: false, error: "비밀번호는 128자 이하여야 합니다" };
-  return { valid: true };
-}
-
-
-function sanitizeInput(input: string): string {
-  return input.trim().slice(0, 500); // XSS 방지: 길이 제한
-}
-
-// ===== Rate Limiting =====
-const requestTimestamps: { [key: string]: number[] } = {};
-const RATE_LIMIT_REQUESTS = 10; // 10초당 최대 10요청
-const RATE_LIMIT_WINDOW = 10000; // 10초
-
-function checkRateLimit(userId: string): boolean {
-  const now = Date.now();
-  if (!requestTimestamps[userId]) {
- requestTimestamps[userId] = [];
-  }
-
-  const timestamps = requestTimestamps[userId];
-  const recentTimestamps = timestamps.filter(t => now - t < RATE_LIMIT_WINDOW);
-
-  if (recentTimestamps.length >= RATE_LIMIT_REQUESTS) {
- return false; // Rate limit exceeded
-  }
-
-  recentTimestamps.push(now);
-  requestTimestamps[userId] = recentTimestamps;
-  return true;
-}
-
-// ===== 사용자 인증 및 일일 제한 관리 =====
-type UserStatus = "guest" | "loggedIn" | "paid";
-
-function getUserStatus(): UserStatus {
-  if (typeof window === "undefined") return "guest";
-  //  보안: PAID_TOKEN_ 형식만 인식, 다른 "paid"는 무시 (DevTools 수정 방지)
-  const status = sessionStorage.getItem("userStatus");
-  if (!status) return "guest";
-
-  // paid는 PAID_TOKEN_으로 시작하는 경우만 인정
-  if (status.startsWith("PAID_TOKEN_")) {
- return "paid";
-  }
-
-  // "paid"를 직접 입력하면 guest로 반환 (DevTools 해킹 방지)
-  if (status === "paid") {
- return "guest";
-  }
-
-  // guest, loggedIn은 그대로 반환
-  return (status as UserStatus) || "guest";
-}
-
-function setUserStatus(status: UserStatus) {
-  //  보안: 특정 토큰으로만 인식 (true/false 수정 방지)
-  if (status === "paid") {
- const paidToken = `PAID_TOKEN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
- sessionStorage.setItem("userStatus", paidToken);
-  } else {
- // guest, loggedIn은 특정 토큰 형식 없음
- sessionStorage.setItem("userStatus", status);
-  }
-}
+// ===== 분리된 유틸 =====
+// checkRateLimit, isAdminUser, maskEmail → ./utils/security
+// updateStreak, getExamDday → ./utils/streak
+// UserStatus, getUserStatus, setUserStatus, getTodayProblemCount,
+// incrementProblemCount, getDailyLimit → ./utils/userStatus
 
 /**
  * Firebase를 통해 사용자의 실제 결제 상태 검증
@@ -135,55 +53,14 @@ async function verifyUserPaidStatusFromFirebase(userId: string): Promise<boolean
  return await getUserPaidStatus(userId);
   } catch (error) {
  // Firebase 오류 시 sessionStorage에 캐시된 값 사용 (폴백)
- //  보안: 특정 토큰 형식만 인식
  const cached = sessionStorage.getItem("userStatus");
  return cached?.startsWith("PAID_TOKEN_") || false;
   }
 }
 
-function getTodayProblemCount(): number {
-  if (typeof window === "undefined") return 0;
-  const today = new Date().toISOString().split("T")[0];
-  //  보안: sessionStorage로 변경 (탭 닫으면 초기화)
-  const stored = sessionStorage.getItem("problemCountDate");
-  if (stored !== today) {
- sessionStorage.setItem("problemCountDate", today);
- sessionStorage.setItem("problemCount", "COUNT_0_" + Date.now());
- return 0;
-  }
-
-  //  보안: COUNT_ 토큰 형식만 인식
-  const countValue = sessionStorage.getItem("problemCount") || "";
-  if (countValue.startsWith("COUNT_")) {
- try {
- const count = parseInt(countValue.split("_")[1], 10);
- return count;
- } catch {
- return 0;
- }
-  }
-
-  // 토큰 형식이 아니면 0으로 반환 (DevTools 수정 방지)
-  return 0;
-}
-
-function incrementProblemCount() {
-  const count = getTodayProblemCount() + 1;
-  //  보안: COUNT_ 토큰 형식으로 저장
-  const countToken = `COUNT_${count}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  sessionStorage.setItem("problemCount", countToken);
-}
-
-function getDailyLimit(): number {
-  const status = getUserStatus();
-  if (status === "paid") return 20;
-  if (status === "loggedIn") return 2;
-  return 2; // 비로그인은 2회
-}
-
 // ===== 세션 타임아웃 =====
 const SESSION_TIMEOUT = 30 * 60 * 1000; // 30분
-let sessionTimeoutId: NodeJS.Timeout | null = null;
+let sessionTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
 function resetSessionTimeout(callback: () => void) {
   if (sessionTimeoutId) {
@@ -193,107 +70,6 @@ function resetSessionTimeout(callback: () => void) {
   sessionTimeoutId = setTimeout(() => {
  callback(); // 로그아웃 실행
   }, SESSION_TIMEOUT);
-}
-
-
-/**
- * 운영자 계정 확인 (서버 API를 통해 검증, 실패 시 localStorage 사용)
- */
-async function isAdminUser(email: string | null): Promise<boolean> {
-  if (!email) return false;
-
-  // 이메일을 키에 노출하지 않기 위해 btoa로 불투명화 (관리자 이메일 은닉)
-  const cacheKey = `_r_${btoa(email).replace(/=/g, '').slice(-10)}`;
-
-  //  보안: ADMIN_TOKEN_ 형식만 인식, 다른 "true"는 무시 (DevTools 수정 방지)
-  const cachedToken = sessionStorage.getItem(cacheKey);
-  if (cachedToken !== null) {
- if (cachedToken.startsWith('ADMIN_TOKEN_')) return true;
- return false;
-  }
-
-  const env = (import.meta as any).env;
-  const adminEmailsStr = env.VITE_ADMIN_EMAILS || '';
-  const adminEmails = adminEmailsStr.split(',').map((e: string) => e.trim()).filter(Boolean);
-
-  const isAdmin = adminEmails.includes(email);
-
-  //  보안: 특정 토큰으로만 admin 인식 (true/false 수정 방지)
-  if (isAdmin) {
- const adminToken = `ADMIN_TOKEN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
- sessionStorage.setItem(cacheKey, adminToken);
-  } else {
- sessionStorage.setItem(cacheKey, 'NOT_ADMIN');
-  }
-
-  return isAdmin;
-}
-
-/**
- * 이메일 마스킹 (개인정보 보호)
- */
-function maskEmail(email: string): string {
-  const [name, domain] = email.split('@');
-  if (!name || !domain) return email;
-
-  // 첫 2글자 + **** + 마지막 4글자
-  const masked = name.substring(0, 2) + '****' + name.slice(-4);
-  return `${masked}@${domain}`;
-}
-
-/**
- * 연속 방문 일수 계산 및 업데이트
- */
-function updateStreak(): number {
-  if (typeof window === "undefined") return 0;
-  const today = new Date().toISOString().split("T")[0];
-  const lastVisitDate = localStorage.getItem("lastVisitDate");
-  let streak = parseInt(localStorage.getItem("streak") || "0");
-
-  if (lastVisitDate === today) {
- // 오늘 이미 방문함 - streak 유지
- return streak;
-  }
-
-  if (lastVisitDate) {
- const lastDate = new Date(lastVisitDate);
- const todayDate = new Date(today);
- const diffTime = todayDate.getTime() - lastDate.getTime();
- const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
- if (diffDays === 1) {
- // 어제 방문했으므로 카운트 증가
- streak += 1;
- } else if (diffDays > 1) {
- // 2일 이상 지났으므로 리셋
- streak = 1;
- }
-  } else {
- // 첫 방문
- streak = 1;
-  }
-
-  localStorage.setItem("lastVisitDate", today);
-  localStorage.setItem("streak", streak.toString());
-  return streak;
-}
-
-function getExamDday(): string {
-  if (typeof window === "undefined") return "-";
-  const examDate = localStorage.getItem("examStartDate");
-  if (!examDate) return "-";
-
-  const exam = new Date(examDate);
-  const now = new Date();
-
-  exam.setHours(0, 0, 0, 0);
-  now.setHours(0, 0, 0, 0);
-
-  const diff = exam.getTime() - now.getTime();
-  const daysLeft = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-  if (daysLeft <= 0) return "D-Day";
-  return `D-${daysLeft}`;
 }
 
 // CW/CH = total canvas, VW/VH = visible viewport
