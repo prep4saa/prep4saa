@@ -7,17 +7,21 @@ const admin = require('firebase-admin');
 require('dotenv').config();
 
 function loadFirebaseServiceAccount() {
-  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
-
-  if (!serviceAccountJson) {
-    throw new Error('❌ FIREBASE_SERVICE_ACCOUNT environment variable is not set. Set it in Railway Variables or your .env file.');
+  // Try environment variable first
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    try {
+      return JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    } catch (error) {
+      console.error('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT:', error?.message || error);
+      throw error;
+    }
   }
 
+  // Fallback to firebase-key.json file
   try {
-    return JSON.parse(serviceAccountJson);
+    return require('./firebase-key.json');
   } catch (error) {
-    console.error('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT:', error?.message || error);
-    throw error;
+    throw new Error('❌ FIREBASE_SERVICE_ACCOUNT not found. Set environment variable or include firebase-key.json file.');
   }
 }
 
