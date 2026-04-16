@@ -10,10 +10,11 @@ import PaymentModal from "./components/Modals/PaymentModal";
 import ExamDateModal from "./components/Modals/ExamDateModal";
 import EmailVerificationModal from "./components/Modals/EmailVerificationModal";
 import QuotaModal from "./components/Modals/QuotaModal";
+import PostFormModal from "./components/Modals/PostFormModal";
 import { CAT, CONCEPTS_KO, LINKS, NODES } from "./data";
 import { CONCEPTS_EN } from "./CONCEPTS_EN";
 import { CONCEPTS_JA } from "./concepts_ja";
-import { auth, createPost, deleteExpiredResults, deleteOldMockExamProblems, deletePost, getAdminStatsSecure, getAllUsersForAdminSecure, getCurrentUser, getExamStartDate, getPostById, getPosts, getTodayMockExamProblems, getUserPaidStatus, getUserProblemSessions, getUserProblemSessionsSecure, getUserQuizStats, isPasswordLinked, onAuthStateChange, saveTodayMockExamProblems, saveUserInfoToFirebase, signIn, signInWithGoogle, signOut, signUp, updateMockExamProblemsProgressively, updateStreakInFirebase, updateUserPaidStatus, uploadPDFToStorage, refreshUserData, resendEmailVerification } from "./firebase";
+import { auth, deleteExpiredResults, deleteOldMockExamProblems, deletePost, getAdminStatsSecure, getAllUsersForAdminSecure, getCurrentUser, getExamStartDate, getPostById, getPosts, getTodayMockExamProblems, getUserPaidStatus, getUserProblemSessions, getUserProblemSessionsSecure, getUserQuizStats, isPasswordLinked, onAuthStateChange, saveTodayMockExamProblems, saveUserInfoToFirebase, signIn, signInWithGoogle, signOut, signUp, updateMockExamProblemsProgressively, updateStreakInFirebase, updateUserPaidStatus, uploadPDFToStorage, refreshUserData, resendEmailVerification } from "./firebase";
 import { useLocale } from "./LocaleContext";
 import { useTheme } from "./ThemeContext";
 // SEC Challenges
@@ -529,8 +530,6 @@ function App() {
   const [postsSearch, setPostsSearch] = useState("");
   const [postsFilterMine, setPostsFilterMine] = useState(false);
   const [showPostForm, setShowPostForm] = useState(false);
-  const [postFormData, setPostFormData] = useState({ title: "", content: "", authorName: "", password: "", isPublic: true });
-  const [postFormLoading, setPostFormLoading] = useState(false);
 
   // 앱 초기화: 만료된 PDF만 삭제 & 날짜 변경 시 플래그 초기화 (한 번만 실행)
   useEffect(() => {
@@ -4968,10 +4967,7 @@ function App() {
  {/* Write Button */}
  {userEmail && (
  <button
- onClick={() => {
- setShowPostForm(true);
- setPostFormData({ title: "", content: "", authorName: "", password: "", isPublic: true });
- }}
+ onClick={() => setShowPostForm(true)}
  style={{
  padding: "6px 12px",
  background: "rgba(255,153,0,0.15)",
@@ -5394,209 +5390,18 @@ function App() {
  {renderPaymentModal()}
 
  {/* Write Post Modal */}
- {showPostForm && (
- <div style={{
- position: "fixed",
- top: 0,
- left: 0,
- right: 0,
- bottom: 0,
- background: "rgba(0,0,0,0.7)",
- display: "flex",
- alignItems: "center",
- justifyContent: "center",
- zIndex: 1000
- }}>
- <div style={{
- background: "#0b0f1e",
- border: "1px solid rgba(255,255,255,0.1)",
- borderRadius: "12px",
- padding: "24px",
- maxWidth: "500px",
- width: "90%",
- maxHeight: "80vh",
- overflowY: "auto"
- }}>
- <h3 style={{ fontSize: "16px", color: "#e2e8f0", marginBottom: "16px" }}>
- {t("postsWrite")}
- </h3>
- <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
- {/* Title */}
- <input
- type="text"
- placeholder={t("postsTitle")}
- value={postFormData.title}
- onChange={(e) => setPostFormData({ ...postFormData, title: e.target.value })}
- maxLength={100}
- style={{
- padding: "10px",
- background: "#2A344A",
- border: "1px solid #2A344A",
- borderRadius: "6px",
- color: "#D1D5DB",
- fontSize: "13px"
- }}
- />
- {/* Author Name */}
- <input
- type="text"
- placeholder={userEmail?.split("@")[0] || t("postsAuthor")}
- value={userEmail?.split("@")[0] || ""}
- disabled={true}
- maxLength={50}
- style={{
- padding: "10px",
- background: "rgba(255,255,255,0.05)",
- border: "1px solid #2A344A",
- borderRadius: "6px",
- color: "#D1D5DB",
- fontSize: "13px",
- cursor: "not-allowed"
- }}
- />
- {/* Content */}
- <textarea
- placeholder={t("postsContent")}
- value={postFormData.content}
- onChange={(e) => setPostFormData({ ...postFormData, content: e.target.value.slice(0, 800) })}
- maxLength={800}
- style={{
- padding: "10px",
- background: "#2A344A",
- border: "1px solid #2A344A",
- borderRadius: "6px",
- color: "#D1D5DB",
- fontSize: "13px",
- minHeight: "150px",
- fontFamily: "inherit",
- resize: "vertical"
- }}
- />
- <div style={{ fontSize: "11px", color: "#64748b", textAlign: "right" }}>
- {postFormData.content.length}/800
- </div>
- {/* Public/Private Toggle */}
- <div style={{ display: "flex", gap: "8px" }}>
- <button
- onClick={() => setPostFormData({ ...postFormData, isPublic: true, password: "" })}
- style={{
- flex: 1,
- padding: "8px",
- background: postFormData.isPublic ? "rgba(16,185,129,0.2)" : "rgba(255,255,255,0.05)",
- border: postFormData.isPublic ? "1px solid rgba(16,185,129,0.4)" : "1px solid rgba(255,255,255,0.2)",
- borderRadius: "6px",
- color: postFormData.isPublic ? "#10b981" : "#D1D5DB",
- cursor: "pointer",
- fontSize: "12px"
- }}
- >
- {t("postsPublic")}
- </button>
- <button
- onClick={() => setPostFormData({ ...postFormData, isPublic: false })}
- style={{
- flex: 1,
- padding: "8px",
- background: !postFormData.isPublic ? "rgba(239,68,68,0.2)" : "rgba(255,255,255,0.05)",
- border: !postFormData.isPublic ? "1px solid rgba(239,68,68,0.4)" : "1px solid rgba(255,255,255,0.2)",
- borderRadius: "6px",
- color: !postFormData.isPublic ? "#ef4444" : "#D1D5DB",
- cursor: "pointer",
- fontSize: "12px"
- }}
- >
- {t("postsSecret")}
- </button>
- </div>
- {/* Password (if private) */}
- {!postFormData.isPublic && (
- <input
- type="password"
- placeholder={t("postsPassword")}
- value={postFormData.password}
- onChange={(e) => setPostFormData({ ...postFormData, password: e.target.value.slice(0, 20) })}
- maxLength={20}
- autoComplete="new-password"
- style={{
- padding: "10px",
- background: "#2A344A",
- border: "1px solid #2A344A",
- borderRadius: "6px",
- color: "#D1D5DB",
- fontSize: "13px"
- }}
- />
- )}
- {/* Buttons */}
- <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
- <button
- onClick={async () => {
- if (!postFormData.title.trim() || !postFormData.content.trim()) {
- alert(locale === "en" ? "Please fill in all fields" : locale === "ja" ? "すべてのフィールドに入力してください" : "모든 항목을 입력하세요");
- return;
- }
- if (!postFormData.isPublic && !postFormData.password.trim()) {
- alert(t("postsPasswordRequired"));
- return;
- }
- setPostFormLoading(true);
- try {
- const user = getCurrentUser();
- await createPost(
- postFormData.title,
- postFormData.content,
- userEmail?.split("@")[0] || "Guest",
- user?.uid || "guest",
- postFormData.isPublic,
- postFormData.password || undefined
- );
- setShowPostForm(false);
- setPostFormData({ title: "", content: "", authorName: "", password: "", isPublic: true });
+ <PostFormModal
+ open={showPostForm}
+ onClose={() => setShowPostForm(false)}
+ userEmail={userEmail}
+ onSubmitted={async () => {
  setPostsPage(1);
+ const user = getCurrentUser();
  const result = await getPosts(1, 20, postsSearch, postsFilterMine ? user?.uid : "", user?.uid || "");
  setPosts(result.posts);
  setPostsTotalCount(result.totalCount);
- } catch (error: any) {
- alert(error.message);
- } finally {
- setPostFormLoading(false);
- }
  }}
- disabled={postFormLoading}
- style={{
- flex: 1,
- padding: "10px",
- background: postFormLoading ? "rgba(255,153,0,0.1)" : "rgba(255,153,0,0.2)",
- border: "1px solid rgba(255,153,0,0.4)",
- borderRadius: "6px",
- color: "#a78bfa",
- cursor: postFormLoading ? "not-allowed" : "pointer",
- fontSize: "12px",
- fontWeight: 600
- }}
- >
- {postFormLoading ? "등록 중..." : t("postsSubmit")}
- </button>
- <button
- onClick={() => setShowPostForm(false)}
- style={{
- flex: 1,
- padding: "10px",
- background: "rgba(255,255,255,0.05)",
- border: "1px solid #2A344A",
- borderRadius: "6px",
- color: "#D1D5DB",
- cursor: "pointer",
- fontSize: "12px"
- }}
- >
- {t("postsCancel")}
- </button>
- </div>
- </div>
- </div>
- </div>
- )}
+ />
  </div>
 
  {/* Footer */}
