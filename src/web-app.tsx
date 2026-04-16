@@ -9,6 +9,7 @@ import Navigator from "./components/organisms/Navigator";
 import PaymentModal from "./components/Modals/PaymentModal";
 import ExamDateModal from "./components/Modals/ExamDateModal";
 import EmailVerificationModal from "./components/Modals/EmailVerificationModal";
+import QuotaModal from "./components/Modals/QuotaModal";
 import { CAT, CONCEPTS_KO, LINKS, NODES } from "./data";
 import { CONCEPTS_EN } from "./CONCEPTS_EN";
 import { CONCEPTS_JA } from "./concepts_ja";
@@ -5354,67 +5355,20 @@ function App() {
  {/* 이메일 검증 모달 */}
  {renderEmailVerificationModal()}
 
- {/* 인증 모달 */}
- {showAuthModal && (
- <div style={{
- position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
- background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center",
- zIndex: 1000
- }} onClick={() => setShowAuthModal(false)}>
- <div style={{
- background: "#0F1629", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px",
- padding: "32px", maxWidth: "500px", width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.5)"
- }} onClick={e => e.stopPropagation()}>
- <h2 style={{ color: "#fff", marginBottom: "16px", fontSize: "20px" }}> {t("labelQuotaFull") || "Quota Limited"}</h2>
-
- <div style={{ marginBottom: "24px", color: "#D1D5DB", lineHeight: "1.6", fontSize: "14px" }}>
- {userStatus === "guest" && (
- <>
- <p> <strong>Guest (비로그인):</strong> 하루 2회 무료</p>
- <p style={{ marginTop: "12px" }}>로그인하면 하루 <strong>2회 무료</strong>를 이용할 수 있으며, 결제 후에는 <strong>하루 20개 문제</strong>를 생성할 수 있습니다.</p>
- <div style={{ marginTop: "16px", padding: "12px", background: "rgba(255,153,0,0.15)", borderRadius: "6px", border: "1px solid rgba(255,153,0,0.3)" }}>
- <p style={{ margin: "0 0 8px 0", color: "#e0e7ff", fontWeight: "bold" }}> {t("premiumPlan")}</p>
- <p style={{ margin: "0 0 8px 0", fontSize: "16px", color: "#FF9900", fontWeight: "bold" }}>{t("premiumPrice")}</p>
- <p style={{ margin: "0", fontSize: "12px" }}>{t("premiumUnlimited")}<br />{t("premiumAllDifficulty")}<br />{t("premiumAdFree")}<br />{t("premiumCancelAnytime")}</p>
- </div>
- </>
- )}
- {userStatus === "loggedIn" && (
- <>
- <p> <strong>로그인:</strong> 2회 무료 이용 완료</p>
- <p style={{ marginTop: "12px" }}>결제하시면 <strong>하루 20개 문제</strong>를 생성하실 수 있습니다!</p>
- <div style={{ marginTop: "16px", padding: "12px", background: "rgba(255,153,0,0.15)", borderRadius: "6px", border: "1px solid rgba(255,153,0,0.3)" }}>
- <p style={{ margin: "0 0 8px 0", color: "#e0e7ff", fontWeight: "bold" }}> {t("premiumPlan")}</p>
- <p style={{ margin: "0 0 8px 0", fontSize: "16px", color: "#FF9900", fontWeight: "bold" }}>{t("premiumPrice")}</p>
- <p style={{ margin: "0", fontSize: "12px" }}>{t("premiumUnlimited")}<br />{t("premiumAllDifficulty")}<br />{t("premiumAdFree")}<br />{t("premiumCancelAnytime")}</p>
- </div>
- </>
- )}
- {userStatus === "paid" && (
- <>
- <p> <strong>Premium (결제):</strong> 하루 20개 문제 이용 중</p>
- <p style={{ marginTop: "12px" }}>내일 자정에 카운트가 초기화됩니다.</p>
- </>
- )}
- </div>
-
- <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
- {userStatus === "guest" && (
- <>
- <button onClick={() => {
+ {/* 할당량 초과 알림 모달 */}
+ <QuotaModal
+ open={showAuthModal}
+ userStatus={userStatus}
+ onClose={() => setShowAuthModal(false)}
+ onLoginAsLoggedIn={() => {
  setUserStatus("loggedIn");
  setUserStatusLocal("loggedIn");
  setDailyCount(0);
  localStorage.setItem("problemCountDate", new Date().toISOString().split("T")[0]);
  localStorage.setItem("problemCount", "0");
  setShowAuthModal(false);
- }} style={{
- flex: 1, padding: "12px", background: "#FF9900", color: "#0F1629",
- border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold"
- }}>
- 로그인
- </button>
- <button onClick={async () => {
+ }}
+ onCheckout={async () => {
  try {
  const backendBaseUrl = resolveBackendUrl();
  const response = await fetch(`${backendBaseUrl}/api/lemonsqueezy/checkout`, {
@@ -5433,51 +5387,8 @@ function App() {
  console.error('Checkout error:', error);
  alert('결제 페이지를 열 수 없습니다.');
  }
- }} style={{
- flex: 1, padding: "12px", background: "#FF9900", color: "#0F1629",
- border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold"
- }}>
- 프리미엄 업그레이드
- </button>
- </>
- )}
- {userStatus === "loggedIn" && (
- <button onClick={async () => {
- try {
- const backendBaseUrl = resolveBackendUrl();
- const response = await fetch(`${backendBaseUrl}/api/lemonsqueezy/checkout`, {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({
- email: userEmail,
- returnUrl: window.location.href
- })
- });
- const data = await response.json();
- if (data.checkoutUrl) {
- window.location.href = data.checkoutUrl;
- }
- } catch (error) {
- console.error('Checkout error:', error);
- alert('결제 페이지를 열 수 없습니다.');
- }
- }} style={{
- flex: 1, padding: "12px", background: "#FF9900", color: "#0F1629",
- border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold"
- }}>
- 프리미엄 업그레이드
- </button>
- )}
- <button onClick={() => setShowAuthModal(false)} style={{
- flex: 1, padding: "12px", background: "rgba(255,255,255,0.05)", color: "#D1D5DB",
- border: "1px solid #2A344A", borderRadius: "6px", cursor: "pointer"
- }}>
- 닫기
- </button>
- </div>
- </div>
- </div>
- )}
+ }}
+ />
 
  {/* Payment Modal */}
  {renderPaymentModal()}
