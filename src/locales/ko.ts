@@ -401,6 +401,8 @@ export const ko = {
   carouselProgressDesc: "약한 서비스, 정확도, 총 문제 수 등을 한눈에 확인하세요. 자신의 학습 진도를 체계적으로 추적합니다.",
   mockExamLoadingProblems: "문제 로딩 중...",
   mockExamHoursRemaining: "시간 남음",
+  mockExamRestart: "모의시험 다시 보기",
+  mockExamLoading: "불러오는 중...",
 
   // Console Challenge
   tabConsole: "CLI 실습",

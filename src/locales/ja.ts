@@ -403,6 +403,8 @@ export const ja: Strings = {
   carouselProgressDesc: "弱いサービス、正確度、総問題数をひと目で確認できます。学習の進捗を体系的に追跡します。",
   mockExamLoadingProblems: "問題を読み込み中...",
   mockExamHoursRemaining: "時間残り",
+  mockExamRestart: "模擬試験をもう一度受ける",
+  mockExamLoading: "読み込み中...",
 
   // Console Challenge
   tabConsole: "CLIラボ",

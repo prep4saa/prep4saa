@@ -403,6 +403,8 @@ export const en: Strings = {
   carouselProgressDesc: "Check weak services, accuracy, and total number of problems at a glance. Systematically track your learning progress.",
   mockExamLoadingProblems: "Loading problems...",
   mockExamHoursRemaining: "hours remaining",
+  mockExamRestart: "Retake Mock Exam",
+  mockExamLoading: "Loading...",
 
   // Console Challenge
   tabConsole: "CLI Lab",

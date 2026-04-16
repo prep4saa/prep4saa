@@ -4296,7 +4296,7 @@ function App() {
        fontWeight: "600",
      }}
    >
-     모의시험 다시 보기
+     {t("mockExamRestart")}
    </button>
  </div>
  </div>
@@ -4389,7 +4389,7 @@ function App() {
      fontWeight: "600",
    }}
  >
-   {loading ? "불러오는 중..." : "모의시험 다시 보기"}
+   {loading ? t("mockExamLoading") : t("mockExamRestart")}
  </button>
  </div>
  ) : (
