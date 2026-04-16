@@ -8,6 +8,7 @@ import LandingPage from "./components/pages/LandingPage";
 import Navigator from "./components/organisms/Navigator";
 import PremiumBanner from "./components/organisms/PremiumBanner";
 import QuizStatsCards from "./components/molecules/QuizStatsCards";
+import AdminStatsGrid from "./components/molecules/AdminStatsGrid";
 import PaymentModal from "./components/Modals/PaymentModal";
 import ExamDateModal from "./components/Modals/ExamDateModal";
 import EmailVerificationModal from "./components/Modals/EmailVerificationModal";
@@ -3477,75 +3478,12 @@ function App() {
  </div>
 
  {/* Admin Stats */}
- <div style={{
- display: "grid",
- gridTemplateColumns: "1fr 1fr",
- gap: "12px"
- }}>
- {/* 오늘 방문자 */}
- <div style={{
- background: "rgba(255,153,0,0.1)",
- borderRadius: "8px",
- padding: "16px",
- textAlign: "center",
- border: "1px solid rgba(255,153,0,0.3)"
- }}>
- <div style={{ fontSize: "11px", color: "#D1D5DB", marginBottom: "8px", fontWeight: 600 }}>
- 오늘 방문자
- </div>
- <div style={{ fontSize: "32px", fontWeight: 700, color: "var(--accent)" }}>
- {visitorCount}
- </div>
- </div>
-
- {/* 전체 방문자 */}
- <div style={{
- background: "rgba(168,85,247,0.1)",
- borderRadius: "8px",
- padding: "16px",
- textAlign: "center",
- border: "1px solid rgba(168,85,247,0.3)"
- }}>
- <div style={{ fontSize: "11px", color: "#D1D5DB", marginBottom: "8px", fontWeight: 600 }}>
- 전체 방문자
- </div>
- <div style={{ fontSize: "32px", fontWeight: 700, color: "#c4b5fd" }}>
- {totalVisitorCount}
- </div>
- </div>
-
- {/* 유료 사용자 */}
- <div style={{
- background: "rgba(34,197,94,0.1)",
- borderRadius: "8px",
- padding: "16px",
- textAlign: "center",
- border: "1px solid rgba(34,197,94,0.3)"
- }}>
- <div style={{ fontSize: "11px", color: "#D1D5DB", marginBottom: "8px", fontWeight: 600 }}>
- 유료 사용자
- </div>
- <div style={{ fontSize: "32px", fontWeight: 700, color: "#4ade80" }}>
- {paidUsers}
- </div>
- </div>
-
- {/* 2회 무료 사용자 */}
- <div style={{
- background: "rgba(249,115,22,0.1)",
- borderRadius: "8px",
- padding: "16px",
- textAlign: "center",
- border: "1px solid rgba(249,115,22,0.3)"
- }}>
- <div style={{ fontSize: "11px", color: "#D1D5DB", marginBottom: "8px", fontWeight: 600 }}>
- 2회 무료 사용자
- </div>
- <div style={{ fontSize: "32px", fontWeight: 700, color: "#fb923c" }}>
- {freeUsers}
- </div>
- </div>
- </div>
+ <AdminStatsGrid
+ todayVisitors={visitorCount}
+ totalVisitors={totalVisitorCount}
+ paidUsers={paidUsers}
+ freeUsers={freeUsers}
+ />
  {/* Admin Info */}
  <div style={{
  marginTop: "auto",
