@@ -6,6 +6,7 @@ import CookieConsent from "./components/organisms/CookieConsent";
 import Footer from "./components/organisms/Footer";
 import LandingPage from "./components/pages/LandingPage";
 import Navigator from "./components/organisms/Navigator";
+import PremiumBanner from "./components/organisms/PremiumBanner";
 import PaymentModal from "./components/Modals/PaymentModal";
 import ExamDateModal from "./components/Modals/ExamDateModal";
 import EmailVerificationModal from "./components/Modals/EmailVerificationModal";
@@ -2202,35 +2203,13 @@ function App() {
  </span>
  </button>
 
- {/* 프리미엄 배너 (로그인하지 않았거나 일반 사용자일 때) */}
- {userStatus !== "paid" && (
- <div style={{
- marginTop: "16px", padding: "14px", background: "linear-gradient(135deg, rgba(255,153,0,0.2) 0%, rgba(255,153,0,0.15) 100%)",
- border: "1px solid rgba(255,153,0,0.3)", borderRadius: "8px", textAlign: "center"
- }}>
- <div style={{ color: "#e0e7ff", fontSize: "12px", marginBottom: "8px" }}>
- <strong>{t("premiumTitle")}</strong>
- </div>
- <div style={{ color: "#D1D5DB", fontSize: "13px", fontWeight: "bold", marginBottom: "10px" }}>
- {t("premiumFeature1")} - <span style={{ color: "#FF9900" }}>{t("premiumPrice")}</span>
- </div>
- <div style={{ color: "#D1D5DB", fontSize: "13px", fontWeight: "bold", marginBottom: "12px" }}>
- {t("mockExamPremiumDaily")}
- </div>
- <button onClick={() => {
- if (!userEmail) {
- setShowLoginModal(true);
- } else {
- setShowPaymentModal(true);
- }
- }} style={{
- width: "100%", padding: "10px", background: "#FF9900", color: "#0F1629",
- border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "bold"
- }}>
- {t("premiumUpgradeBtn")}
- </button>
- </div>
- )}
+ {/* 프리미엄 배너 (paid 사용자 제외) */}
+ <PremiumBanner
+ userStatus={userStatus}
+ userEmail={userEmail}
+ onLoginClick={() => setShowLoginModal(true)}
+ onUpgradeClick={() => setShowPaymentModal(true)}
+ />
 
  {error && (
  <div className="error-message" style={{ color: "#ff6b6b", marginTop: "12px", padding: "10px", background: "rgba(255,107,107,0.1)", borderRadius: "6px" }}>
