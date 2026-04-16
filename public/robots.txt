@@ -35,4 +35,4 @@ User-agent: Claude-Web
 Allow: /
 
 # Sitemap location
-Sitemap: https://prep4saa.com/sitemap.xml
+Sitemap: https://www.prep4saa.com/sitemap.xml
