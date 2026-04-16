@@ -17,7 +17,7 @@ import PostFormModal from "./components/Modals/PostFormModal";
 import { CAT, CONCEPTS_KO, LINKS, NODES } from "./data";
 import { CONCEPTS_EN } from "./CONCEPTS_EN";
 import { CONCEPTS_JA } from "./concepts_ja";
-import { auth, deleteExpiredResults, deleteOldMockExamProblems, deletePost, getAdminStatsSecure, getAllUsersForAdminSecure, getCurrentUser, getExamStartDate, getPostById, getPosts, getTodayMockExamProblems, getUserPaidStatus, getUserProblemSessions, getUserProblemSessionsSecure, getUserQuizStats, isPasswordLinked, onAuthStateChange, saveTodayMockExamProblems, saveUserInfoToFirebase, signIn, signInWithGoogle, signOut, signUp, updateMockExamProblemsProgressively, updateStreakInFirebase, updateUserPaidStatus, uploadPDFToStorage, refreshUserData, resendEmailVerification } from "./firebase";
+import { auth, deleteExpiredResults, deleteOldMockExamProblems, deletePost, getAdminStatsSecure, getAllUsersForAdminSecure, getCurrentUser, getExamStartDate, getPostById, getPosts, getTodayMockExamProblems, getUserPaidStatus, getUserProblemSessions, getUserProblemSessionsSecure, getUserQuizStats, isPasswordLinked, isSubscriptionCancelled, onAuthStateChange, saveTodayMockExamProblems, saveUserInfoToFirebase, signIn, signInWithGoogle, signOut, signUp, updateMockExamProblemsProgressively, updateStreakInFirebase, updateUserPaidStatus, uploadPDFToStorage, refreshUserData, resendEmailVerification } from "./firebase";
 import { useLocale } from "./LocaleContext";
 import { useTheme } from "./ThemeContext";
 // SEC Challenges
@@ -475,6 +475,7 @@ function App() {
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const [subscriptionCancelled, setSubscriptionCancelled] = useState(false);
   const [dday, setDday] = useState("-");
   const [showExamDateModal, setShowExamDateModal] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
@@ -645,6 +646,8 @@ function App() {
  // Firestore에서 결제 상태 로드
  try {
  let isPaid = await getUserPaidStatus(user.uid);
+ const cancelled = await isSubscriptionCancelled(user.uid);
+ setSubscriptionCancelled(cancelled);
 
  // ✅ 테스트 사용자: 환경변수에서 읽은 이메일은 자동으로 paid 처리
  if (user.email && TEST_PAID_EMAILS.includes(user.email)) {
@@ -1933,6 +1936,7 @@ function App() {
         streak={streak}
         onDdayClick={() => setShowExamDateModal(true)}
         userStatus={userStatus}
+        subscriptionCancelled={subscriptionCancelled}
         onLogout={async () => {
           await signOut();
           setUserEmail(null);
@@ -1972,6 +1976,7 @@ function App() {
    streak={streak}
    onDdayClick={() => setShowExamDateModal(true)}
    userStatus={userStatus}
+   subscriptionCancelled={subscriptionCancelled}
    onLogout={async () => {
      await signOut();
      setUserEmail(null);
@@ -2002,6 +2007,7 @@ function App() {
 
          setUserStatusLocal("paid");
          localStorage.setItem("userStatus", "paid");
+         setSubscriptionCancelled(true);
          alert(
            locale === 'ko'
              ? '구독이 취소되었습니다. 현재 결제 기간 종료일까지는 이용하실 수 있습니다.'

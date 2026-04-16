@@ -25,9 +25,10 @@ interface LandingPageProps {
   isAdmin?: boolean;
   isAuthChecked?: boolean;
   emailVerified?: boolean;
+  subscriptionCancelled?: boolean;
 }
 
-export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, onProClick, userEmail, dday, streak, onDdayClick, userStatus, onLogout, onCancelSubscription, currentLocale = 'ko', onLocaleChange, isAdmin = false }: LandingPageProps) {
+export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, onProClick, userEmail, dday, streak, onDdayClick, userStatus, onLogout, onCancelSubscription, currentLocale = 'ko', onLocaleChange, isAdmin = false, subscriptionCancelled = false }: LandingPageProps) {
 
   // 버튼 클릭 핸들러: 비로그인 → 로그인 창, 로그인 → 해당 액션
   const handleFreeClick = () => userEmail ? onGetStarted() : onLoginClick?.();
@@ -240,6 +241,7 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, o
         userStatus={userStatus}
         onLogout={onLogout}
         onCancelSubscription={onCancelSubscription}
+        subscriptionCancelled={subscriptionCancelled}
         isAdmin={isAdmin}
       />
       <div className="landing-outer" style={{ width: '100%', minHeight: '100vh', background: '#0F1629', color: '#D1D5DB', fontFamily: 'Inter, sans-serif', overflowX: 'hidden', paddingTop: '5rem' }}>

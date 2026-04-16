@@ -480,6 +480,29 @@ export async function getUserPaidStatus(userId: string): Promise<boolean> {
 }
 
 /**
+ * 구독이 이미 취소된 상태인지 확인.
+ * Lemon Squeezy 의 subscription.status 가 'cancelled' / 'expired' / 'unpaid'
+ * 중 하나거나, subscriptionCancelledAt 필드가 존재하면 취소된 것으로 간주.
+ */
+export async function isSubscriptionCancelled(userId: string): Promise<boolean> {
+  try {
+    const userRef = doc(db, "users", userId);
+    const userDoc = await getDoc(userRef);
+    if (!userDoc.exists()) return false;
+    const data = userDoc.data() as {
+      subscriptionStatus?: string;
+      subscriptionCancelledAt?: string;
+    };
+    const status = (data.subscriptionStatus || '').toLowerCase();
+    if (status === 'cancelled' || status === 'expired' || status === 'unpaid') return true;
+    if (data.subscriptionCancelledAt) return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * 사용자의 결제 상태 업데이트
  */
 export async function updateUserPaidStatus(userId: string, isPaid: boolean): Promise<void> {

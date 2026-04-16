@@ -21,9 +21,11 @@ interface NavigatorProps {
   userStatus?: "guest" | "loggedIn" | "paid";
   onLogout?: () => void;
   onCancelSubscription?: () => void;
+  /** 이미 구독이 취소된 상태면 구독 취소 버튼 숨김 */
+  subscriptionCancelled?: boolean;
 }
 
-export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleChange, onLoginClick, showLoginButton = true, onLogoClick, isAdmin = false, currentTab, dday, streak, userEmail, onDdayClick, userStatus, onLogout, onCancelSubscription }: NavigatorProps) {
+export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleChange, onLoginClick, showLoginButton = true, onLogoClick, isAdmin = false, currentTab, dday, streak, userEmail, onDdayClick, userStatus, onLogout, onCancelSubscription, subscriptionCancelled = false }: NavigatorProps) {
   const [locale, setLocale] = useState<Locale>(currentLocale);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -184,14 +186,14 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
                         textAlign: 'left',
                         fontSize: '.875rem',
                         transition: 'all .15s',
-                        borderBottom: userStatus === 'paid' ? '1px solid #2A344A' : 'none'
+                        borderBottom: (userStatus === 'paid' && !subscriptionCancelled) ? '1px solid #2A344A' : 'none'
                       }}
                       onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
                     >
                       {t.logoutBtn}
                     </button>
-                    {userStatus === 'paid' && (
+                    {userStatus === 'paid' && !subscriptionCancelled && (
                       <button
                         onClick={() => {
                           onCancelSubscription?.();
@@ -300,7 +302,7 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
             )}
             {streak !== undefined && streak > 0 && <span style={{ color: '#D1D5DB', fontSize: '.875rem', padding: '.75rem 0' }}>{streak}{t.streakDaysLabel}</span>}
             <button className="mobile-menu-btn" style={{ color: '#fca5a5' }} onClick={() => { onLogout?.(); setShowMobileMenu(false); }}>{t.logoutBtn}</button>
-            {userStatus === 'paid' && (
+            {userStatus === 'paid' && !subscriptionCancelled && (
               <button className="mobile-menu-btn" style={{ color: '#fca5a5' }} onClick={() => { onCancelSubscription?.(); setShowMobileMenu(false); }}>{t.cancelSubscriptionBtn}</button>
             )}
           </div>
