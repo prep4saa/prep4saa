@@ -731,6 +731,7 @@ app.post('/api/getQuizStats', async (req, res) => {
 
     let totalAttempts = 0;
     let correctCount = 0;
+    const byService = {};
 
     const now = new Date().getTime();
 
@@ -749,35 +750,31 @@ app.post('/api/getQuizStats', async (req, res) => {
       if (isCorrect) {
         correctCount++;
       }
+
+      // 서비스별 통계: problem.keywords[0] 기반 (AI 생성 locale 별 키워드)
+      // 클라이언트가 NODE name 매칭으로 필터링해 한국어 stale 키를 숨김
+      if (data.fullProblem && data.fullProblem.keywords && data.fullProblem.keywords.length > 0) {
+        const service = data.fullProblem.keywords[0];
+        if (!byService[service]) {
+          byService[service] = { total: 0, correct: 0, accuracy: 0 };
+        }
+        byService[service].total++;
+        if (isCorrect) {
+          byService[service].correct++;
+        }
+      }
     });
 
     // 정확도 계산
     const accuracy = totalAttempts > 0 ? Math.round((correctCount / totalAttempts) * 100) : 0;
 
-    // 서비스별 통계는 aggregatedStats 에서 읽음 (NODE id 기준 누적치)
-    // quizResults.keywords 는 AI 생성 한국어 키워드라 locale 전환 시 혼란을 유발
-    let byService = {};
-    try {
-      const statsDoc = await db.collection('users').doc(userId)
-        .collection('userData').doc('aggregatedStats').get();
-      if (statsDoc.exists) {
-        const raw = statsDoc.data()?.byService || {};
-        // accuracy 필드 계산 후 주입
-        Object.keys(raw).forEach((service) => {
-          const entry = raw[service] || {};
-          const total = entry.total || 0;
-          const correct = entry.correct || 0;
-          byService[service] = {
-            total,
-            correct,
-            accuracy: total > 0 ? Math.round((correct / total) * 100) : 0
-          };
-        });
-      }
-    } catch (aggErr) {
-      // aggregatedStats 읽기 실패 시 빈 객체로 폴백 (화면은 "데이터 없음" 처리)
-      byService = {};
-    }
+    // 서비스별 정확도 계산
+    Object.keys(byService).forEach((service) => {
+      const serviceTotal = byService[service].total;
+      byService[service].accuracy = serviceTotal > 0
+        ? Math.round((byService[service].correct / serviceTotal) * 100)
+        : 0;
+    });
 
     return res.json({
       totalAttempts,

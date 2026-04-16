@@ -3881,12 +3881,12 @@ function App() {
  <h3 style={{ fontSize: "13px", color: "#D1D5DB", marginBottom: "12px" }}>
  {t("weakServices")} {t("weakServicesDesc")}
  </h3>
- {quizStats && Object.entries(quizStats.byService || {}).some(([s]) => NODES.some(n => n.id === s)) ? (
+ {quizStats && Object.entries(quizStats.byService || {}).some(([s]) => NODES.some(n => n.id === s || n.name.toLowerCase() === String(s).toLowerCase())) ? (
  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
- {/* 정답률 낮은 순서대로 정렬. 과거 locale 별 키워드가 키로 저장된
-     stale 데이터는 제외 (유효 NODE id 만 표시). */}
+ {/* 정답률 낮은 순서대로 정렬.
+     과거 locale 별 한국어 키워드로 저장된 stale 데이터는 NODE 매칭 실패로 자동 제외. */}
  {Object.entries(quizStats.byService || {})
- .filter(([service]) => NODES.some(n => n.id === service))
+ .filter(([service]) => NODES.some(n => n.id === service || n.name.toLowerCase() === String(service).toLowerCase()))
  .map(([service, stats]: any) => ({
  service,
  accuracy: stats.accuracy,
@@ -3895,7 +3895,7 @@ function App() {
  }))
  .sort((a, b) => a.accuracy - b.accuracy) // 낮은 정답률부터
  .map(({ service, accuracy, total, correct }) => {
- const nodeData = NODES.find(n => n.id === service);
+ const nodeData = NODES.find(n => n.id === service || n.name.toLowerCase() === String(service).toLowerCase());
  return (
  <div
  key={service}
