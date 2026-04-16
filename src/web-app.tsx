@@ -3881,10 +3881,12 @@ function App() {
  <h3 style={{ fontSize: "13px", color: "#D1D5DB", marginBottom: "12px" }}>
  {t("weakServices")} {t("weakServicesDesc")}
  </h3>
- {quizStats && Object.keys(quizStats.byService || {}).length > 0 ? (
+ {quizStats && Object.entries(quizStats.byService || {}).some(([s]) => NODES.some(n => n.id === s)) ? (
  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
- {/* 정답률 낮은 순서대로 정렬 */}
+ {/* 정답률 낮은 순서대로 정렬. 과거 locale 별 키워드가 키로 저장된
+     stale 데이터는 제외 (유효 NODE id 만 표시). */}
  {Object.entries(quizStats.byService || {})
+ .filter(([service]) => NODES.some(n => n.id === service))
  .map(([service, stats]: any) => ({
  service,
  accuracy: stats.accuracy,
