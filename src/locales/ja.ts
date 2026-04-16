@@ -406,6 +406,26 @@ export const ja: Strings = {
   mockExamRestart: "模擬試験をもう一度受ける",
   mockExamLoading: "読み込み中...",
 
+  // Admin / Status panel チャート
+  graphPeriodDaily: "日別",
+  graphPeriodWeekly: "週別",
+  graphPeriodMonthly: "月別",
+  graphTitleMonthlyOverview: "月別概要",
+  graphHintClickToZoom: "クリックでズーム",
+  graphHintScrollClickBar: "スクロールでズーム、棒をクリック",
+  graphHintScrollDragPan: "スクロールでズーム、ドラッグで移動",
+  panelResizeHint: "パネルをドラッグしてサイズ調整",
+
+  // Users 管理パネル
+  usersPanelTitle: "ユーザー一覧",
+  usersPanelEmpty: "ユーザーがいません",
+  usersPanelAdminBadge: "管理者",
+
+  // 現況タブのセッション一覧
+  sessionProblemsCount: "{n}問",
+  sessionPdfGenerating: "生成中...",
+  sessionPdfDownload: "PDFダウンロード",
+
   // Console Challenge
   tabConsole: "CLIラボ",
   consoleDone: "完了",

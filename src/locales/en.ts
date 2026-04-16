@@ -406,6 +406,26 @@ export const en: Strings = {
   mockExamRestart: "Retake Mock Exam",
   mockExamLoading: "Loading...",
 
+  // Admin / Status panel chart
+  graphPeriodDaily: "Daily",
+  graphPeriodWeekly: "Weekly",
+  graphPeriodMonthly: "Monthly",
+  graphTitleMonthlyOverview: "Monthly Overview",
+  graphHintClickToZoom: "Click to zoom in",
+  graphHintScrollClickBar: "Scroll to zoom, click bar",
+  graphHintScrollDragPan: "Scroll to zoom, drag to pan",
+  panelResizeHint: "Drag to resize panel",
+
+  // Users management panel
+  usersPanelTitle: "User List",
+  usersPanelEmpty: "No users",
+  usersPanelAdminBadge: "Admin",
+
+  // Status tab session list
+  sessionProblemsCount: "{n} problems",
+  sessionPdfGenerating: "Generating...",
+  sessionPdfDownload: "Download PDF",
+
   // Console Challenge
   tabConsole: "CLI Lab",
   consoleDone: "done",

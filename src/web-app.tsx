@@ -3412,7 +3412,7 @@ function App() {
  {session.date} {session.time}
  </div>
  <div style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>
- {session.problemCount} problems
+ {t("sessionProblemsCount").replace("{n}", String(session.problemCount))}
  </div>
  </div>
  <button
@@ -3451,10 +3451,10 @@ function App() {
  <span style={{ display: "inline-block", animation: "spin 1s linear infinite", marginRight: "4px" }}>
  ⏳
  </span>
- Generating...
+ {t("sessionPdfGenerating")}
  </>
  ) : (
- " Download PDF"
+ ` ${t("sessionPdfDownload")}`
  )}
  </button>
  </div>
@@ -3519,7 +3519,7 @@ function App() {
  overflow: "auto"
  }}>
  <div style={{ fontSize: "14px", color: "#D1D5DB" }}>
- 사용자 목록
+ {t("usersPanelTitle")}
  </div>
 
  {/* Users List */}
@@ -3537,7 +3537,7 @@ function App() {
  color: "#64748b",
  fontSize: "12px"
  }}>
- 사용자가 없습니다
+ {t("usersPanelEmpty")}
  </div>
  ) : (
  <div style={{
@@ -3581,12 +3581,12 @@ function App() {
  {maskEmail(user.email)}
  {ADMIN_EMAILS.includes(user.email) && (
  <span style={{ fontSize: "10px", background: "rgba(249,115,22,0.3)", color: "#fb923c", padding: "2px 6px", borderRadius: "4px" }}>
- 운영자
+ {t("usersPanelAdminBadge")}
  </span>
  )}
  </div>
  <div style={{ fontSize: "10px", color: "#D1D5DB" }}>
- {user.userStatus === "paid" ? " 유료" : user.userStatus === "loggedIn" ? " 로그인" : " 게스트"}
+ {user.userStatus === "paid" ? ` ${t("userStatusPaid")}` : user.userStatus === "loggedIn" ? ` ${t("userStatusLoggedIn")}` : ` ${t("userStatusGuest")}`}
  </div>
  </div>
  ))}
@@ -3622,7 +3622,7 @@ function App() {
  (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.15)';
  }
  }}
- title="드래그해서 패널 크기 조절"
+ title={t("panelResizeHint")}
  />
  )}
 
@@ -3662,9 +3662,9 @@ function App() {
  transition: "all 0.2s"
  }}
  >
- {period === "daily" && (locale === "en" ? "Daily" : locale === "ja" ? "日別" : "일별")}
- {period === "weekly" && (locale === "en" ? "Weekly" : locale === "ja" ? "週別" : "주별")}
- {period === "monthly" && (locale === "en" ? "Monthly" : locale === "ja" ? "月別" : "월별")}
+ {period === "daily" && t("graphPeriodDaily")}
+ {period === "weekly" && t("graphPeriodWeekly")}
+ {period === "monthly" && t("graphPeriodMonthly")}
  </button>
  ))}
  </div>
@@ -3692,10 +3692,10 @@ function App() {
  <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
  <span style={{ fontWeight: "500" }}>
  {graphPeriod === "monthly"
- ? locale === "en" ? "Monthly Overview" : locale === "ja" ? "月別概要" : "월별 현황"
+ ? t("graphTitleMonthlyOverview")
  : graphPeriod === "weekly"
- ? locale === "en" ? "Weekly" : locale === "ja" ? "週別" : "주별"
- : locale === "en" ? "Daily" : locale === "ja" ? "日別" : "일별"}
+ ? t("graphPeriodWeekly")
+ : t("graphPeriodDaily")}
  </span>
  {graphPeriod !== "monthly" && (
  <select
@@ -3741,8 +3741,8 @@ function App() {
  </div>
  <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)" }}>
  {graphPeriod === "monthly"
- ? locale === "en" ? "Click to zoom in" : locale === "ja" ? "クリックでズーム" : "클릭으로 확대"
- : locale === "en" ? "Scroll to zoom, click bar" : locale === "ja" ? "スクロールでズーム" : "스크롤로 줌"}
+ ? t("graphHintClickToZoom")
+ : t("graphHintScrollClickBar")}
  </span>
  </div>
  {graphData && graphData.length > 0 ? (
@@ -3844,7 +3844,7 @@ function App() {
  color: "#64748b",
  fontSize: "12px"
  }}>
- {locale === "en" ? "No data available" : locale === "ja" ? "データがありません" : "데이터 없음"}
+ {t("noData")}
  </div>
  )}
  </div>
@@ -3857,7 +3857,7 @@ function App() {
  marginTop: "8px",
  textAlign: "center"
  }}>
- {locale === "en" ? "Scroll to zoom, drag to pan" : locale === "ja" ? "スクロールでズーム、ドラッグで移動" : "스크롤로 줌, 드래그로 이동"}
+ {t("graphHintScrollDragPan")}
  </div>
  )}
  </div>

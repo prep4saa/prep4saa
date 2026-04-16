@@ -404,6 +404,26 @@ export const ko = {
   mockExamRestart: "모의시험 다시 보기",
   mockExamLoading: "불러오는 중...",
 
+  // Admin / Status panel 차트
+  graphPeriodDaily: "일별",
+  graphPeriodWeekly: "주별",
+  graphPeriodMonthly: "월별",
+  graphTitleMonthlyOverview: "월별 현황",
+  graphHintClickToZoom: "클릭으로 확대",
+  graphHintScrollClickBar: "스크롤로 줌, 막대 클릭",
+  graphHintScrollDragPan: "스크롤로 줌, 드래그로 이동",
+  panelResizeHint: "드래그해서 패널 크기 조절",
+
+  // Users 관리 패널
+  usersPanelTitle: "사용자 목록",
+  usersPanelEmpty: "사용자가 없습니다",
+  usersPanelAdminBadge: "운영자",
+
+  // 현황 탭 세션 목록
+  sessionProblemsCount: "{n}개 문제",
+  sessionPdfGenerating: "생성 중...",
+  sessionPdfDownload: "PDF 다운로드",
+
   // Console Challenge
   tabConsole: "CLI 실습",
   consoleDone: "완료",
