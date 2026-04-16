@@ -13,6 +13,7 @@ import {
   EmailAuthProvider,
   fetchSignInMethodsForEmail,
   linkWithCredential,
+  sendEmailVerification,
   reload
 } from "firebase/auth";
 import {
@@ -152,23 +153,14 @@ export async function signUp(email: string, password: string, displayName: strin
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    // ✅ 백엔드 API로 AWS SES 이메일 발송 (HTML 형식)
+    // ✅ Firebase 기본 이메일 인증 메일 발송 (AWS SES 고객 지원 응답 대기 중 임시 전환)
     try {
-      const response = await fetch('/api/send-verification-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: user.email,
-          userName: email.split('@')[0]
-        })
+      await sendEmailVerification(user, {
+        url: `${window.location.origin}/?emailVerified=true`
       });
-      if (response.ok) {
-        console.log('✅ Verification email sent via AWS SES:', user.email);
-      } else {
-        console.warn('⚠️ Failed to send verification email via API');
-      }
+      console.log('✅ Firebase verification email sent:', user.email);
     } catch (error: any) {
-      console.warn("⚠️ Error calling verification email API:", error?.message);
+      console.warn("⚠️ Firebase email verification failed:", error?.message);
       // 이메일 발송 실패해도 계정은 생성됨
     }
 
@@ -268,31 +260,20 @@ export async function resendEmailVerification(): Promise<void> {
   }
 
   try {
-    // 백엔드 API로 AWS SES 이메일 발송 (HTML 형식)
-    const response = await fetch('/api/send-verification-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: user.email,
-        userName: user.email?.split('@')[0]
-      })
+    // ✅ Firebase 기본 이메일 인증 메일 재발송 (AWS SES 고객 지원 응답 대기 중 임시 전환)
+    await sendEmailVerification(user, {
+      url: `${window.location.origin}/?emailVerified=true`
     });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || 'Failed to send verification email');
-    }
-
-    console.log('✅ Verification email resent via AWS SES');
+    console.log('✅ Firebase verification email resent');
   } catch (error: any) {
     // Firebase rate limiting 오류 처리
-    if (error.message?.includes('too-many-requests')) {
+    if (error?.code === 'auth/too-many-requests' || error?.message?.includes('too-many-requests')) {
       const err = new Error("email-verification-too-many-requests");
       (err as any).code = "email-verification-too-many-requests";
       throw err;
     }
 
-    throw new Error(error.message || "Failed to send verification email");
+    throw new Error(error?.message || "Failed to send verification email");
   }
 }
 
