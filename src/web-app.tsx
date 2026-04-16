@@ -2153,11 +2153,9 @@ function App() {
  setIsSubmitted(true);
  // 로그인된 사용자면 결과 저장
  const user = getCurrentUser();
- console.log(`📝 Submit button clicked: user=${user?.uid}, problem=${!!problem}, selectedAnswer=${selectedAnswer}, difficulty=${difficulty}, sessionId=${sessionId}, slots=${slots?.join(',')}`);
 
  if (user && problem) {
  try {
- console.log(`💾 Calling recordQuizResult via server...`);
  const backendUrl = resolveBackendUrl();
  const response = await fetch(`${backendUrl}/api/recordQuizResult`, {
  method: "POST",
@@ -2178,9 +2176,6 @@ function App() {
  throw new Error(`Server returned ${response.status}`);
  }
 
- const result = await response.json();
- console.log(`✅ recordQuizResult completed: isCorrect=${result.isCorrect}`);
-
  // 세션 목록 즉시 갱신 (현황 탭 PDF 다운로드 반영)
  const sessions = await getUserProblemSessions(user.uid);
  setProblemSessions(sessions);
@@ -2188,7 +2183,6 @@ function App() {
  console.error(`❌ Error in recordQuizResult:`, error);
  }
  } else {
- console.warn(`⚠️ Cannot save result: user=${!!user}, problem=${!!problem}`);
  }
  }}
  style={{

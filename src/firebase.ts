@@ -158,9 +158,7 @@ export async function signUp(email: string, password: string, displayName: strin
       await sendEmailVerification(user, {
         url: `${window.location.origin}/?emailVerified=true`
       });
-      console.log('✅ Firebase verification email sent:', user.email);
     } catch (error: any) {
-      console.warn("⚠️ Firebase email verification failed:", error?.message);
       // 이메일 발송 실패해도 계정은 생성됨
     }
 
@@ -264,7 +262,6 @@ export async function resendEmailVerification(): Promise<void> {
     await sendEmailVerification(user, {
       url: `${window.location.origin}/?emailVerified=true`
     });
-    console.log('✅ Firebase verification email resent');
   } catch (error: any) {
     // Firebase rate limiting 오류 처리
     if (error?.code === 'auth/too-many-requests' || error?.message?.includes('too-many-requests')) {
@@ -715,7 +712,6 @@ export async function recordQuizResult(
 ): Promise<void> {
   try {
     const isCorrect = selectedAnswer === problem.answer;
-    console.log(`🎯 recordQuizResult called: isCorrect=${isCorrect}, selectedAnswer=${selectedAnswer}, answer=${problem.answer}, userId=${userId}`);
     const resultsRef = collection(db, "users", userId, "quizResults");
 
     // 24시간 뒤 만료 타임스탬프 계산
@@ -798,7 +794,6 @@ export async function getUserQuizStats(userId: string): Promise<{
       ? "http://localhost:5000"
       : (import.meta as any).env?.VITE_BACKEND_URL || "http://localhost:5000";
 
-    console.log(`📊 Fetching quiz stats from server...`);
 
     const response = await fetch(`${backendUrl}/api/getQuizStats`, {
       method: "POST",
@@ -813,7 +808,6 @@ export async function getUserQuizStats(userId: string): Promise<{
     }
 
     const stats = await response.json();
-    console.log(`✅ Quiz stats: ${stats.totalAttempts} attempts, ${stats.accuracy}% accuracy`);
 
     return stats;
   } catch (error: any) {
@@ -844,7 +838,6 @@ export async function getUserProblemSessions(userId: string): Promise<Array<{
       ? "http://localhost:5000"
       : (import.meta as any).env?.VITE_BACKEND_URL || "http://localhost:5000";
 
-    console.log(`🔍 Fetching problem sessions from server...`);
 
     const response = await fetch(`${backendUrl}/api/getUserProblemSessions`, {
       method: "POST",
@@ -859,7 +852,6 @@ export async function getUserProblemSessions(userId: string): Promise<Array<{
     }
 
     const sessions = await response.json();
-    console.log(`✅ Retrieved ${sessions.length} problem sessions`);
 
     return sessions;
   } catch (error: any) {
@@ -1393,7 +1385,6 @@ export async function canGenerateProblemToday(
       ? "http://localhost:5000"
       : (import.meta as any).env?.VITE_BACKEND_URL || "http://localhost:5000";
 
-    console.log(`🔍 Fetching problem count from server...`);
 
     const response = await fetch(`${backendUrl}/api/getProblemCountToday`, {
       method: "POST",
@@ -1411,7 +1402,6 @@ export async function canGenerateProblemToday(
     }
 
     const data = await response.json();
-    console.log(`✅ Today's problem count: ${data.count}/${data.limit}`);
 
     return {
       canGenerate: data.canGenerate,
@@ -1445,7 +1435,6 @@ export async function recordProblemGeneration(userId: string, problem?: Problem)
         problemCount: newCount,
         lastGeneratedAt: new Date().toISOString()
       });
-      console.log(`✅ Problem recorded: ${newCount} problems generated today`);
     } else {
       // 새 기록 생성
       await setDoc(dailyStatsRef, {
@@ -1454,7 +1443,6 @@ export async function recordProblemGeneration(userId: string, problem?: Problem)
         createdAt: new Date().toISOString(),
         lastGeneratedAt: new Date().toISOString()
       });
-      console.log(`✅ First problem recorded today`);
     }
 
     // 문제를 quizResults에 저장 (현황 탭 PDF 다운로드용)
@@ -1474,7 +1462,6 @@ export async function recordProblemGeneration(userId: string, problem?: Problem)
         timeSpent: 0,
         expiresAt: new Date().getTime() + 24 * 60 * 60 * 1000 // 1일(24시간) 뒤 삭제
       });
-      console.log(`✅ Problem saved to quizResults`);
     }
 
   } catch (error: any) {
