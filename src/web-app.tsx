@@ -12,7 +12,7 @@ import EmailVerificationModal from "./components/Modals/EmailVerificationModal";
 import { CAT, CONCEPTS_KO, LINKS, NODES } from "./data";
 import { CONCEPTS_EN } from "./CONCEPTS_EN";
 import { CONCEPTS_JA } from "./concepts_ja";
-import { auth, createPost, deleteExpiredResults, deleteOldMockExamProblems, deletePost, getAdminStatsSecure, getAllUsersForAdminSecure, getCurrentUser, getExamStartDate, getPostById, getPosts, getTodayMockExamProblems, getUserPaidStatus, getUserProblemSessions, getUserProblemSessionsSecure, getUserQuizStats, isPasswordLinked, linkEmailPasswordToCurrentUser, onAuthStateChange, saveTodayMockExamProblems, saveUserInfoToFirebase, signIn, signInWithGoogle, signOut, signUp, updateMockExamProblemsProgressively, updateStreakInFirebase, updateUserPaidStatus, uploadPDFToStorage, refreshUserData, resendEmailVerification } from "./firebase";
+import { auth, createPost, deleteExpiredResults, deleteOldMockExamProblems, deletePost, getAdminStatsSecure, getAllUsersForAdminSecure, getCurrentUser, getExamStartDate, getPostById, getPosts, getTodayMockExamProblems, getUserPaidStatus, getUserProblemSessions, getUserProblemSessionsSecure, getUserQuizStats, isPasswordLinked, onAuthStateChange, saveTodayMockExamProblems, saveUserInfoToFirebase, signIn, signInWithGoogle, signOut, signUp, updateMockExamProblemsProgressively, updateStreakInFirebase, updateUserPaidStatus, uploadPDFToStorage, refreshUserData, resendEmailVerification } from "./firebase";
 import { useLocale } from "./LocaleContext";
 import { useTheme } from "./ThemeContext";
 // SEC Challenges
@@ -502,10 +502,6 @@ function App() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [, setIsPasswordLoginLinked] = useState(false);
-  const [showLinkPasswordModal, setShowLinkPasswordModal] = useState(false);
-  const [linkPasswordValue, setLinkPasswordValue] = useState("");
-  const [linkPasswordLoading, setLinkPasswordLoading] = useState(false);
-  const [linkPasswordError, setLinkPasswordError] = useState<string | null>(null);
   const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
   const [emailVerificationMessage, setEmailVerificationMessage] = useState<string | null>(null);
   const [emailVerificationUserEmail, setEmailVerificationUserEmail] = useState<string | null>(null);
@@ -5353,124 +5349,6 @@ function App() {
  />
 
  {/* Firebase 로그인/회원가입 모달 */}
- {showLinkPasswordModal && (
- <div style={{
- display: "none",
- position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
- background: "rgba(0,0,0,0.7)", alignItems: "center", justifyContent: "center",
- zIndex: 1002
- }} onClick={() => setShowLinkPasswordModal(false)}>
- <div style={{
- background: "#0F1629",
- border: "1px solid rgba(255,255,255,0.1)",
- borderRadius: "16px",
- padding: "32px",
- maxWidth: "420px",
- width: "90%",
- boxShadow: "0 20px 60px rgba(0,0,0,0.5)"
- }} onClick={(e) => e.stopPropagation()}>
- <h3 style={{ color: "#fff", margin: "0 0 12px", fontSize: "22px", textAlign: "center" }}>
- 비밀번호 연결
- </h3>
- <p style={{ color: "#D1D5DB", fontSize: "13px", textAlign: "center", marginBottom: "20px", lineHeight: 1.6 }}>
- Google로 로그인한 현재 계정에 비밀번호를 추가합니다.
- 연결 후에는 이메일/비밀번호 로그인도 함께 사용할 수 있습니다.
- </p>
-
- {linkPasswordError && (
- <div style={{
- marginBottom: "12px",
- padding: "12px",
- background: "rgba(239,68,68,0.1)",
- border: "1px solid rgba(239,68,68,0.3)",
- borderRadius: "8px",
- color: "#fca5a5",
- fontSize: "12px",
- textAlign: "center"
- }}>
- {linkPasswordError}
- </div>
- )}
-
- <input
- type="password"
- value={linkPasswordValue}
- onChange={(e) => setLinkPasswordValue(e.target.value)}
- placeholder="새 비밀번호 (6자 이상)"
- autoComplete="new-password"
- style={{
- width: "100%",
- padding: "12px 16px",
- background: "rgba(255,255,255,0.05)",
- border: "1px solid #2A344A",
- borderRadius: "8px",
- color: "#D1D5DB",
- fontSize: "14px",
- boxSizing: "border-box",
- marginBottom: "16px"
- }}
- />
-
- <div style={{ display: "flex", gap: "12px" }}>
- <button
- onClick={async () => {
- setLinkPasswordError(null);
- const validation = validatePassword(linkPasswordValue);
- if (!validation.valid) {
- setLinkPasswordError(validation.error || "비밀번호를 다시 확인해주세요.");
- return;
- }
-
- setLinkPasswordLoading(true);
- try {
- await linkEmailPasswordToCurrentUser(linkPasswordValue);
- setIsPasswordLoginLinked(true);
- setShowLinkPasswordModal(false);
- setLinkPasswordValue("");
- } catch (error: any) {
- setLinkPasswordError(error.message || "비밀번호 연결에 실패했습니다.");
- } finally {
- setLinkPasswordLoading(false);
- }
- }}
- disabled={linkPasswordLoading}
- style={{
- flex: 1,
- padding: "12px",
- background: "#FF9900",
- color: "#fff",
- border: "none",
- borderRadius: "8px",
- cursor: linkPasswordLoading ? "not-allowed" : "pointer",
- fontWeight: "bold",
- opacity: linkPasswordLoading ? 0.6 : 1
- }}
- >
- {linkPasswordLoading ? "연결 중..." : "연결하기"}
- </button>
- <button
- onClick={() => {
- setShowLinkPasswordModal(false);
- setLinkPasswordError(null);
- setLinkPasswordValue("");
- }}
- style={{
- flex: 1,
- padding: "12px",
- background: "#2A344A",
- color: "#D1D5DB",
- border: "1px solid rgba(255,255,255,0.15)",
- borderRadius: "8px",
- cursor: "pointer"
- }}
- >
- 나중에
- </button>
- </div>
- </div>
- </div>
- )}
-
  {renderLoginModal()}
 
  {/* 이메일 검증 모달 */}
