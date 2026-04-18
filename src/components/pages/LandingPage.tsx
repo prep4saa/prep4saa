@@ -365,6 +365,7 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, o
                 { icon: '3', title: t.landingHonest4Title, desc: t.landingHonest4Desc },
                 { icon: 'P', title: t.landingHonest5Title, desc: t.landingHonest5Desc },
                 { icon: 'AI', title: t.landingHonest6Title, desc: t.landingHonest6Desc },
+                { icon: 'H', title: t.landingHonest7Title, desc: t.landingHonest7Desc },
               ].map((f, i) => (
                 <div key={i} className="feature-card">
                   <div style={{ width: '2.25rem', height: '2.25rem', borderRadius: '0.375rem', background: 'rgba(255,153,0,0.12)', border: '1px solid rgba(255,153,0,0.25)', color: '#FF9900', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', fontSize: '0.8125rem', fontWeight: 700, marginBottom: '1.25rem' }}>{f.icon}</div>
@@ -372,11 +373,6 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, o
                   <p className="feature-desc">{f.desc}</p>
                 </div>
               ))}
-              <div className="feature-card" style={{ opacity: 0.65 }}>
-                <div style={{ width: '2.25rem', height: '2.25rem', borderRadius: '0.375rem', background: 'rgba(107,115,137,0.15)', border: '1px solid rgba(107,115,137,0.25)', color: '#6b7389', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', fontSize: '0.8125rem', fontWeight: 700, marginBottom: '1.25rem' }}>···</div>
-                <div className="feature-title" style={{ color: '#9CA3AF' }}>{t.landingHonest7Title}</div>
-                <p className="feature-desc">{t.landingHonest7Desc}</p>
-              </div>
             </div>
           </div>
         </section>
