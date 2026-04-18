@@ -24,7 +24,10 @@ export function checkRateLimit(userId: string): boolean {
 }
 
 /**
- * 운영자 계정 확인 (sessionStorage 캐시 + ENV 비교)
+ * 운영자 계정 확인 (서버 API 호출, sessionStorage 캐시)
+ *
+ * 보안: admin 이메일을 번들에 담지 않도록 서버 /api/checkAdmin 호출.
+ * 서버는 process.env.VITE_ADMIN_EMAIL 로 비교.
  */
 export async function isAdminUser(email: string | null): Promise<boolean> {
   if (!email) return false;
@@ -39,20 +42,40 @@ export async function isAdminUser(email: string | null): Promise<boolean> {
     return false;
   }
 
-  // 보안: 특정 env 값만 정적 참조 (전체 env destructure 금지)
-  const adminEmailsStr = import.meta.env.VITE_ADMIN_EMAILS || '';
-  const adminEmails = adminEmailsStr.split(',').map((e: string) => e.trim()).filter(Boolean);
+  // 서버 API 호출 (admin 이메일은 서버에만 존재)
+  const hostname = typeof window !== 'undefined' ? window.location?.hostname : '';
+  const backendUrl = (hostname === 'localhost' || hostname === '127.0.0.1')
+    ? 'http://localhost:5000'
+    : (import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000');
 
-  const isAdmin = adminEmails.includes(email);
+  try {
+    const res = await fetch(`${backendUrl}/api/checkAdmin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
 
-  if (isAdmin) {
-    const adminToken = `ADMIN_TOKEN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    sessionStorage.setItem(cacheKey, adminToken);
-  } else {
+    if (!res.ok) {
+      sessionStorage.setItem(cacheKey, 'NOT_ADMIN');
+      return false;
+    }
+
+    const data = await res.json();
+    const isAdmin = data?.isAdmin === true;
+
+    if (isAdmin) {
+      const adminToken = `ADMIN_TOKEN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      sessionStorage.setItem(cacheKey, adminToken);
+    } else {
+      sessionStorage.setItem(cacheKey, 'NOT_ADMIN');
+    }
+
+    return isAdmin;
+  } catch {
+    // 서버 통신 실패 시 관리자 아님으로 간주 (보안 우선)
     sessionStorage.setItem(cacheKey, 'NOT_ADMIN');
+    return false;
   }
-
-  return isAdmin;
 }
 
 /**

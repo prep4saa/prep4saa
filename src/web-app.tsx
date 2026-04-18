@@ -381,9 +381,9 @@ function App() {
  return errorMessage;
   };
 
-  //  보안: 특정 env 값만 정적 참조 (Vite가 빌드 시 개별 값 inline, 전체 env 객체 번들 방지)
-  const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || '').split(',').map((e: string) => e.trim()).filter(Boolean);
-  const TEST_PAID_EMAILS = (import.meta.env.VITE_TEST_PAID_EMAILS || '').split(',').map((e: string) => e.trim()).filter(Boolean);
+  //  보안: admin 이메일은 번들에 담지 않음 (서버 /api/checkAdmin 사용)
+  //  테스트용 paid 이메일도 번들 제거 (프로덕션에서 사용 안 함)
+  const TEST_PAID_EMAILS: string[] = [];
   const [tab, setTab] = useState<"quiz" | "concept" | "status" | "mockExam" | "pastExam" | "posts" | "admin" | "users" | "console">("quiz");
   const [showQuizIntroModal, setShowQuizIntroModal] = useState(false);
   const [quizIntroStep, setQuizIntroStep] = useState(0);
@@ -4183,7 +4183,7 @@ function App() {
  >
  <div style={{ fontSize: "12px", fontWeight: 600, marginBottom: "4px", display: "flex", alignItems: "center", gap: "8px" }}>
  {maskEmail(user.email)}
- {ADMIN_EMAILS.includes(user.email) && (
+ {(user.email === userEmail && isAdmin) && (
  <span style={{ fontSize: "10px", background: "rgba(249,115,22,0.3)", color: "#fb923c", padding: "2px 6px", borderRadius: "4px" }}>
  {t("usersPanelAdminBadge")}
  </span>
@@ -5118,7 +5118,7 @@ function App() {
  }
 
  // 환경변수에서 읽은 이메일 목록 사용 + Firebase 검증
- const isUnlimitedUser = isPaidUser || ADMIN_EMAILS.includes(userEmail || '') || isAdmin;
+ const isUnlimitedUser = isPaidUser || isAdmin;
 
  const today = new Date().toISOString().split('T')[0];
  const mockExamStartedDate = localStorage.getItem("mockExamStartedToday");
