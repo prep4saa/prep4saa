@@ -10,7 +10,7 @@ type Locale = 'ko' | 'en' | 'ja';
 
 interface LandingPageProps {
   onGetStarted: () => void;
-  onTabChange: (tab: "quiz" | "concept" | "status" | "mockExam" | "admin" | "users" | "console") => void;
+  onTabChange: (tab: "quiz" | "concept" | "status" | "mockExam" | "pastExam" | "admin" | "users" | "console") => void;
   onLoginClick?: () => void;
   onProClick?: () => void;
   userEmail?: string | null;
@@ -87,13 +87,13 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, o
     /* HERO */
     .hero{position:relative;padding-top:3rem;padding-bottom:3rem;overflow:hidden;}
     .hero-grid{position:absolute;inset:0;opacity:.3;pointer-events:none;}
-    .hero-glow{position:absolute;top:0;right:0;width:50%;height:100%;background:linear-gradient(to left,rgba(255,153,0,.05),transparent);pointer-events:none;}
+    .hero-glow{position:absolute;inset:0;background:radial-gradient(ellipse 70% 50% at 20% 0%,rgba(255,153,0,0.15),transparent 60%),radial-gradient(ellipse 50% 40% at 85% 20%,rgba(52,211,153,0.08),transparent 60%);pointer-events:none;}
     .hero-inner{max-width:80rem;margin:0 auto;padding:0 1.5rem;position:relative;z-index:10;}
     .hero-grid-cols{display:grid;gap:4rem;align-items:center;}
     .hero-badge{display:inline-flex;align-items:center;gap:.5rem;padding:.25rem .75rem;border-radius:9999px;background:#151E32;border:1px solid #2A344A;margin-bottom:1.5rem;}
     .hero-badge-dot{width:.5rem;height:.5rem;border-radius:9999px;background:#FF9900;flex-shrink:0;}
     .hero-badge-text{font-size:.75rem;font-weight:500;color:#D1D5DB;text-transform:uppercase;letter-spacing:.05em;}
-    h1{font-size:3rem;font-weight:800;color:#F9FAFB;line-height:1.1;margin-bottom:1.5rem;letter-spacing:-.025em;word-break:keep-all;}
+    h1{font-size:3.25rem;font-weight:800;color:#F9FAFB;line-height:1.1;margin-bottom:1.5rem;letter-spacing:-.025em;word-break:keep-all;text-shadow:0 0 40px rgba(255,255,255,0.04);}
     .hero-sub{font-size:1.125rem;color:#D1D5DB;line-height:1.625;margin-bottom:2rem;max-width:36rem;}
     .hero-ctas{display:flex;flex-direction:column;gap:1rem;margin-bottom:1rem;}
     .btn-hero-primary{background:#FF9900;color:#0F1629;font-weight:700;font-size:1.125rem;padding:1rem 2rem;border-radius:.5rem;transition:all .15s;box-shadow:0 0 20px rgba(255,153,0,.3);text-align:center;cursor:pointer;border:none;display:inline-block;text-decoration:none;}
@@ -218,11 +218,28 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, o
     }
     @media(min-width:1024px){
         .hero-grid-cols{grid-template-columns:repeat(2,1fr);}
-        h1{font-size:3.75rem;}
+        h1{font-size:4.25rem;}
         .mock-card{margin-top:0;margin-left:2.5rem;}
         .cta-h{font-size:3rem;}
         .hero{padding-top:5rem;padding-bottom:5rem;}
     }
+
+    /* ── Hero entrance: fade-up stagger ── */
+    @keyframes heroFadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes heroFadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    .hero-grid-cols > div:first-child > * { animation: heroFadeUp 0.8s ease backwards; }
+    .hero-grid-cols > div:first-child > *:nth-child(1) { animation-delay: 0.05s; }
+    .hero-grid-cols > div:first-child > *:nth-child(2) { animation-delay: 0.15s; }
+    .hero-grid-cols > div:first-child > *:nth-child(3) { animation-delay: 0.25s; }
+    .hero-grid-cols > div:first-child > *:nth-child(4) { animation-delay: 0.35s; }
+    .hero-grid-cols > div:first-child > *:nth-child(5) { animation-delay: 0.45s; }
+    .hero-grid-cols > .mock-card { animation: heroFadeIn 0.8s ease backwards; animation-delay: 0.55s; }
   `;
 
   return (
@@ -253,15 +270,14 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, o
           <div className="hero-inner">
             <div className="hero-grid-cols" style={{ display: 'grid', gap: '4rem', alignItems: 'center' }}>
               <div>
-                <div className="hero-badge">
-                  <span className="hero-badge-dot"></span>
-                  <span className="hero-badge-text">{t.landingBadgeText}</span>
-                </div>
+                <span style={{ fontFamily: 'monospace', fontSize: '0.875rem', fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#FF9900', display: 'inline-flex', alignItems: 'center', gap: '0.625rem', marginBottom: '1.75rem', textShadow: '0 0 20px rgba(255,153,0,0.3)' }}>
+                  <span style={{ width: '1.75rem', height: '1.5px', background: '#FF9900' }}></span>
+                  {t.landingBadgeText}
+                </span>
                 <h1>{t.landingHeading}<br /><span style={{ background: 'linear-gradient(to right,#FF9900,#fb923c)', backgroundClip: 'text', WebkitBackgroundClip: 'text', color: 'transparent' }}>{t.landingHeadingGradient}</span></h1>
                 <p className="hero-sub">{t.landingSub}</p>
                 <div className="hero-ctas">
                   <button onClick={handleFreeClick} className="btn-hero-primary">{t.landingCTAPrimary}</button>
-                  <a href="#preview" className="btn-hero-secondary">{t.landingCTASecondary}</a>
                 </div>
                 <p className="hero-note">
                   <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#4ADE80" strokeWidth="2">
@@ -330,29 +346,36 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, o
           </div>
         </div>
 
-        {/* FEATURES */}
-        <section id="features" className="section">
+        {/* HONEST FEATURES - 솔직한 기능 소개 */}
+        <section id="honest-features" className="section" style={{ background: '#0A101E', borderTop: '1px solid #2A344A', borderBottom: '1px solid #2A344A' }}>
           <div className="section-inner">
-            <div className="section-header">
-              <h2>{t.landingFeaturesTitle}</h2>
-              <p className="section-sub">{t.landingFeaturesSub}</p>
+            <div style={{ maxWidth: '48rem', marginBottom: '3.5rem' }}>
+              <span style={{ fontFamily: 'monospace', fontSize: '0.75rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#FF9900', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                <span style={{ width: '1.5rem', height: '1px', background: '#FF9900' }}></span>
+                {t.landingHonestEyebrow}
+              </span>
+              <h2 style={{ textAlign: 'left', fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', fontWeight: 700, lineHeight: 1.2, margin: '0.5rem 0 1rem', color: '#fff' }}>{t.landingHonestTitle}</h2>
+              <p style={{ fontSize: '1.0625rem', color: '#9CA3AF', lineHeight: 1.6 }}>{t.landingHonestSub}</p>
             </div>
-            <div className="features-grid">
-              <div className="feature-card">
-                <div className="feature-title">{t.landingFeature1Title}</div>
-                <p className="feature-desc">{t.landingFeature1Desc}</p>
-              </div>
-              <div className="feature-card">
-                <div className="feature-title">{t.landingFeature2Title}</div>
-                <p className="feature-desc">{t.landingFeature2Desc}</p>
-              </div>
-              <div className="feature-card">
-                <div className="feature-title">{t.landingFeature3Title}</div>
-                <p className="feature-desc">{t.landingFeature3Desc}</p>
-              </div>
-              <div className="feature-card">
-                <div className="feature-title">{t.landingFeature4Title}</div>
-                <p className="feature-desc">{t.landingFeature4Desc}</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
+              {[
+                { icon: 'Q', title: t.landingHonest1Title, desc: t.landingHonest1Desc },
+                { icon: 'M', title: t.landingHonest2Title, desc: t.landingHonest2Desc },
+                { icon: 'G', title: t.landingHonest3Title, desc: t.landingHonest3Desc },
+                { icon: '3', title: t.landingHonest4Title, desc: t.landingHonest4Desc },
+                { icon: 'P', title: t.landingHonest5Title, desc: t.landingHonest5Desc },
+                { icon: 'AI', title: t.landingHonest6Title, desc: t.landingHonest6Desc },
+              ].map((f, i) => (
+                <div key={i} className="feature-card">
+                  <div style={{ width: '2.25rem', height: '2.25rem', borderRadius: '0.375rem', background: 'rgba(255,153,0,0.12)', border: '1px solid rgba(255,153,0,0.25)', color: '#FF9900', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', fontSize: '0.8125rem', fontWeight: 700, marginBottom: '1.25rem' }}>{f.icon}</div>
+                  <div className="feature-title">{f.title}</div>
+                  <p className="feature-desc">{f.desc}</p>
+                </div>
+              ))}
+              <div className="feature-card" style={{ opacity: 0.65 }}>
+                <div style={{ width: '2.25rem', height: '2.25rem', borderRadius: '0.375rem', background: 'rgba(107,115,137,0.15)', border: '1px solid rgba(107,115,137,0.25)', color: '#6b7389', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', fontSize: '0.8125rem', fontWeight: 700, marginBottom: '1.25rem' }}>···</div>
+                <div className="feature-title" style={{ color: '#9CA3AF' }}>{t.landingHonest7Title}</div>
+                <p className="feature-desc">{t.landingHonest7Desc}</p>
               </div>
             </div>
           </div>
@@ -395,6 +418,10 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, o
         <section id="how-it-works" className="how-section">
           <div className="section-inner">
             <div className="section-header">
+              <span style={{ fontFamily: 'monospace', fontSize: '0.75rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#FF9900', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                <span style={{ width: '1.5rem', height: '1px', background: '#FF9900' }}></span>
+                {t.landingHowEyebrow}
+              </span>
               <h2>{t.landingHowTitle}</h2>
               <p className="section-sub">{t.landingHowSub}</p>
             </div>
@@ -472,31 +499,15 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, o
                 <div className="pro-features">
                   <div className="pro-feature">
                     <div className="pro-feature-title">{t.landingProPlanFeature1Title}</div>
-                    <p className="pro-feature-desc">{t.landingProPlanFeature1Desc}</p>
                   </div>
                   <div className="pro-feature">
                     <div className="pro-feature-title">{t.landingProPlanFeature2Title}</div>
-                    <p className="pro-feature-desc">{t.landingProPlanFeature2Desc}</p>
                   </div>
                   <div className="pro-feature">
                     <div className="pro-feature-title">{t.landingProPlanFeature3Title}</div>
-                    <p className="pro-feature-desc">{t.landingProPlanFeature3Desc}</p>
                   </div>
                   <div className="pro-feature">
                     <div className="pro-feature-title">{t.landingProPlanFeature4Title}</div>
-                    <p className="pro-feature-desc">{t.landingProPlanFeature4Desc}</p>
-                  </div>
-                  <div className="pro-feature">
-                    <div className="pro-feature-title">{t.landingProPlanFeature5Title}</div>
-                    <p className="pro-feature-desc">{t.landingProPlanFeature5Desc}</p>
-                  </div>
-                  <div className="pro-feature">
-                    <div className="pro-feature-title">{t.landingProPlanFeature6Title}</div>
-                    <p className="pro-feature-desc">{t.landingProPlanFeature6Desc}</p>
-                  </div>
-                  <div className="pro-feature">
-                    <div className="pro-feature-title">{t.landingProPlanFeature7Title}</div>
-                    <p className="pro-feature-desc">{t.landingProPlanFeature7Desc}</p>
                   </div>
                 </div>
                 <button className="btn-pro" onClick={handleProClick}>
@@ -531,6 +542,18 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, o
             <div className="faq-item">
               <div className="faq-q">{t.landingFaq4Q}</div>
               <p className="faq-a">{t.landingFaq4A}</p>
+            </div>
+            <div className="faq-item">
+              <div className="faq-q">{t.landingFaq5Q}</div>
+              <p className="faq-a">{t.landingFaq5A}</p>
+            </div>
+            <div className="faq-item">
+              <div className="faq-q">{t.landingFaq6Q}</div>
+              <p className="faq-a">{t.landingFaq6A}</p>
+            </div>
+            <div className="faq-item">
+              <div className="faq-q">{t.landingFaq7Q}</div>
+              <p className="faq-a">{t.landingFaq7A}</p>
             </div>
           </div>
         </section>

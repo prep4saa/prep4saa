@@ -1,0 +1,70 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ──── 사용자 문서 ────
+    match /users/{userId} {
+      allow read, write: if request.auth.uid == userId ||
+                          request.auth.uid == 'github-actions-deploy@awsssac03.iam.gserviceaccount.com';
+    }
+
+    // ──── 분석 데이터 (원래대로 유지 - trackVisitor()가 모든 유저로부터 쓰기 필요) ────
+    match /analytics/{document=**} {
+      allow read, write: if request.auth != null ||
+                          request.auth.uid == 'github-actions-deploy@awsssac03.iam.gserviceaccount.com';
+    }
+    match /visitors/{document=**} {
+      allow read, write: if request.auth != null ||
+                          request.auth.uid == 'github-actions-deploy@awsssac03.iam.gserviceaccount.com';
+    }
+    match /purchases/{document=**} {
+      allow read, write: if request.auth != null ||
+                          request.auth.uid == 'github-actions-deploy@awsssac03.iam.gserviceaccount.com';
+    }
+
+    // ──── 모의시험 (delete 제거: 관리자만 삭제 가능) ────
+    match /mockExamProblems/{document=**} {
+      allow read: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isPaid == true ||
+                   request.auth.uid == 'sArV67Za48dxKSYdoU2VVgmGAST2';
+      allow write: if request.auth.uid == 'sArV67Za48dxKSYdoU2VVgmGAST2';
+    }
+
+    // ──── 기출문제 (언어별) ────
+    // Page 1 (order 1~10): 로그인 유저 누구나
+    // Page 2+ (order > 10): isPaid 또는 관리자
+    // 쓰기: 관리자만
+    match /pastExams_ko/{document=**} {
+      allow read: if request.auth != null &&
+                  (resource.data.order <= 10 ||
+                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isPaid == true ||
+                   request.auth.uid == 'sArV67Za48dxKSYdoU2VVgmGAST2');
+      allow write: if request.auth.uid == 'sArV67Za48dxKSYdoU2VVgmGAST2';
+    }
+    match /pastExams_en/{document=**} {
+      allow read: if request.auth != null &&
+                  (resource.data.order <= 10 ||
+                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isPaid == true ||
+                   request.auth.uid == 'sArV67Za48dxKSYdoU2VVgmGAST2');
+      allow write: if request.auth.uid == 'sArV67Za48dxKSYdoU2VVgmGAST2';
+    }
+    match /pastExams_ja/{document=**} {
+      allow read: if request.auth != null &&
+                  (resource.data.order <= 10 ||
+                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isPaid == true ||
+                   request.auth.uid == 'sArV67Za48dxKSYdoU2VVgmGAST2');
+      allow write: if request.auth.uid == 'sArV67Za48dxKSYdoU2VVgmGAST2';
+    }
+
+    // ──── 메타 (총 개수 캐시) ────
+    match /meta/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.uid == 'sArV67Za48dxKSYdoU2VVgmGAST2';
+    }
+
+    // ──── 관리자 catch-all ────
+    match /{document=**} {
+      allow read, write: if request.auth.uid == 'sArV67Za48dxKSYdoU2VVgmGAST2' ||
+                          request.auth.uid == 'github-actions-deploy@awsssac03.iam.gserviceaccount.com';
+    }
+  }
+}

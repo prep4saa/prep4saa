@@ -1,5 +1,5 @@
 // Analytics and tracking utilities for visitor count and paid purchases
-import { db } from "./firebase";
+import { db, auth } from "./firebase";
 import { doc, getDoc, setDoc, collection, getDocs } from "firebase/firestore";
 
 const VISITOR_COLLECTION = "analytics/visitors/daily";
@@ -38,42 +38,59 @@ function generateVisitorId(): string {
 
 /**
  * Track today's visitor - returns today's visitor count
+ *
+ * - 로그인 유저: Firebase user.uid 사용 → 여러 디바이스·브라우저 접속해도 1 count
+ * - 비로그인: localStorage 기반 visitor_ID 사용 → 브라우저별 1 count
+ * - 중복 방지: visitors 배열에 이미 있으면 추가 안 함
  */
 export async function trackVisitor(): Promise<number> {
   try {
-    const today = getTodayDate();
-    const visitorId = generateVisitorId();
-
-    // Check if this is a new session (visitor hasn't been tracked yet)
-    const sessionKey = `aws-quiz-session-${today}`;
-    if (!localStorage.getItem(sessionKey)) {
-      localStorage.setItem(sessionKey, visitorId);
-
-      const docRef = doc(db, VISITOR_COLLECTION, today);
-      const docSnap = await getDoc(docRef);
-
-      let todayData: VisitorData;
-      if (docSnap.exists()) {
-        todayData = docSnap.data() as VisitorData;
-        if (!todayData.visitors.includes(visitorId)) {
-          todayData.visitors.push(visitorId);
-          todayData.count = todayData.visitors.length;
-        }
-      } else {
-        todayData = {
-          date: today,
-          count: 1,
-          visitors: [visitorId],
-        };
-      }
-
-      await setDoc(docRef, todayData);
+    // Firebase Auth 초기화 대기 (세션 복원 전이면 currentUser = null)
+    // → 로그인 유저를 비로그인으로 오인하는 문제 방지
+    try {
+      await auth.authStateReady();
+    } catch {
+      // authStateReady 미지원 SDK면 무시
     }
 
-    // Return today's count
+    const today = getTodayDate();
+    const sessionKey = `aws-quiz-session-${today}`;
+    const storedId = localStorage.getItem(sessionKey);
+
+    // 로그인 유저는 uid, 아니면 이전에 쓰던 ID 또는 새 ID
+    const currentUser = auth.currentUser;
+    const trackingId = currentUser?.uid || storedId || generateVisitorId();
+
+    // 이미 오늘 이 trackingId로 카운트 처리됐으면 스킵 (불필요한 쓰기 방지)
+    if (storedId === trackingId) {
+      const docRef = doc(db, VISITOR_COLLECTION, today);
+      const docSnap = await getDoc(docRef);
+      return docSnap.exists() ? (docSnap.data() as VisitorData).count : 0;
+    }
+
+    localStorage.setItem(sessionKey, trackingId);
+
     const docRef = doc(db, VISITOR_COLLECTION, today);
     const docSnap = await getDoc(docRef);
-    return docSnap.exists() ? (docSnap.data() as VisitorData).count : 0;
+
+    let todayData: VisitorData;
+    if (docSnap.exists()) {
+      todayData = docSnap.data() as VisitorData;
+      // 같은 trackingId 이미 있으면 중복 방지 (다른 디바이스에서 로그인 유저가 재방문)
+      if (!todayData.visitors.includes(trackingId)) {
+        todayData.visitors.push(trackingId);
+        todayData.count = todayData.visitors.length;
+      }
+    } else {
+      todayData = {
+        date: today,
+        count: 1,
+        visitors: [trackingId],
+      };
+    }
+
+    await setDoc(docRef, todayData);
+    return todayData.count;
   } catch (error) {
     return 0;
   }

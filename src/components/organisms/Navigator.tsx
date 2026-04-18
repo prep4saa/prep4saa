@@ -6,7 +6,7 @@ import { ja } from '../../locales/ja';
 type Locale = 'ko' | 'en' | 'ja';
 
 interface NavigatorProps {
-  onTabChange: (tab: "quiz" | "concept" | "status" | "mockExam" | "admin" | "users" | "console") => void;
+  onTabChange: (tab: "quiz" | "concept" | "status" | "mockExam" | "pastExam" | "admin" | "users" | "console") => void;
   currentLocale?: Locale;
   onLocaleChange?: (locale: Locale) => void;
   onLoginClick?: () => void;
@@ -106,14 +106,17 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
             <span style={{ color: '#fff', fontWeight: 700, fontSize: '1.25rem', letterSpacing: '-.025em' }}>SAA Cloud Prep</span>
           </button>
           <div className="nav-links">
-            <button onClick={() => onTabChange('quiz')} style={{ background: 'none', border: 'none', color: currentTab === 'quiz' ? '#FF9900' : '#D1D5DB', fontSize: '.875rem', fontWeight: 500, cursor: 'pointer', transition: 'color .15s' }}>
-              {t.tabQuiz}
+            <button onClick={() => onTabChange('status')} style={{ background: 'none', border: 'none', color: currentTab === 'status' ? '#FF9900' : '#D1D5DB', fontSize: '.875rem', fontWeight: 500, cursor: 'pointer', transition: 'color .15s' }}>
+              {t.tabStatus}
             </button>
             <button onClick={() => onTabChange('concept')} style={{ background: 'none', border: 'none', color: currentTab === 'concept' ? '#FF9900' : '#D1D5DB', fontSize: '.875rem', fontWeight: 500, cursor: 'pointer', transition: 'color .15s' }}>
               {t.tabConcept}
             </button>
-            <button onClick={() => onTabChange('status')} style={{ background: 'none', border: 'none', color: currentTab === 'status' ? '#FF9900' : '#D1D5DB', fontSize: '.875rem', fontWeight: 500, cursor: 'pointer', transition: 'color .15s' }}>
-              {t.tabStatus}
+            <button onClick={() => onTabChange('quiz')} style={{ background: 'none', border: 'none', color: currentTab === 'quiz' ? '#FF9900' : '#D1D5DB', fontSize: '.875rem', fontWeight: 500, cursor: 'pointer', transition: 'color .15s' }}>
+              {t.tabQuiz}
+            </button>
+            <button onClick={() => onTabChange('pastExam')} style={{ background: 'none', border: 'none', color: currentTab === 'pastExam' ? '#FF9900' : '#D1D5DB', fontSize: '.875rem', fontWeight: 500, cursor: 'pointer', transition: 'color .15s' }}>
+              {t.tabPastExam}
             </button>
             <button onClick={() => onTabChange('mockExam')} style={{ background: 'none', border: 'none', color: currentTab === 'mockExam' ? '#FF9900' : '#D1D5DB', fontSize: '.875rem', fontWeight: 500, cursor: 'pointer', transition: 'color .15s' }}>
               {t.tabMockExam}
@@ -269,9 +272,10 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
       {/* 모바일 메뉴 드롭다운 */}
       <div className={`mobile-menu${showMobileMenu ? ' open' : ''}`}>
         {/* 탭 메뉴 */}
-        <button className={`mobile-menu-btn${currentTab === 'quiz' ? ' active' : ''}`} onClick={() => { onTabChange('quiz'); setShowMobileMenu(false); }}>{t.tabQuiz}</button>
-        <button className={`mobile-menu-btn${currentTab === 'concept' ? ' active' : ''}`} onClick={() => { onTabChange('concept'); setShowMobileMenu(false); }}>{t.tabConcept}</button>
         <button className={`mobile-menu-btn${currentTab === 'status' ? ' active' : ''}`} onClick={() => { onTabChange('status'); setShowMobileMenu(false); }}>{t.tabStatus}</button>
+        <button className={`mobile-menu-btn${currentTab === 'concept' ? ' active' : ''}`} onClick={() => { onTabChange('concept'); setShowMobileMenu(false); }}>{t.tabConcept}</button>
+        <button className={`mobile-menu-btn${currentTab === 'quiz' ? ' active' : ''}`} onClick={() => { onTabChange('quiz'); setShowMobileMenu(false); }}>{t.tabQuiz}</button>
+        <button className={`mobile-menu-btn${currentTab === 'pastExam' ? ' active' : ''}`} onClick={() => { onTabChange('pastExam'); setShowMobileMenu(false); }}>{t.tabPastExam}</button>
         <button className={`mobile-menu-btn${currentTab === 'mockExam' ? ' active' : ''}`} onClick={() => { onTabChange('mockExam'); setShowMobileMenu(false); }}>{t.tabMockExam}</button>
         <button className={`mobile-menu-btn${currentTab === 'console' ? ' active' : ''}`} onClick={() => { onTabChange('console'); setShowMobileMenu(false); }}>{t.tabConsole}</button>
         {isAdmin && <>

@@ -17,7 +17,7 @@ import PostFormModal from "./components/Modals/PostFormModal";
 import { CAT, CONCEPTS_KO, LINKS, NODES } from "./data";
 import { CONCEPTS_EN } from "./CONCEPTS_EN";
 import { CONCEPTS_JA } from "./concepts_ja";
-import { auth, deleteExpiredResults, deleteOldMockExamProblems, deletePost, getAdminStatsSecure, getAllUsersForAdminSecure, getCurrentUser, getExamStartDate, getPostById, getPosts, getTodayMockExamProblems, getUserPaidStatus, getUserProblemSessions, getUserProblemSessionsSecure, getUserQuizStats, isPasswordLinked, isSubscriptionCancelled, onAuthStateChange, saveTodayMockExamProblems, saveUserInfoToFirebase, signIn, signInWithGoogle, signOut, signUp, updateMockExamProblemsProgressively, updateStreakInFirebase, updateUserPaidStatus, uploadPDFToStorage, refreshUserData, resendEmailVerification } from "./firebase";
+import { auth, deleteExpiredResults, deleteOldMockExamProblems, deletePost, getAdminStatsSecure, getAllUsersForAdminSecure, getCurrentUser, getExamStartDate, getPostById, getPosts, getTodayMockExamProblems, getUserPaidStatus, getUserProblemSessions, getUserProblemSessionsSecure, getUserQuizStats, isPasswordLinked, isSubscriptionCancelled, onAuthStateChange, saveTodayMockExamProblems, saveUserInfoToFirebase, signIn, signInWithGoogle, signOut, signUp, updateMockExamProblemsProgressively, updateStreakInFirebase, updateUserPaidStatus, uploadPDFToStorage, refreshUserData, resendEmailVerification, uploadCurrentMockExamToPastExams, fetchPastExamPage, getPastExamTotalCount } from "./firebase";
 import { useLocale } from "./LocaleContext";
 import { useTheme } from "./ThemeContext";
 // SEC Challenges
@@ -181,26 +181,33 @@ function GraphSVG({ pos, setPos, posRef: _posRef, dragRef, pan, setPan, zoom, se
     y: Math.max(0, Math.min(CH - VH / z, y)),
   });
 
+  // 네이티브 wheel 리스너 (passive: false) — 패널 내 줌이 페이지 스크롤로 새지 않도록
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const handler = (e: WheelEvent) => {
+      e.preventDefault();
+      const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+      const newZoom = Math.max(0.3, Math.min(4, zoom * factor));
+      const r = svg.getBoundingClientRect();
+      const mx = (e.clientX - r.left) / r.width;
+      const my = (e.clientY - r.top) / r.height;
+      const canvasX = pan.x + mx * vw;
+      const canvasY = pan.y + my * vh;
+      const newVW = VW / newZoom;
+      const newVH = VH / newZoom;
+      setZoom(newZoom);
+      setPan(clampPan(canvasX - mx * newVW, canvasY - my * newVH, newZoom));
+    };
+    svg.addEventListener('wheel', handler, { passive: false });
+    return () => svg.removeEventListener('wheel', handler);
+  }, [zoom, pan.x, pan.y, vw, vh]);
+
   const R = 28;
 
   return (
  <svg ref={svgRef} viewBox={`${pan.x} ${pan.y} ${vw} ${vh}`}
  style={{ display: "block", width: "100%", height: "100%", background: "var(--bg-graph)", touchAction: "none", cursor: "grab" }}
- onWheel={e => {
-   e.preventDefault();
-   const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
-   const newZoom = Math.max(0.3, Math.min(4, zoom * factor));
-   const r = svgRef.current?.getBoundingClientRect();
-   if (!r) { setZoom(newZoom); return; }
-   const mx = (e.clientX - r.left) / r.width;
-   const my = (e.clientY - r.top) / r.height;
-   const canvasX = pan.x + mx * vw;
-   const canvasY = pan.y + my * vh;
-   const newVW = VW / newZoom;
-   const newVH = VH / newZoom;
-   setZoom(newZoom);
-   setPan(clampPan(canvasX - mx * newVW, canvasY - my * newVH, newZoom));
- }}
  onMouseDown={e => {
    didPanRef.current = false;
    if (!(e.target as Element).closest('g')) {
@@ -295,17 +302,18 @@ function GraphSVG({ pos, setPos, posRef: _posRef, dragRef, pan, setPan, zoom, se
  r={i % 6 === 0 ? 1.3 : 0.5} fill={theme === "dark" ? "white" : "#151E32"} opacity={0.06 + (i % 4) * 0.03} />
  ))}
 
- {/* Links */}
+ {/* Links - 선택 시에만 강조 (스파게티 방지) */}
  {LINKS.map((link, i) => {
  const sp = pos[link.s], tp = pos[link.t];
  if (!sp || !tp) return null;
- const active = !selected || (connectedIds?.has(link.s) && connectedIds?.has(link.t));
+ const highlighted = selected && connectedIds?.has(link.s) && connectedIds?.has(link.t);
  const srcNode = NODES.find(n => n.id === link.s);
+ const faintColor = theme === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.08)";
  return (
  <line key={i} x1={sp.x} y1={sp.y} x2={tp.x} y2={tp.y}
- stroke={active ? (srcNode ? CAT[srcNode.cat].color : "#fff") : (theme === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.08)")}
- strokeWidth={active ? 2 : 1}
- opacity={active ? 0.5 : 0.15}
+ stroke={highlighted ? (srcNode ? CAT[srcNode.cat].color : "#fff") : faintColor}
+ strokeWidth={highlighted ? 2 : 1}
+ opacity={highlighted ? 0.7 : (selected ? 0.03 : 0.08)}
  pointerEvents="none"
  />
  );
@@ -377,7 +385,19 @@ function App() {
   const env = (import.meta as any).env;
   const ADMIN_EMAILS = (env.VITE_ADMIN_EMAILS || '').split(',').map((e: string) => e.trim()).filter(Boolean);
   const TEST_PAID_EMAILS = (env.VITE_TEST_PAID_EMAILS || '').split(',').map((e: string) => e.trim()).filter(Boolean);
-  const [tab, setTab] = useState<"quiz" | "concept" | "status" | "mockExam" | "posts" | "admin" | "users" | "console">("quiz");
+  const [tab, setTab] = useState<"quiz" | "concept" | "status" | "mockExam" | "pastExam" | "posts" | "admin" | "users" | "console">("quiz");
+  const [showQuizIntroModal, setShowQuizIntroModal] = useState(false);
+  const [quizIntroStep, setQuizIntroStep] = useState(0);
+
+  // 기출문제 (Past Exams) 상태
+  const [pastExamPage, setPastExamPage] = useState(1);
+  const [pastExamPageInput, setPastExamPageInput] = useState("1");
+  const [pastExamCache, setPastExamCache] = useState<Map<number, any[]>>(new Map());
+  const [pastExamTotalCount, setPastExamTotalCount] = useState(0);
+  const [pastExamLoading, setPastExamLoading] = useState(false);
+  const [revealedAnswers, setRevealedAnswers] = useState<Set<string>>(new Set());
+  const [uploadingPastExam, setUploadingPastExam] = useState(false);
+  const [pastExamError, setPastExamError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [slots, setSlots] = useState<string[]>([]);
   const [catFilter, setCatFilter] = useState<string | null>(null);
@@ -1144,6 +1164,74 @@ function App() {
  }
   }, [tab, userEmail]);
 
+  // 퀴즈 탭 최초 진입 시 소개 모달 표시 (localStorage로 한 번만)
+  useEffect(() => {
+    if (tab === "quiz") {
+      const seen = localStorage.getItem("quizIntroModalSeen");
+      if (!seen) {
+        setShowQuizIntroModal(true);
+      }
+    }
+  }, [tab]);
+
+  // 기출문제 탭 진입 시 총 개수 조회
+  useEffect(() => {
+    if (tab !== "pastExam" || !userEmail) return;
+    (async () => {
+      try {
+        const total = await getPastExamTotalCount(locale as any);
+        setPastExamTotalCount(total);
+      } catch (err) {
+        // meta 문서 없음 등 - 조용히 0 유지
+      }
+    })();
+  }, [tab, userEmail, locale]);
+
+  // 기출문제 페이지 변경 시 로드 (캐시 우선)
+  useEffect(() => {
+    if (tab !== "pastExam" || !userEmail) return;
+    // 이미 캐시에 있으면 스킵
+    if (pastExamCache.has(pastExamPage)) return;
+    // 무료 유저가 페이지 2+ 접근 시 서버 호출 스킵 (UI에서도 막지만 네트워크 낭비 방지)
+    const isPaidOrAdmin = userStatus === "paid" || isAdmin;
+    if (pastExamPage > 1 && !isPaidOrAdmin) return;
+
+    (async () => {
+      setPastExamLoading(true);
+      setPastExamError(null);
+      try {
+        const { problems } = await fetchPastExamPage(locale as any, pastExamPage, 10);
+        setPastExamCache(prev => {
+          const next = new Map(prev);
+          next.set(pastExamPage, problems);
+          return next;
+        });
+      } catch (err: any) {
+        // 🔒 Firestore 권한 거부 = 유료/관리자 아님 → 결제 모달 자동 오픈
+        const msg = String(err?.message || "");
+        const code = String(err?.code || "");
+        if (code === "permission-denied" || msg.toLowerCase().includes("permission") || msg.toLowerCase().includes("insufficient")) {
+          setShowPaymentModal(true);
+          setPastExamPage(1);
+          setPastExamPageInput("1");
+          setPastExamError(null);
+        } else {
+          setPastExamError(msg || "Failed to load");
+        }
+      } finally {
+        setPastExamLoading(false);
+      }
+    })();
+  }, [tab, pastExamPage, userEmail, userStatus, isAdmin, locale, pastExamCache]);
+
+  // 언어 바뀌면 기출문제 캐시 초기화
+  useEffect(() => {
+    setPastExamCache(new Map());
+    setRevealedAnswers(new Set());
+    setPastExamPage(1);
+    setPastExamPageInput("1");
+  }, [locale]);
+
   // 모의시험 일일 제한 체크 및 PDF 초기화 (Firebase 기반)
   useEffect(() => {
  if (tab !== "mockExam") return;
@@ -1750,7 +1838,7 @@ function App() {
  await refreshUserData(); // 최신 상태 새로고침
  const currentUser = getCurrentUser();
  if (currentUser && !currentUser.emailVerified) {
- // 이메일이 아직 검증되지 않음 - 로그아웃 처리
+ // 이메일이 아직 검증되지 않음 - 로컬 상태는 로그아웃 처리
  localStorage.setItem("pendingVerificationEmail", email);
  // UI 상태 초기화
  setUserEmail(null);
@@ -1759,9 +1847,19 @@ function App() {
  localStorage.removeItem("userName");
  localStorage.removeItem("problemCountDate");
  localStorage.removeItem("examStartDate");
- setShowLoginModal(false);
- setLoginError(t("emailVerificationPending"));
+
+ // 🔹 인증 메일 자동 재발송 (rate limit 시 모달에서 수동 재발송 가능)
+ try {
+ await resendEmailVerification();
+ } catch (err) {
+ // 자동 재발송 실패 → 사용자가 모달의 재발송 버튼으로 수동 재시도 가능
+ }
+
+ // 로그인 모달은 유지, 인증 모달을 위에 겹쳐 띄움
+ setLoginError(null);
  setEmailVerificationUserEmail(email);
+ setEmailVerificationMessage(t("emailVerificationMessage").replace("{email}", email));
+ setIsWaitingEmailVerification(true);
  setShowEmailVerificationModal(true);
  setLoginLoading(false);
  return;
@@ -2028,7 +2126,7 @@ function App() {
 
  <div className="main-area" style={{ cursor: isResizing ? 'col-resize' : 'default' }}>
  {/* Left: Controls */}
- <div className="controls-panel" style={{ flex: `0 0 ${(tab === "posts" || tab === "console") ? "100%" : (100 - graphPanelWidth) + "%"}`, display: (tab === "posts" || tab === "console") ? "flex" : "flex" }}>
+ <div className="controls-panel" style={{ flex: `0 0 ${(tab === "posts" || tab === "console" || tab === "pastExam") ? "100%" : (100 - graphPanelWidth) + "%"}`, display: (tab === "posts" || tab === "console" || tab === "pastExam") ? "flex" : "flex" }}>
  {tab === "quiz" && (
  <>
  {/* Category filter */}
@@ -2046,7 +2144,7 @@ function App() {
  {/* Slots */}
  <div className="slots-section">
  <div className="slots-header">
- <span className="slots-title">&#9881; {t("slotsTitle")} ({slots.length}/4)</span>
+ <span className="slots-title">{t("slotsTitle")} ({slots.length}/4)</span>
  <div className="difficulty-buttons">
  {(["medium", "hard", "challenge"] as const).map(d => (
  <button key={d} className={`diff-btn ${difficulty === d ? "active" : ""}`}
@@ -2056,6 +2154,9 @@ function App() {
  ))}
  <button className="diff-btn reset" onClick={resetSlots}>{t("btnReset")}</button>
  </div>
+ </div>
+ <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '-2px', marginBottom: '8px' }}>
+   {t("slotsRecommendation")}
  </div>
 
  <div className="slots-grid">
@@ -2080,6 +2181,38 @@ function App() {
  })}
  </div>
 
+ {/* 예시 프리셋 (빈 상태일 때만) */}
+ {slots.length === 0 && (
+   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px', alignItems: 'center' }}>
+     <span style={{ fontSize: '12px', color: '#9CA3AF', whiteSpace: 'nowrap' }}>{t("quizPresetLabel")}</span>
+     {[
+       { label: 'S3 + CloudFront + Route 53', ids: ['s3', 'cloudfront', 'route53'] },
+       { label: 'Lambda + API Gateway + DynamoDB', ids: ['lambda', 'apigw', 'dynamodb'] },
+       { label: 'EC2 + RDS + ELB', ids: ['ec2', 'rds', 'elb'] },
+     ].map(preset => (
+       <button
+         key={preset.label}
+         onClick={() => setSlots(preset.ids)}
+         style={{
+           padding: '6px 12px',
+           background: 'rgba(255, 153, 0, 0.08)',
+           border: '1px solid rgba(255, 153, 0, 0.3)',
+           borderRadius: '6px',
+           fontSize: '12px',
+           color: '#FF9900',
+           cursor: 'pointer',
+           fontFamily: 'inherit',
+           transition: 'all 0.15s'
+         }}
+         onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255, 153, 0, 0.15)'; }}
+         onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255, 153, 0, 0.08)'; }}
+       >
+         {preset.label}
+       </button>
+     ))}
+   </div>
+ )}
+
  <button className="generate-btn"
  disabled={slots.length === 0 || loading || (!userEmail || !emailVerified) || (!isAdmin && dailyCount >= getDailyLimit())}
  onClick={handleGenerateProblem}
@@ -2088,17 +2221,9 @@ function App() {
  {loading ? t("btnGenerating") : t("btnGenerate")}
  <br />
  <span style={{ fontSize: "11px", opacity: 0.7, display: "block", marginTop: "4px" }}>
- {isAdmin ? t("adminLabel") : `${dailyCount}/${getDailyLimit()}`}
+ {isAdmin ? t("adminLabel") : `${t("dailyRemainingPrefix")} ${Math.max(0, getDailyLimit() - dailyCount)}${t("dailyRemainingText")}`}
  </span>
  </button>
-
- {/* 프리미엄 배너 (paid 사용자 제외) */}
- <PremiumBanner
- userStatus={userStatus}
- userEmail={userEmail}
- onLoginClick={() => setShowLoginModal(true)}
- onUpgradeClick={() => setShowPaymentModal(true)}
- />
 
  {error && (
  <div className="error-message" style={{ color: "#ff6b6b", marginTop: "12px", padding: "10px", background: "rgba(255,107,107,0.1)", borderRadius: "6px" }}>
@@ -2331,8 +2456,380 @@ function App() {
  </div>
  )}
  </div>
+
+ {/* 프리미엄 배너 - 퀴즈 탭 최하단 (공부 플로우 방해 최소화) */}
+ <PremiumBanner
+ userStatus={userStatus}
+ userEmail={userEmail}
+ onLoginClick={() => setShowLoginModal(true)}
+ onUpgradeClick={() => setShowPaymentModal(true)}
+ />
  </>
  )}
+
+ {/* PastExam Tab - 기출문제 */}
+ {tab === "pastExam" && (() => {
+   const isPaidOrAdmin = userStatus === "paid" || isAdmin;
+   const pageSize = 10;
+   const totalPages = Math.max(1, Math.ceil(pastExamTotalCount / pageSize));
+   const startOrder = (pastExamPage - 1) * pageSize + 1;
+   const endOrder = Math.min(pastExamPage * pageSize, pastExamTotalCount);
+   const currentProblems = pastExamCache.get(pastExamPage) || [];
+   const locked = pastExamPage > 1 && !isPaidOrAdmin;
+
+   const jumpToPage = () => {
+     const n = parseInt(pastExamPageInput, 10);
+     if (!Number.isFinite(n) || n < 1) return;
+     const capped = Math.min(Math.max(1, n), totalPages);
+     // 무료 유저가 2페이지 이상 이동 시도 → 결제 모달
+     if (capped > 1 && !isPaidOrAdmin) {
+       setShowPaymentModal(true);
+       return;
+     }
+     setPastExamPage(capped);
+     setPastExamPageInput(String(capped));
+   };
+
+   // 무료 유저가 다음 페이지 버튼 클릭 시 → 결제 모달
+   const goToNextPage = () => {
+     if (!isPaidOrAdmin && pastExamPage >= 1) {
+       setShowPaymentModal(true);
+       return;
+     }
+     const p = Math.min(totalPages, pastExamPage + 1);
+     setPastExamPage(p);
+     setPastExamPageInput(String(p));
+   };
+
+   const toggleAnswer = (id: string) => {
+     setRevealedAnswers(prev => {
+       const next = new Set(prev);
+       if (next.has(id)) next.delete(id); else next.add(id);
+       return next;
+     });
+   };
+
+   return (
+     <div style={{ padding: "20px 24px 60px", overflowY: "auto", height: "100%" }}>
+       <div style={{ maxWidth: "900px", margin: "0 auto" }}>
+
+         {/* 로그인 필요 */}
+         {!userEmail ? (
+           <div style={{
+             padding: "60px 20px",
+             textAlign: "center",
+             background: "rgba(59, 130, 246, 0.08)",
+             border: "1px solid rgba(59, 130, 246, 0.25)",
+             borderRadius: "12px"
+           }}>
+             <h2 style={{ fontSize: "20px", color: "#F9FAFB", marginBottom: "12px", fontWeight: 700 }}>{t("pastExamTitle")}</h2>
+             <p style={{ fontSize: "14px", color: "#D1D5DB", marginBottom: "20px" }}>{t("pastExamLoginRequired")}</p>
+             <button
+               onClick={() => setShowLoginModal(true)}
+               style={{
+                 padding: "10px 20px",
+                 background: "#FF9900",
+                 color: "#0F1629",
+                 border: "none",
+                 borderRadius: "8px",
+                 fontSize: "14px",
+                 fontWeight: 700,
+                 cursor: "pointer"
+               }}
+             >{t("loginButton")}</button>
+           </div>
+         ) : (
+           <>
+             {/* 상단: 타이틀 + 페이지 정보 */}
+             <div style={{
+               display: "flex",
+               justifyContent: "space-between",
+               alignItems: "center",
+               marginBottom: "20px",
+               flexWrap: "wrap",
+               gap: "12px"
+             }}>
+               <h2 style={{ fontSize: "20px", color: "#F9FAFB", fontWeight: 700, margin: 0 }}>
+                 {t("pastExamTitle")}
+               </h2>
+               {pastExamTotalCount > 0 && (
+                 <span style={{ fontSize: "13px", color: "#9CA3AF", fontFamily: "ui-monospace, monospace" }}>
+                   {t("pastExamPageRange")
+                     .replace("{start}", String(startOrder))
+                     .replace("{end}", String(endOrder))
+                     .replace("{total}", String(pastExamTotalCount))}
+                 </span>
+               )}
+             </div>
+
+             {/* 페이지 점프 + 이전/다음 */}
+             {pastExamTotalCount > 0 && (
+               <div style={{
+                 display: "flex",
+                 gap: "8px",
+                 alignItems: "center",
+                 marginBottom: "24px",
+                 flexWrap: "wrap"
+               }}>
+                 <button
+                   onClick={() => { const p = Math.max(1, pastExamPage - 1); setPastExamPage(p); setPastExamPageInput(String(p)); }}
+                   disabled={pastExamPage <= 1}
+                   style={{
+                     padding: "8px 14px",
+                     background: "rgba(255,255,255,0.05)",
+                     border: "1px solid #2A344A",
+                     borderRadius: "6px",
+                     color: pastExamPage <= 1 ? "#4B5563" : "#D1D5DB",
+                     fontSize: "13px",
+                     cursor: pastExamPage <= 1 ? "not-allowed" : "pointer",
+                     fontFamily: "inherit"
+                   }}
+                 >{t("pastExamPrevPage")}</button>
+
+                 <button
+                   onClick={goToNextPage}
+                   disabled={pastExamPage >= totalPages}
+                   title={!isPaidOrAdmin && pastExamPage >= 1 ? t("pastExamPaidLockDesc") : ""}
+                   style={{
+                     padding: "8px 14px",
+                     background: (!isPaidOrAdmin && pastExamPage >= 1) ? "rgba(255,153,0,0.08)" : "rgba(255,153,0,0.15)",
+                     border: `1px solid rgba(255,153,0,0.4)`,
+                     borderRadius: "6px",
+                     color: pastExamPage >= totalPages ? "#4B5563" : "#FF9900",
+                     fontSize: "13px",
+                     cursor: pastExamPage >= totalPages ? "not-allowed" : "pointer",
+                     fontFamily: "inherit"
+                   }}
+                 >{t("pastExamNextPage")}</button>
+
+                 <div style={{ flex: 1 }} />
+
+                 <span style={{ fontSize: "12px", color: "#9CA3AF" }}>{t("pastExamJumpLabel")}:</span>
+                 <input
+                   type="number"
+                   min={1}
+                   max={totalPages}
+                   value={pastExamPageInput}
+                   onChange={(e) => setPastExamPageInput(e.target.value)}
+                   onKeyDown={(e) => { if (e.key === "Enter") jumpToPage(); }}
+                   style={{
+                     width: "72px",
+                     padding: "6px 10px",
+                     background: "#151E32",
+                     border: "1px solid #2A344A",
+                     borderRadius: "6px",
+                     color: "#D1D5DB",
+                     fontSize: "13px",
+                     fontFamily: "inherit"
+                   }}
+                 />
+                 <button
+                   onClick={jumpToPage}
+                   style={{
+                     padding: "6px 14px",
+                     background: "#FF9900",
+                     color: "#0F1629",
+                     border: "none",
+                     borderRadius: "6px",
+                     fontSize: "13px",
+                     fontWeight: 700,
+                     cursor: "pointer",
+                     fontFamily: "inherit"
+                   }}
+                 >{t("pastExamJumpBtn")}</button>
+               </div>
+             )}
+
+             {/* 컨텐츠 영역 */}
+             {pastExamTotalCount === 0 ? (
+               /* 빈 상태 */
+               <div style={{
+                 padding: "60px 20px",
+                 textAlign: "center",
+                 background: "#1A253D",
+                 border: "1px solid #2A344A",
+                 borderRadius: "12px"
+               }}>
+                 <p style={{ fontSize: "14px", color: "#9CA3AF" }}>{t("pastExamEmpty")}</p>
+               </div>
+             ) : locked ? (
+               /* 무료 유저 잠금 UI */
+               <div style={{
+                 padding: "60px 20px",
+                 textAlign: "center",
+                 background: "linear-gradient(135deg, rgba(255,153,0,0.1), rgba(255,153,0,0.04))",
+                 border: "1px solid rgba(255,153,0,0.3)",
+                 borderRadius: "12px"
+               }}>
+                 <h3 style={{ fontSize: "20px", color: "#F9FAFB", fontWeight: 700, marginBottom: "12px" }}>
+                   {t("pastExamPaidLockTitle")}
+                 </h3>
+                 <p style={{ fontSize: "14px", color: "#D1D5DB", marginBottom: "20px", lineHeight: 1.6 }}>
+                   {t("pastExamPaidLockDesc")}
+                 </p>
+                 <button
+                   onClick={() => setShowPaymentModal(true)}
+                   style={{
+                     padding: "12px 24px",
+                     background: "#FF9900",
+                     color: "#0F1629",
+                     border: "none",
+                     borderRadius: "8px",
+                     fontSize: "14px",
+                     fontWeight: 700,
+                     cursor: "pointer"
+                   }}
+                 >{t("pastExamUpgradeCta")}</button>
+               </div>
+             ) : pastExamLoading ? (
+               /* 로딩 스피너 */
+               <div style={{
+                 padding: "80px 20px",
+                 textAlign: "center",
+                 color: "#9CA3AF"
+               }}>
+                 <div style={{
+                   display: "inline-block",
+                   width: "32px",
+                   height: "32px",
+                   border: "3px solid #2A344A",
+                   borderTopColor: "#FF9900",
+                   borderRadius: "50%",
+                   animation: "spin 0.8s linear infinite",
+                   marginBottom: "12px"
+                 }} />
+                 <div style={{ fontSize: "13px" }}>{t("pastExamLoading")}</div>
+               </div>
+             ) : pastExamError ? (
+               <div style={{
+                 padding: "20px",
+                 background: "rgba(239,68,68,0.1)",
+                 border: "1px solid rgba(239,68,68,0.3)",
+                 borderRadius: "8px",
+                 color: "#fca5a5",
+                 fontSize: "13px"
+               }}>{pastExamError}</div>
+             ) : (
+               /* 문제 리스트 (10개) */
+               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                 {currentProblems.map((p: any) => {
+                   const isRevealed = revealedAnswers.has(p.id);
+                   return (
+                     <div key={p.id} style={{
+                       background: "#151E32",
+                       border: "1px solid #2A344A",
+                       borderRadius: "10px",
+                       padding: "20px"
+                     }}>
+                       {/* 문제 헤더 */}
+                       <div style={{
+                         display: "flex",
+                         justifyContent: "space-between",
+                         alignItems: "center",
+                         marginBottom: "12px"
+                       }}>
+                         <span style={{
+                           fontSize: "12px",
+                           color: "#FF9900",
+                           fontWeight: 700,
+                           fontFamily: "ui-monospace, monospace"
+                         }}>Q{p.order}</span>
+                       </div>
+
+                       {/* 질문 */}
+                       <p style={{
+                         fontSize: "14px",
+                         color: "#F9FAFB",
+                         lineHeight: 1.6,
+                         marginBottom: "16px"
+                       }}>{p.question}</p>
+
+                       {/* 선택지 A/B/C/D */}
+                       <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "16px" }}>
+                         {(["A", "B", "C", "D"] as const).map(opt => {
+                           const isCorrect = isRevealed && p.answer === opt;
+                           return (
+                             <div key={opt} style={{
+                               padding: "10px 14px",
+                               background: isCorrect ? "rgba(16,185,129,0.12)" : "rgba(255,255,255,0.03)",
+                               border: `1px solid ${isCorrect ? "rgba(16,185,129,0.4)" : "#2A344A"}`,
+                               borderRadius: "6px",
+                               fontSize: "13px",
+                               color: isCorrect ? "#4ade80" : "#D1D5DB",
+                               display: "flex",
+                               gap: "10px"
+                             }}>
+                               <strong style={{ minWidth: "20px" }}>{opt}.</strong>
+                               <span>{p.options?.[opt]}</span>
+                             </div>
+                           );
+                         })}
+                       </div>
+
+                       {/* 답 보기 버튼 */}
+                       <button
+                         onClick={() => toggleAnswer(p.id)}
+                         style={{
+                           padding: "8px 16px",
+                           background: isRevealed ? "rgba(255,255,255,0.05)" : "rgba(255,153,0,0.15)",
+                           border: `1px solid ${isRevealed ? "#2A344A" : "rgba(255,153,0,0.4)"}`,
+                           borderRadius: "6px",
+                           color: isRevealed ? "#9CA3AF" : "#FF9900",
+                           fontSize: "13px",
+                           fontWeight: 600,
+                           cursor: "pointer",
+                           fontFamily: "inherit"
+                         }}
+                       >{isRevealed ? t("pastExamHideAnswer") : t("pastExamRevealAnswer")}</button>
+
+                       {/* 해설 (답 본 후) */}
+                       {isRevealed && (
+                         <div style={{
+                           marginTop: "16px",
+                           padding: "14px",
+                           background: "#0F1629",
+                           border: "1px solid #2A344A",
+                           borderRadius: "6px"
+                         }}>
+                           <div style={{ fontSize: "12px", color: "#4ade80", fontWeight: 700, marginBottom: "8px" }}>
+                             {t("pastExamCorrectAnswer")}: {p.answer}
+                           </div>
+                           {p.explanation?.correct && (
+                             <div style={{ marginBottom: "8px" }}>
+                               <strong style={{ fontSize: "11px", color: "#9CA3AF" }}>{t("pastExamExplanationCorrect")}</strong>
+                               <p style={{ fontSize: "13px", color: "#D1D5DB", lineHeight: 1.6, marginTop: "4px" }}>
+                                 {p.explanation.correct}
+                               </p>
+                             </div>
+                           )}
+                           {p.keywords && p.keywords.length > 0 && (
+                             <div style={{ marginTop: "10px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                               {p.keywords.map((kw: string, i: number) => (
+                                 <span key={i} style={{
+                                   fontSize: "11px",
+                                   padding: "3px 8px",
+                                   background: "rgba(255,153,0,0.15)",
+                                   color: "#FF9900",
+                                   borderRadius: "4px",
+                                   fontWeight: 600
+                                 }}>{kw}</span>
+                               ))}
+                             </div>
+                           )}
+                         </div>
+                       )}
+                     </div>
+                   );
+                 })}
+               </div>
+             )}
+           </>
+         )}
+
+       </div>
+     </div>
+   );
+ })()}
 
  {/* Console Tab - CLI 실습 (ConsoleChallenge) */}
  {tab === "console" && (
@@ -3353,8 +3850,55 @@ function App() {
  </div>
  ) : (
  <>
- {/* Stats cards */}
+ {/* Stats cards or Onboarding card */}
+ {(!quizStats || (quizStats.totalAttempts ?? 0) === 0) ? (
+ <div style={{
+ background: "#1A253D",
+ border: "1px solid #2A344A",
+ borderRadius: "12px",
+ padding: "28px 24px",
+ textAlign: "center"
+ }}>
+ <h3 style={{
+ fontSize: "16px",
+ color: "#F9FAFB",
+ fontWeight: 700,
+ marginBottom: "10px",
+ lineHeight: 1.4
+ }}>
+ {t("statusEmptyTitle")}
+ </h3>
+ <p style={{
+ fontSize: "13px",
+ color: "#9CA3AF",
+ lineHeight: 1.6,
+ marginBottom: "20px"
+ }}>
+ {t("statusEmptyDesc")}
+ </p>
+ <button
+ onClick={() => setTab("quiz")}
+ style={{
+ padding: "10px 20px",
+ background: "#FF9900",
+ color: "#0F1629",
+ border: "none",
+ borderRadius: "8px",
+ fontSize: "13px",
+ fontWeight: 700,
+ cursor: "pointer",
+ fontFamily: "inherit",
+ transition: "all 0.15s"
+ }}
+ onMouseEnter={(e) => { e.currentTarget.style.background = "#FFB347"; }}
+ onMouseLeave={(e) => { e.currentTarget.style.background = "#FF9900"; }}
+ >
+ {t("statusEmptyCta")}
+ </button>
+ </div>
+ ) : (
  <QuizStatsCards stats={quizStats} />
+ )}
 
  {/* Problem Sessions */}
  {problemSessions && problemSessions.length > 0 && (
@@ -3484,6 +4028,62 @@ function App() {
  paidUsers={paidUsers}
  freeUsers={freeUsers}
  />
+
+ {/* 기출문제 업로드 버튼 (언어별 3개 동시 노출) */}
+ <div style={{
+   padding: "16px",
+   background: "#1A253D",
+   borderRadius: "8px",
+   border: "1px solid #2A344A"
+ }}>
+   <div style={{ fontSize: "13px", color: "#D1D5DB", marginBottom: "10px", fontWeight: 600 }}>
+     기출문제 관리
+   </div>
+   <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+     {(["ko", "en", "ja"] as const).map(loc => (
+       <button
+         key={loc}
+         onClick={async () => {
+           if (uploadingPastExam) return;
+           setUploadingPastExam(true);
+           try {
+             const result = await uploadCurrentMockExamToPastExams(loc);
+             alert(`[${loc}] ` + t("pastExamUploadSuccess")
+               .replace("{added}", String(result.added))
+               .replace("{skipped}", String(result.skipped))
+               .replace("{deleted}", String(result.deleted))
+               .replace("{total}", String(result.totalCount)));
+             // 현재 보고 있는 로케일만 캐시 무효화
+             if (loc === locale) {
+               setPastExamTotalCount(result.totalCount);
+               setPastExamCache(new Map());
+             }
+           } catch (err: any) {
+             alert(`[${loc}] ` + (err?.message || "Upload failed"));
+           } finally {
+             setUploadingPastExam(false);
+           }
+         }}
+         disabled={uploadingPastExam}
+         style={{
+           padding: "10px 16px",
+           background: uploadingPastExam ? "rgba(255,153,0,0.4)" : "#FF9900",
+           color: "#0F1629",
+           border: "none",
+           borderRadius: "6px",
+           fontSize: "13px",
+           fontWeight: 700,
+           cursor: uploadingPastExam ? "not-allowed" : "pointer",
+           fontFamily: "inherit",
+           whiteSpace: "nowrap"
+         }}
+       >
+         {t("pastExamAdminUpload")} ({loc})
+       </button>
+     ))}
+   </div>
+ </div>
+
  {/* Admin Info */}
  <div style={{
  marginTop: "auto",
@@ -3622,7 +4222,7 @@ function App() {
 
  {/* Right: Graph or Admin Chart */}
  {tab !== "console" && (
- <div className="graph-panel" style={{ flex: `0 0 ${tab === "posts" ? "100%" : graphPanelWidth + "%"}`, position: 'relative' }}>
+ <div className="graph-panel" style={{ flex: `0 0 ${tab === "posts" ? "100%" : (tab === "pastExam" || tab === "console") ? "0%" : graphPanelWidth + "%"}`, position: 'relative', display: (tab === "pastExam") ? "none" : undefined }}>
  {tab === "admin" ? (
  <>
  {/* Admin Bar Graph */}
@@ -5093,7 +5693,22 @@ function App() {
  </>
  ) : (
  <>
- <div className="graph-label">{t("graphLabel")}</div>
+ <div className="graph-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+ <span>{t("graphLabel")}</span>
+ {!selected && (
+ <span style={{
+ fontSize: '11px',
+ color: 'var(--accent)',
+ fontFamily: 'ui-monospace, monospace',
+ letterSpacing: '0.05em',
+ padding: '4px 10px',
+ background: 'rgba(255, 153, 0, 0.1)',
+ border: '1px solid rgba(255, 153, 0, 0.25)',
+ borderRadius: '6px',
+ whiteSpace: 'nowrap'
+ }}>{t("graphHintClickNode")}</span>
+ )}
+ </div>
  <div className="graph-box">
  <GraphSVG pos={pos} setPos={setPos} posRef={posRef} dragRef={dragRef} pan={pan} setPan={setPan} zoom={zoom} setZoom={setZoom}
  selected={selected} slots={slots} onNodeClick={onNodeClick} catFilter={catFilter} theme={theme} />
@@ -5174,6 +5789,221 @@ function App() {
 
  {/* Cookie Consent */}
  <CookieConsent />
+
+ {/* Quiz Intro Modal - 퀴즈 탭 최초 진입 시 표시 (3단계) */}
+ {showQuizIntroModal && (() => {
+   const steps = [
+     {
+       title: "서비스를 조합하면 문제가 나와요",
+       desc: "공부하고 싶은 AWS 서비스 2~4개를 골라보세요. 그 서비스들이 실제 아키텍처에서 어떻게 쓰이는지 시나리오 문제로 만들어 드려요.",
+     },
+     {
+       title: "관계도로 서비스 연결을 배우세요",
+       desc: "노드를 탭하면 관련 서비스만 밝아져요. \"VPC를 탭하면 EC2·RDS·Lambda가 하이라이트되는\" 방식으로 전체 그림을 잡을 수 있어요.",
+     },
+     {
+       title: "매일 조금씩, 꾸준히 합격까지",
+       desc: "매일 꾸준히 하면 약점이 자동으로 분석되고, 합격까지 갈 길이 보입니다. 지금 바로 시작해보세요.",
+     },
+   ];
+   const current = steps[quizIntroStep];
+   const isLast = quizIntroStep === steps.length - 1;
+   const close = () => {
+     setShowQuizIntroModal(false);
+     setQuizIntroStep(0);
+     localStorage.setItem("quizIntroModalSeen", "true");
+   };
+   const next = () => {
+     if (isLast) close();
+     else setQuizIntroStep(quizIntroStep + 1);
+   };
+
+   return (
+     <div
+       onClick={close}
+       style={{
+         position: 'fixed',
+         inset: 0,
+         background: 'rgba(10, 14, 26, 0.85)',
+         backdropFilter: 'blur(8px)',
+         WebkitBackdropFilter: 'blur(8px)',
+         zIndex: 10000,
+         display: 'flex',
+         alignItems: 'center',
+         justifyContent: 'center',
+         padding: '20px',
+         animation: 'fadeIn 0.25s ease'
+       }}
+     >
+       <div
+         onClick={(e) => e.stopPropagation()}
+         style={{
+           background: '#151c30',
+           border: '1px solid rgba(255, 255, 255, 0.14)',
+           borderRadius: '20px',
+           padding: '32px 28px',
+           width: '100%',
+           maxWidth: '480px',
+           boxShadow: '0 20px 60px -20px rgba(0, 0, 0, 0.5)'
+         }}
+       >
+         {/* Step Dots */}
+         <div style={{
+           display: 'flex',
+           justifyContent: 'center',
+           gap: '6px',
+           marginBottom: '20px'
+         }}>
+           {steps.map((_, i) => (
+             <span key={i} style={{
+               width: i === quizIntroStep ? '20px' : '6px',
+               height: '6px',
+               borderRadius: i === quizIntroStep ? '3px' : '50%',
+               background: i === quizIntroStep ? '#ff9900' : 'rgba(255, 255, 255, 0.14)',
+               transition: 'all 0.2s'
+             }} />
+           ))}
+         </div>
+
+         {/* Visual - 스텝별 */}
+         <div style={{
+           background: '#0a0e1a',
+           border: '1px solid rgba(255, 255, 255, 0.08)',
+           borderRadius: '12px',
+           padding: '28px 24px',
+           marginBottom: '24px',
+           minHeight: '140px',
+           display: 'grid',
+           placeItems: 'center'
+         }}>
+           {quizIntroStep === 0 && (
+             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+               <div style={{
+                 width: '44px', height: '44px',
+                 background: '#ff9900',
+                 borderRadius: '8px',
+                 display: 'grid', placeItems: 'center',
+                 fontFamily: 'ui-monospace, monospace',
+                 fontSize: '11px', fontWeight: 700,
+                 color: 'white'
+               }}>EC2</div>
+               <span style={{ color: '#6b7389', fontSize: '20px' }}>+</span>
+               <div style={{
+                 width: '44px', height: '44px',
+                 background: '#3b82f6',
+                 borderRadius: '8px',
+                 display: 'grid', placeItems: 'center',
+                 fontFamily: 'ui-monospace, monospace',
+                 fontSize: '11px', fontWeight: 700,
+                 color: 'white'
+               }}>S3</div>
+               <span style={{ color: '#ff9900', fontSize: '22px' }}>→</span>
+               <div style={{
+                 width: '44px', height: '44px',
+                 background: '#ff9900',
+                 color: '#0a0e1a',
+                 borderRadius: '8px',
+                 display: 'grid', placeItems: 'center',
+                 fontWeight: 700,
+                 fontSize: '22px'
+               }}>?</div>
+             </div>
+           )}
+           {quizIntroStep === 1 && (
+             <div style={{ textAlign: 'center' }}>
+               <div style={{ fontSize: '32px', marginBottom: '8px' }}>✦</div>
+               <div style={{
+                 fontSize: '12px',
+                 color: '#6b7389',
+                 fontFamily: 'ui-monospace, monospace',
+                 letterSpacing: '0.1em'
+               }}>TAP · HIGHLIGHT · LEARN</div>
+             </div>
+           )}
+           {quizIntroStep === 2 && (
+             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+               <div style={{
+                 width: '44px', height: '44px',
+                 background: '#ff9900',
+                 color: '#0a0e1a',
+                 borderRadius: '8px',
+                 display: 'grid', placeItems: 'center',
+                 fontWeight: 700,
+                 fontSize: '22px'
+               }}>✓</div>
+               <span style={{ color: '#ff9900', fontSize: '22px' }}>→</span>
+               <div style={{
+                 padding: '10px 16px',
+                 background: '#34d399',
+                 color: '#0a0e1a',
+                 borderRadius: '8px',
+                 fontFamily: 'ui-monospace, monospace',
+                 fontSize: '14px',
+                 fontWeight: 700
+               }}>PASS</div>
+             </div>
+           )}
+         </div>
+
+         {/* Title */}
+         <h3 style={{
+           fontSize: '22px',
+           fontWeight: 700,
+           color: '#f4f6fb',
+           margin: 0,
+           marginBottom: '10px',
+           letterSpacing: '-0.01em',
+           lineHeight: 1.3
+         }}>{current.title}</h3>
+
+         {/* Description */}
+         <p style={{
+           fontSize: '14px',
+           color: '#a8b0c2',
+           lineHeight: 1.6,
+           margin: 0,
+           marginBottom: '24px'
+         }}>{current.desc}</p>
+
+         {/* Buttons */}
+         <div style={{ display: 'flex', gap: '10px' }}>
+           <button
+             onClick={close}
+             style={{
+               flex: 1,
+               padding: '14px',
+               borderRadius: '10px',
+               background: 'transparent',
+               color: '#a8b0c2',
+               border: '1px solid rgba(255, 255, 255, 0.12)',
+               fontSize: '14px',
+               fontWeight: 600,
+               cursor: 'pointer',
+               fontFamily: 'inherit',
+               transition: 'all 0.15s'
+             }}
+           >건너뛰기</button>
+           <button
+             onClick={next}
+             style={{
+               flex: 1,
+               padding: '14px',
+               borderRadius: '10px',
+               background: '#ff9900',
+               color: '#0a0e1a',
+               border: 'none',
+               fontSize: '14px',
+               fontWeight: 700,
+               cursor: 'pointer',
+               fontFamily: 'inherit',
+               transition: 'all 0.15s'
+             }}
+           >{isLast ? '시작하기' : '다음'}</button>
+         </div>
+       </div>
+     </div>
+   );
+ })()}
  </div>
   );
 }

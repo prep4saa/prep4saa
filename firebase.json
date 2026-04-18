@@ -2,13 +2,6 @@
   "hosting": {
     "public": "dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-    "redirects": [
-      {
-        "source": "**",
-        "destination": "https://www.prep4saa.com",
-        "type": 301
-      }
-    ],
     "headers": [
       {
         "source": "**/*.html",

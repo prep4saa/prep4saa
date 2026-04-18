@@ -26,7 +26,13 @@ import {
   getDocs,
   addDoc,
   deleteDoc,
-  Timestamp
+  Timestamp,
+  query,
+  where,
+  orderBy,
+  limit,
+  writeBatch,
+  serverTimestamp
 } from "firebase/firestore";
 import { Problem } from "./api";
 import {
@@ -1498,5 +1504,217 @@ export async function recordMockExamDate(userId: string): Promise<void> {
     await setDoc(userRef, { lastMockExamDate: today }, { merge: true });
   } catch (error: any) {
     // Error saving mock exam date
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// 📝 기출문제 (Past Exams) 관련 함수
+// ═══════════════════════════════════════════════════════════
+
+type PastExamLocale = "ko" | "en" | "ja";
+type PastExamDoc = Problem & {
+  id: string;
+  order: number;
+  questionHash: string;
+  sourceMockDate: string;
+  locale: PastExamLocale;
+};
+
+/**
+ * SHA-256 해시 생성 (질문 텍스트 중복 제거용)
+ */
+async function sha256(text: string): Promise<string> {
+  const buffer = new TextEncoder().encode(text);
+  const hash = await crypto.subtle.digest("SHA-256", buffer);
+  return Array.from(new Uint8Array(hash))
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/**
+ * 기출문제 최대 개수 (이 수를 초과하면 랜덤으로 오래된 문제 삭제)
+ */
+const PAST_EXAM_MAX = 800;
+
+/**
+ * 관리자: 오늘의 모의시험을 기출문제 컬렉션에 업로드
+ *
+ * 동작:
+ * 1. 질문 텍스트 해시로 중복 제거
+ * 2. 현재 개수 + 신규 개수가 PAST_EXAM_MAX(800) 초과 시,
+ *    초과분만큼 기존 문제 중 **랜덤으로 삭제**하여 800 유지
+ * 3. 삭제된 슬롯(order 번호)을 재활용하여 신규 문제 삽입
+ *    → order는 항상 1~800 범위 내 유지, 페이지네이션 일관성 보장
+ */
+export async function uploadCurrentMockExamToPastExams(
+  locale: PastExamLocale
+): Promise<{ added: number; skipped: number; deleted: number; totalCount: number }> {
+  const collectionName = `pastExams_${locale}`;
+
+  // 1. 오늘의 모의시험 가져오기
+  const problems = await getTodayMockExamProblems(locale);
+  if (!problems || problems.length === 0) {
+    throw new Error("No mock exam problems found for today");
+  }
+
+  // 2. 기존 전체 문서 로드 (id, order, questionHash)
+  const existingSnapshot = await getDocs(collection(db, collectionName));
+  const existing: Array<{ id: string; order: number; questionHash: string }> = [];
+  const existingHashes = new Set<string>();
+  existingSnapshot.forEach(d => {
+    const data = d.data();
+    if (typeof data.order === "number" && typeof data.questionHash === "string") {
+      existing.push({ id: d.id, order: data.order, questionHash: data.questionHash });
+      existingHashes.add(data.questionHash);
+    }
+  });
+
+  // 3. 신규 문제 dedup
+  const today = new Date().toISOString().split("T")[0];
+  const newProblems: Array<{ hash: string; p: Problem }> = [];
+  let skipped = 0;
+  for (const p of problems) {
+    const hash = await sha256(p.question);
+    if (existingHashes.has(hash)) {
+      skipped++;
+      continue;
+    }
+    existingHashes.add(hash);
+    newProblems.push({ hash, p });
+  }
+
+  const currentCount = existing.length;
+  const newCount = newProblems.length;
+  const overflow = Math.max(0, (currentCount + newCount) - PAST_EXAM_MAX);
+
+  // 4. 삭제 대상 랜덤 선정 (Fisher-Yates shuffle)
+  const toDelete: typeof existing = [];
+  if (overflow > 0) {
+    const shuffled = [...existing];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    toDelete.push(...shuffled.slice(0, overflow));
+  }
+
+  // 5. 사용 중인 order 집합 계산 (삭제 대상 제외)
+  const deletedIds = new Set(toDelete.map(d => d.id));
+  const usedOrders = new Set<number>();
+  existing.forEach(d => {
+    if (!deletedIds.has(d.id)) usedOrders.add(d.order);
+  });
+
+  // 6. 신규 문제를 넣을 슬롯 계산 (1..MAX 중 미사용 order, 오름차순)
+  const availableOrders: number[] = [];
+  for (let o = 1; o <= PAST_EXAM_MAX; o++) {
+    if (!usedOrders.has(o)) availableOrders.push(o);
+  }
+
+  // 7. Batch 실행: 삭제 + 추가 + meta 업데이트
+  const BATCH_SIZE = 400;
+  let batch = writeBatch(db);
+  let opsInBatch = 0;
+  let added = 0;
+  let deleted = 0;
+
+  const commitIfNeeded = async () => {
+    if (opsInBatch >= BATCH_SIZE) {
+      await batch.commit();
+      batch = writeBatch(db);
+      opsInBatch = 0;
+    }
+  };
+
+  // 7-1. 삭제
+  for (const d of toDelete) {
+    batch.delete(doc(db, collectionName, d.id));
+    deleted++;
+    opsInBatch++;
+    await commitIfNeeded();
+  }
+
+  // 7-2. 추가 (availableOrders 개수만큼만 — MAX 넘지 않도록 자동 제한)
+  const addLimit = Math.min(newProblems.length, availableOrders.length);
+  for (let i = 0; i < addLimit; i++) {
+    const order = availableOrders[i];
+    const { hash, p } = newProblems[i];
+    const docId = `q${String(order).padStart(4, "0")}`;
+    batch.set(doc(db, collectionName, docId), {
+      order,
+      questionHash: hash,
+      question: p.question,
+      options: p.options,
+      answer: p.answer,
+      keywords: p.keywords || [],
+      goal: p.goal || "",
+      easyMode: p.easyMode || null,
+      explanation: p.explanation,
+      patterns: p.patterns || [],
+      sourceMockDate: today,
+      locale,
+      createdAt: serverTimestamp(),
+    });
+    added++;
+    opsInBatch++;
+    await commitIfNeeded();
+  }
+
+  // 7-3. meta 업데이트 (항상 최종 개수)
+  const finalCount = currentCount - deleted + added;
+  batch.set(doc(db, "meta", collectionName), {
+    totalCount: finalCount,
+    maxSlots: PAST_EXAM_MAX,
+    updatedAt: serverTimestamp(),
+  });
+  opsInBatch++;
+
+  if (opsInBatch > 0) {
+    await batch.commit();
+  }
+
+  return { added, skipped, deleted, totalCount: finalCount };
+}
+
+/**
+ * 기출문제 페이지 단위 조회 (order BETWEEN start AND end)
+ * 페이지 점프 시에도 비용은 동일 (10 reads).
+ */
+export async function fetchPastExamPage(
+  locale: PastExamLocale,
+  page: number,
+  pageSize: number = 10
+): Promise<{ problems: PastExamDoc[] }> {
+  const collectionName = `pastExams_${locale}`;
+  const startOrder = (page - 1) * pageSize + 1;
+  const endOrder = page * pageSize;
+
+  const q = query(
+    collection(db, collectionName),
+    where("order", ">=", startOrder),
+    where("order", "<=", endOrder),
+    orderBy("order")
+  );
+  const snap = await getDocs(q);
+  const problems = snap.docs.map(d => {
+    const data = d.data() as any;
+    return { id: d.id, ...data } as PastExamDoc;
+  });
+  return { problems };
+}
+
+/**
+ * 기출문제 총 개수 (meta 문서에서 1번의 read로 조회)
+ */
+export async function getPastExamTotalCount(locale: PastExamLocale): Promise<number> {
+  const collectionName = `pastExams_${locale}`;
+  try {
+    const metaRef = doc(db, "meta", collectionName);
+    const snap = await getDoc(metaRef);
+    if (!snap.exists()) return 0;
+    const data = snap.data();
+    return typeof data.totalCount === "number" ? data.totalCount : 0;
+  } catch {
+    return 0;
   }
 }
