@@ -2,7 +2,6 @@ import { generatePrompt } from "./prompts";
 import examAnalysis from "../constants/saa-c03-exam-analysis.json";
 
 export function resolveBackendUrl(): string {
-  const env = (import.meta as any)?.env;
   const hostname =
     typeof window !== "undefined" && window.location?.hostname
       ? window.location.hostname
@@ -12,7 +11,8 @@ export function resolveBackendUrl(): string {
     return "http://localhost:5000";
   }
 
-  return env?.VITE_API_BASE_URL || env?.VITE_BACKEND_URL || "http://localhost:5000";
+  // 보안: 특정 env 값만 정적 참조 (전체 env destructure 금지)
+  return import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 }
 
 /**
@@ -159,8 +159,6 @@ export async function generateSAAProblem(
   locale: "ko" | "ja" | "en" = "ko",
   domain?: "security" | "resilience" | "performance" | "cost-optimization"
 ): Promise<Problem> {
-  const env = (import.meta as any).env;
-
   // 📊 모의시험 모드: 빈 배열이면 분석 데이터 기반으로 서비스 선택
   let selectedServices = serviceNames;
   if (serviceNames.length === 0) {
@@ -349,8 +347,6 @@ export async function translateConcept(
   concept: Concept,
   locale: "ja" | "en"
 ): Promise<Concept> {
-  const env = (import.meta as any).env;
-
   const targetLang = locale === "ja" ? "Japanese" : "English";
   const prompt = `You are a technical translator. Translate the following AWS concept from Korean to ${targetLang}.
 Keep all AWS service names (EC2, S3, Lambda, etc.) in English.

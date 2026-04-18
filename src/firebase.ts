@@ -41,15 +41,14 @@ import {
   uploadBytes
 } from "firebase/storage";
 
-// Firebase 설정 (환경변수에서 가져오기)
-const env = (import.meta as any).env;
+// Firebase 설정 (환경변수에서 개별 값만 정적 참조 - 전체 env destructure 금지)
 const firebaseConfig = {
-  apiKey: env.VITE_FIREBASE_API_KEY || "YOUR_API_KEY",
-  projectId: env.VITE_FIREBASE_PROJECT_ID || "YOUR_PROJECT_ID",
-  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || "YOUR_AUTH_DOMAIN",
-  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || "YOUR_STORAGE_BUCKET",
-  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || "YOUR_MESSAGING_SENDER_ID",
-  appId: env.VITE_FIREBASE_APP_ID || "YOUR_APP_ID",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "YOUR_API_KEY",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "YOUR_PROJECT_ID",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "YOUR_AUTH_DOMAIN",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "YOUR_STORAGE_BUCKET",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "YOUR_MESSAGING_SENDER_ID",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "YOUR_APP_ID",
 };
 
 // Firebase 초기화
@@ -798,7 +797,7 @@ export async function getUserQuizStats(userId: string): Promise<{
     // 서버 API로 통계 조회 (보안: 서버에서 처리)
     const backendUrl = typeof window !== "undefined" && window.location?.hostname === "localhost"
       ? "http://localhost:5000"
-      : (import.meta as any).env?.VITE_BACKEND_URL || "http://localhost:5000";
+      : import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 
     const response = await fetch(`${backendUrl}/api/getQuizStats`, {
@@ -842,7 +841,7 @@ export async function getUserProblemSessions(userId: string): Promise<Array<{
     // 서버 API로 세션 조회 (보안: 서버에서 처리)
     const backendUrl = typeof window !== "undefined" && window.location?.hostname === "localhost"
       ? "http://localhost:5000"
-      : (import.meta as any).env?.VITE_BACKEND_URL || "http://localhost:5000";
+      : import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 
     const response = await fetch(`${backendUrl}/api/getUserProblemSessions`, {
@@ -1389,7 +1388,7 @@ export async function canGenerateProblemToday(
     // 서버 API로 개수 조회 (보안: 서버에서 처리)
     const backendUrl = typeof window !== "undefined" && window.location?.hostname === "localhost"
       ? "http://localhost:5000"
-      : (import.meta as any).env?.VITE_BACKEND_URL || "http://localhost:5000";
+      : import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 
     const response = await fetch(`${backendUrl}/api/getProblemCountToday`, {

@@ -81,9 +81,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, onSuccess: _onSucc
 
     setLoading(true);
 
-    const env = (import.meta as any).env;
+    // 보안: 특정 env 값만 정적 참조 (전체 env destructure 금지)
     const storeSlug = "prep4saa";
-    const productId = env?.VITE_LEMON_SQUEEZY_PRODUCT_ID;
+    const productId = import.meta.env.VITE_LEMON_SQUEEZY_PRODUCT_ID;
 
     if (productId) {
       // custom_data에 userId와 email 전달 (webhook에서 받을 데이터)

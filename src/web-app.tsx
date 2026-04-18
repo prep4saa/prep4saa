@@ -381,13 +381,13 @@ function App() {
  return errorMessage;
   };
 
-  //  보안: 환경변수에서 관리자/테스트 이메일 읽기 (하드코딩 금지)
-  const env = (import.meta as any).env;
-  const ADMIN_EMAILS = (env.VITE_ADMIN_EMAILS || '').split(',').map((e: string) => e.trim()).filter(Boolean);
-  const TEST_PAID_EMAILS = (env.VITE_TEST_PAID_EMAILS || '').split(',').map((e: string) => e.trim()).filter(Boolean);
+  //  보안: 특정 env 값만 정적 참조 (Vite가 빌드 시 개별 값 inline, 전체 env 객체 번들 방지)
+  const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || '').split(',').map((e: string) => e.trim()).filter(Boolean);
+  const TEST_PAID_EMAILS = (import.meta.env.VITE_TEST_PAID_EMAILS || '').split(',').map((e: string) => e.trim()).filter(Boolean);
   const [tab, setTab] = useState<"quiz" | "concept" | "status" | "mockExam" | "pastExam" | "posts" | "admin" | "users" | "console">("quiz");
   const [showQuizIntroModal, setShowQuizIntroModal] = useState(false);
   const [quizIntroStep, setQuizIntroStep] = useState(0);
+  const [quizIntroDontShowToday, setQuizIntroDontShowToday] = useState(false);
 
   // 기출문제 (Past Exams) 상태
   const [pastExamPage, setPastExamPage] = useState(1);
@@ -1164,13 +1164,23 @@ function App() {
  }
   }, [tab, userEmail]);
 
-  // 퀴즈 탭 최초 진입 시 소개 모달 표시 (localStorage로 한 번만)
+  // 퀴즈 탭 최초 진입 시 소개 모달 표시
+  // - "오늘 하루 안보기" 체크 시: 24시간 후 다시 노출
+  // - 체크 안 하고 닫음: 영구 숨김 (기존 동작)
   useEffect(() => {
     if (tab === "quiz") {
       const seen = localStorage.getItem("quizIntroModalSeen");
-      if (!seen) {
-        setShowQuizIntroModal(true);
+      if (seen) return; // 영구 숨김
+      const hideUntilStr = localStorage.getItem("quizIntroHideUntil");
+      if (hideUntilStr) {
+        const hideUntil = parseInt(hideUntilStr, 10);
+        if (Number.isFinite(hideUntil) && hideUntil > Date.now()) {
+          return; // 아직 24시간 안 지남
+        }
+        // 만료됨 → 키 정리
+        localStorage.removeItem("quizIntroHideUntil");
       }
+      setShowQuizIntroModal(true);
     }
   }, [tab]);
 
@@ -5811,7 +5821,15 @@ function App() {
    const close = () => {
      setShowQuizIntroModal(false);
      setQuizIntroStep(0);
-     localStorage.setItem("quizIntroModalSeen", "true");
+     if (quizIntroDontShowToday) {
+       // 체크됨 → 24시간 후 다시 노출
+       localStorage.setItem("quizIntroHideUntil", String(Date.now() + 24 * 60 * 60 * 1000));
+       localStorage.removeItem("quizIntroModalSeen");
+     } else {
+       // 기본 → 영구 숨김
+       localStorage.setItem("quizIntroModalSeen", "true");
+     }
+     setQuizIntroDontShowToday(false);
    };
    const next = () => {
      if (isLast) close();
@@ -5964,6 +5982,31 @@ function App() {
            margin: 0,
            marginBottom: '24px'
          }}>{current.desc}</p>
+
+         {/* "오늘 하루 안보기" 체크박스 */}
+         <label style={{
+           display: 'flex',
+           alignItems: 'center',
+           gap: '8px',
+           marginBottom: '16px',
+           fontSize: '13px',
+           color: '#a8b0c2',
+           cursor: 'pointer',
+           userSelect: 'none'
+         }}>
+           <input
+             type="checkbox"
+             checked={quizIntroDontShowToday}
+             onChange={(e) => setQuizIntroDontShowToday(e.target.checked)}
+             style={{
+               width: '16px',
+               height: '16px',
+               cursor: 'pointer',
+               accentColor: '#ff9900'
+             }}
+           />
+           <span>오늘 하루 안보기</span>
+         </label>
 
          {/* Buttons */}
          <div style={{ display: 'flex', gap: '10px' }}>

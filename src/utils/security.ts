@@ -39,8 +39,8 @@ export async function isAdminUser(email: string | null): Promise<boolean> {
     return false;
   }
 
-  const env = (import.meta as any).env;
-  const adminEmailsStr = env.VITE_ADMIN_EMAILS || '';
+  // 보안: 특정 env 값만 정적 참조 (전체 env destructure 금지)
+  const adminEmailsStr = import.meta.env.VITE_ADMIN_EMAILS || '';
   const adminEmails = adminEmailsStr.split(',').map((e: string) => e.trim()).filter(Boolean);
 
   const isAdmin = adminEmails.includes(email);
