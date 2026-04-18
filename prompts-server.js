@@ -8,7 +8,7 @@
  * - 1개 명백한 함정답 (다른 서비스 선택)
  * - 2개 어느 정도 가능한 선택지
  */
-export const SAA_PROBLEM_PROMPT_MEDIUM = `⚠️ **CRITICAL: 응답은 2000~3500 토큰 사이로 작성하세요.**
+const SAA_PROBLEM_PROMPT_MEDIUM = `⚠️ **CRITICAL: 응답은 2000~3500 토큰 사이로 작성하세요.**
 
 당신은 AWS SAA-C03 시험의 출제 전문가입니다.
 다음 2가지 예시 문제의 스타일, 난이도, 함정답 구조를 정확히 분석하고,
@@ -172,7 +172,7 @@ JSON 형식으로 응답해주세요 (마크다운 없이 순수 JSON만, 모든
  * - 2개의 정교한 함정답 (각각 1가지 제약 미충족)
  * - 실무 수준의 아키텍처 이해 필요
  */
-export const SAA_PROBLEM_PROMPT_HARD = `⚠️ **CRITICAL: 응답은 2000~3500 토큰 사이로 작성하세요.**
+const SAA_PROBLEM_PROMPT_HARD = `⚠️ **CRITICAL: 응답은 2000~3500 토큰 사이로 작성하세요.**
 
 당신은 AWS SAA-C03 시험 출제 전문가입니다.
 다음은 "어려움" 난이도의 예시 문제입니다. 복합적인 제약조건과 정교한 함정답 구조를 분석하세요.
@@ -244,7 +244,7 @@ JSON 형식으로 응답 (마크다운 없이 순수 JSON, 모든 값은 한 줄
  * - 3개의 매우 정교한 함정답 (각각 서로 다른 미충족 요소)
  * - 실제 Examtopics 최고 난이도 수준
  */
-export const SAA_PROBLEM_PROMPT_CHALLENGE = `⚠️ **CRITICAL: 응답은 2000~3500 토큰 사이로 작성하세요.**
+const SAA_PROBLEM_PROMPT_CHALLENGE = `⚠️ **CRITICAL: 응답은 2000~3500 토큰 사이로 작성하세요.**
 
 당신은 AWS SAA-C03 시험 출제 전문가입니다.
 다음은 "챌린지" 난이도의 예시 입니다. 매우 정교하고 현실감 높은 아키텍처 문제를 분석하세요.
@@ -314,7 +314,7 @@ JSON 형식으로 응답 (마크다운 없이 순수 JSON, 모든 값은 한 줄
   "patterns": ["패턴1: 하이브리드 아키텍처의 핵심", "패턴2: 규제 준수와 기술의 충돌", "패턴3: 비용 vs 기술의 트레이드오프"]
 }`;
 
-export const SAA_PROBLEM_PROMPT_EN = `⚠️ **CRITICAL: Response should be 2000-3500 tokens.**
+const SAA_PROBLEM_PROMPT_EN = `⚠️ **CRITICAL: Response should be 2000-3500 tokens.**
 
 You are an AWS SAA-C03 exam expert.
 Analyze the style, difficulty level, and trick answer structure of the following 2 example questions,
@@ -407,7 +407,7 @@ Respond in JSON format (pure JSON, all values on single line, no markdown):
   "patterns": ["Pattern 1: Frequently tested concept", "Pattern 2: Comparison between similar services"]
 }`;
 
-export const SAA_PROBLEM_PROMPT_JA = `⚠️ **重要：レスポンスは正確に2000トークン以内である必要があります。超過しないでください。**
+const SAA_PROBLEM_PROMPT_JA = `⚠️ **重要：レスポンスは正確に2000トークン以内である必要があります。超過しないでください。**
 
 あなたはAWS SAA-C03試験の専門家です。
 以下の2つの例題のスタイル、難易度レベル、トリック選択肢の構造を分析し、
@@ -489,7 +489,7 @@ JSON形式で応答してください:
   "patterns": ["この問題の重要なパターン 1", "重要なパターン 2"]
 }`;
 
-export const SAA_PROBLEM_PROMPT_EN_HARD = `⚠️ **CRITICAL: Response should be 2000-3500 tokens.**
+const SAA_PROBLEM_PROMPT_EN_HARD = `⚠️ **CRITICAL: Response should be 2000-3500 tokens.**
 
 You are an AWS SAA-C03 exam expert.
 The following shows a "Hard" difficulty-level example. Analyze complex constraints and sophisticated trap answer structures.
@@ -555,7 +555,7 @@ Response in JSON format (pure JSON, all values on single line, no markdown):
   "patterns": ["Core pattern 1: Frequently tested concept", "Core pattern 2: Service comparison and tradeoffs"]
 }`;
 
-export const SAA_PROBLEM_PROMPT_EN_CHALLENGE = `⚠️ **CRITICAL: Response should be 2000-3500 tokens.**
+const SAA_PROBLEM_PROMPT_EN_CHALLENGE = `⚠️ **CRITICAL: Response should be 2000-3500 tokens.**
 
 You are an AWS SAA-C03 exam expert.
 The following shows a "Challenge" difficulty-level example. Analyze highly sophisticated and realistic architecture problems.
@@ -625,7 +625,7 @@ Response in JSON format (pure JSON, all values on single line, no markdown):
   "patterns": ["Core pattern 1: Hybrid architecture design principles", "Core pattern 2: Compliance and security tradeoffs", "Core pattern 3: Cost optimization vs technical sophistication"]
 }`;
 
-export const SAA_PROBLEM_PROMPT_JA_HARD = `⚠️ **重要：レスポンスは2000〜3500トークンの間で作成してください。**
+const SAA_PROBLEM_PROMPT_JA_HARD = `⚠️ **重要：レスポンスは2000〜3500トークンの間で作成してください。**
 
 あなたはAWS SAA-C03試験の専門家です。
 以下の「難しい」難易度の例題を分析してください。複雑な制約条件と洗練されたトリック選択肢の構造を理解します。
@@ -691,7 +691,7 @@ JSON形式で応答 (マークダウンなし、純粋なJSON、すべての値�
   "patterns": ["コアパターン 1", "コアパターン 2"]
 }`;
 
-export const SAA_PROBLEM_PROMPT_JA_CHALLENGE = `⚠️ **重要：レスポンスは2000〜3500トークンの間で作成してください。**
+const SAA_PROBLEM_PROMPT_JA_CHALLENGE = `⚠️ **重要：レスポンスは2000〜3500トークンの間で作成してください。**
 
 あなたはAWS SAA-C03試験の専門家です。
 以下は「チャレンジ」難易度の例題です。非常に高度で現実的なアーキテクチャ問題を分析してください。
@@ -761,20 +761,15 @@ JSON形式で応答 (マークダウンなし、純粋なJSON、すべての値�
   "patterns": ["コアパターン 1: ハイブリッドアーキテクチャ設計原則", "コアパターン 2: コンプライアンスとセキュリティのトレードオフ", "コアパターン 3: コスト最適化 vs 技術的洗練度"]
 }`;
 
-export const DIFFICULTY_LABELS = {
+const DIFFICULTY_LABELS = {
   ko: { medium: "보통", hard: "어려움", challenge: "챌린지" },
   ja: { medium: "普通", hard: "難しい", challenge: "チャレンジ" },
   en: { medium: "Medium", hard: "Hard", challenge: "Challenge" },
-} as const;
+};
 
-export function generatePrompt(
-  serviceNames: string[],
-  difficulty: string,
-  locale: "ko" | "ja" | "en" = "ko",
-  domain?: "security" | "resilience" | "performance" | "cost-optimization"
-): string {
+function generatePrompt(serviceNames, difficulty, locale = "ko", domain) {
   // 난이도별로 다른 프롬프트 선택
-  let prompt: string;
+  let prompt;
 
   if (locale === "ko") {
     if (difficulty === "hard") {
@@ -802,7 +797,7 @@ export function generatePrompt(
     }
   }
 
-  const diffLabel = DIFFICULTY_LABELS[locale][difficulty as "medium" | "hard" | "challenge"] || difficulty;
+  const diffLabel = DIFFICULTY_LABELS[locale][difficulty] || difficulty;
 
   // 📊 도메인별 가이드 추가
   const domainGuide = domain
@@ -838,3 +833,17 @@ export function generatePrompt(
     .replace("${SERVICE_NAMES}", serviceNames.join(", "))
     .replace("${DIFFICULTY}", diffLabel) + domainGuide + tokenConstraint);
 }
+
+module.exports = {
+  SAA_PROBLEM_PROMPT_MEDIUM,
+  SAA_PROBLEM_PROMPT_HARD,
+  SAA_PROBLEM_PROMPT_CHALLENGE,
+  SAA_PROBLEM_PROMPT_EN,
+  SAA_PROBLEM_PROMPT_JA,
+  SAA_PROBLEM_PROMPT_EN_HARD,
+  SAA_PROBLEM_PROMPT_EN_CHALLENGE,
+  SAA_PROBLEM_PROMPT_JA_HARD,
+  SAA_PROBLEM_PROMPT_JA_CHALLENGE,
+  DIFFICULTY_LABELS,
+  generatePrompt,
+};

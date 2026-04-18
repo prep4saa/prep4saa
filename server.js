@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
 const crypto = require('crypto');
 const admin = require('firebase-admin');
+const { generatePrompt } = require('./prompts-server');
 require('dotenv').config();
 
 function loadFirebaseServiceAccount() {
@@ -120,6 +121,103 @@ async function handleClaudeProxy(req, res) {
 
 // 추そ 메메서드사씤//吏//app.post('/api/claude', handleClaudeProxy);
 app.post('/api/claudeProxy', handleClaudeProxy);
+
+// ═════════════════════════════════════════════════════════════
+// 🔒 SAA Problem Generation — 프롬프트 서버 보관 (클라이언트 노출 방지)
+// 클라이언트는 services/difficulty/locale/domain만 전달.
+// 서버가 프롬프트 생성 + Gemini/Claude 호출 + JSON 파싱까지 담당.
+// ═════════════════════════════════════════════════════════════
+async function callGeminiFromServer(prompt, maxTokens) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY not found');
+
+  const response = await fetch(
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: maxTokens, temperature: 1 },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(`Gemini API Error: ${error?.error?.message || response.status}`);
+  }
+
+  const data = await response.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+async function callClaudeFromServer(prompt, maxTokens) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not found');
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: maxTokens,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(`Claude API Error: ${error?.error?.message || response.status}`);
+  }
+
+  const data = await response.json();
+  return data.content?.[0]?.text || '';
+}
+
+app.post('/api/generateSAAProblem', async (req, res) => {
+  try {
+    const { services, difficulty, locale = 'ko', domain } = req.body || {};
+    if (!Array.isArray(services) || !difficulty) {
+      return res.status(400).json({ error: { message: 'services(array) and difficulty are required' } });
+    }
+
+    // 서버에서 프롬프트 생성 (클라이언트에 노출 안 됨)
+    const prompt = generatePrompt(services, difficulty, locale, domain);
+
+    let content;
+    let source;
+
+    // Gemini 우선, 실패 시 Claude 폴백
+    try {
+      content = await callGeminiFromServer(prompt, 3500);
+      source = 'gemini';
+    } catch (geminiError) {
+      console.warn('⚠️ Gemini failed, falling back to Claude:', geminiError?.message);
+      try {
+        content = await callClaudeFromServer(prompt, 3500);
+        source = 'claude';
+      } catch (claudeError) {
+        console.error('❌ Both Gemini and Claude failed');
+        return res.status(500).json({
+          error: { message: `Gemini: ${geminiError?.message} | Claude: ${claudeError?.message}` }
+        });
+      }
+    }
+
+    res.json({ content, source });
+  } catch (error) {
+    console.error('❌ generateSAAProblem error:', error);
+    res.status(500).json({ error: { message: error.message } });
+  }
+});
 
 // Gemini API 프록시 (보안: API 키는 서버에만 저장)
 async function handleGeminiProxy(req, res) {
