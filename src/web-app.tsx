@@ -2371,20 +2371,6 @@ function App() {
  )}
  </div>
 
- {/* 핵심 키워드 */}
- {(problem as any).keywords && (problem as any).keywords.length > 0 && (
- <div style={{ fontSize: "12px", color: "#D1D5DB", marginBottom: "8px", padding: "8px", background: "#2A344A", borderRadius: "4px" }}>
- <strong>{t("quizKeywords")}</strong>
- <div style={{ marginTop: "4px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
- {(problem as any).keywords.map((kw: string, i: number) => (
- <span key={i} style={{ background: "rgba(255,153,0,0.15)", padding: "2px 8px", borderRadius: "12px", color: "var(--accent)" }}>
- <strong>{kw}</strong>
- </span>
- ))}
- </div>
- </div>
- )}
-
  {/* easyMode 버튼 */}
  {(problem as any).easyMode && (
  <button
@@ -2430,16 +2416,6 @@ function App() {
  </div>
  )}
 
- {problem.patterns && (
- <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px solid #2A344A" }}>
- <strong style={{ fontSize: "12px" }}>{t("quizCorePattern")}</strong>
- <ul style={{ fontSize: "12px", marginTop: "4px", paddingLeft: "16px" }}>
- {problem.patterns.map((p, i) => (
- <li key={i} style={{ color: "#D1D5DB", marginTop: "4px" }}>{p}</li>
- ))}
- </ul>
- </div>
- )}
  </div>
  )}
 
