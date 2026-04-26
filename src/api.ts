@@ -16,36 +16,52 @@ export function resolveBackendUrl(): string {
 
 /**
  * 분석 데이터를 기반으로 AWS 서비스를 선택
+ *
+ * - 빈 배열 감지 시 medium 난이도로 고정 (단일 서비스 1개 기본)
+ * - usedSets 전달 시 중복 방지: 단일 서비스 모두 소진되면 2개 조합으로 fallback
+ *   ([EC2] 이미 사용 → [EC2, S3] 같은 조합은 허용)
  */
-function selectServicesFromAnalysis(difficulty: string): string[] {
+export function selectServicesFromAnalysis(usedSets?: Set<string>): string[] {
   const weights = examAnalysis.generationStrategy.serviceSelectionWeights as any;
-
-  // 가중치 기반 서비스 선택 (1-3개)
-  const services: string[] = [];
   const serviceList = Object.keys(weights).filter(s => s !== "Others");
 
-  // 난이도별 선택 개수
-  let numServices = 1;
-  if (difficulty === "hard") numServices = 2;
-  if (difficulty === "challenge") numServices = 3;
-
-  // 가중치 기반으로 랜덤 선택 (복원 추출)
-  for (let i = 0; i < numServices; i++) {
+  const pickWeighted = (): string => {
     const rand = Math.random();
     let cumulative = 0;
-
     for (const service of serviceList) {
       cumulative += weights[service];
-      if (rand <= cumulative) {
-        if (!services.includes(service)) {
-          services.push(service);
-        }
-        break;
-      }
+      if (rand <= cumulative) return service;
+    }
+    return serviceList[0];
+  };
+
+  const MAX_TRIES = 50;
+
+  // 1단계: 단일 서비스 시도 (medium 고정 → 1개)
+  for (let i = 0; i < MAX_TRIES; i++) {
+    const single = [pickWeighted()];
+    const key = single.join("|");
+    if (!usedSets || !usedSets.has(key)) {
+      usedSets?.add(key);
+      return single;
     }
   }
 
-  return services.length > 0 ? services : ["EC2"];
+  // 2단계: 단일 서비스 모두 사용됨 → 2개 조합 fallback
+  for (let i = 0; i < MAX_TRIES; i++) {
+    const a = pickWeighted();
+    let b = pickWeighted();
+    while (b === a) b = pickWeighted();
+    const combo = [a, b].sort();
+    const key = combo.join("|");
+    if (!usedSets || !usedSets.has(key)) {
+      usedSets?.add(key);
+      return combo;
+    }
+  }
+
+  // 마지막 fallback
+  return ["EC2"];
 }
 
 // ✅ Gemini API 호출 함수 (서버 프록시 사용 - 보안)
@@ -158,10 +174,10 @@ export async function generateSAAProblem(
   locale: "ko" | "ja" | "en" = "ko",
   domain?: "security" | "resilience" | "performance" | "cost-optimization"
 ): Promise<Problem> {
-  // 📊 모의시험 모드: 빈 배열이면 분석 데이터 기반으로 서비스 선택
+  // 📊 모의시험 모드: 빈 배열이면 분석 데이터 기반으로 서비스 선택 (medium 고정)
   let selectedServices = serviceNames;
   if (serviceNames.length === 0) {
-    selectedServices = selectServicesFromAnalysis(difficulty);
+    selectedServices = selectServicesFromAnalysis();
   }
 
   // 🔒 프롬프트는 서버에서 생성 (클라이언트 노출 방지)
@@ -355,14 +371,23 @@ Output (JSON only):`;
 
 /**
  * 모의고사 50문제를 한번의 API 호출로 생성 (병렬 처리)
+ *
+ * - difficulty 파라미터 무시하고 전체 medium 고정
+ * - 50문제 전반에 걸쳐 서비스 세트 중복 금지
+ *   (예: [EC2] 단일이 한 번 사용되면 더 이상 [EC2] 단일로 출제 안 됨,
+ *    하지만 [EC2, S3] 같은 조합은 별개로 허용)
  */
 export async function generateMockExamBatch(
   difficulties: Array<"medium" | "hard" | "challenge">,
   locale: "ko" | "ja" | "en" = "ko"
 ): Promise<Problem[]> {
-  // 병렬 처리: 모든 문제를 동시에 요청
-  const problemPromises = difficulties.map((difficulty) =>
-    generateSAAProblem([], difficulty, locale)
+  // 1) 50개 서비스 세트 사전 할당 — 중복 없는 조합 보장
+  const usedSets = new Set<string>();
+  const serviceSets = difficulties.map(() => selectServicesFromAnalysis(usedSets));
+
+  // 2) 사전 할당된 서비스로 병렬 API 호출 — 모두 medium 고정
+  const problemPromises = serviceSets.map((services) =>
+    generateSAAProblem(services, "medium", locale)
   );
 
   try {

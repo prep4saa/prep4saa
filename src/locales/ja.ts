@@ -151,13 +151,13 @@ export const ja: Strings = {
   premiumPrice: "$14.99 / 月",
   premiumFeature1: "1日20問",
   premiumFeature2: "毎日模擬試験 (50問、130分)",
-  premiumFeature3: "すべての難易度",
+  premiumFeature3: "過去問全ページ",
   premiumFeature4: "完全に広告なし",
   premiumUpgradeBtn: "今すぐアップグレード",
   premiumPlan: "プレミアムプラン",
   premiumBenefits: "プレミアムプラン",
   premiumUnlimited: "1日20問",
-  premiumAllDifficulty: "すべての難易度",
+  premiumAllDifficulty: "過去問全ページ",
   premiumAdFree: "完全に広告なし",
   premiumCancelAnytime: "いつでもキャンセル可能",
 
@@ -173,7 +173,7 @@ export const ja: Strings = {
   premiumFeatureList1: "1日20問の生成",
   premiumFeatureList2: "毎日1回模擬試験 (50問、130分)",
   premiumFeatureList3: "詳細な成績分析",
-  premiumFeatureList4: "すべての難易度 (普通、難しい、チャレンジ)",
+  premiumFeatureList4: "AIカスタム問題 + CLI演習",
 
   // Status related
   guestStatus: "ゲスト",
@@ -424,7 +424,7 @@ export const ja: Strings = {
   landingFaq5Q: "解約は簡単にできますか?",
   landingFaq5A: "はい。Monthly プランはいつでも 1 クリックで解約いただけます。解約後も、お支払いいただいた期間の終了日まで引き続きご利用いただけます。",
   landingFaq6Q: "新しいコンテンツはどのくらいの頻度で追加されますか?",
-  landingFaq6A: "新しい問題と解説は毎週追加されます。有料プランにご登録いただくと、追加されるすべてのコンテンツを追加料金なしでご利用いただけます。プラットフォームと共に学習を続けられる設計です。",
+  landingFaq6A: "厳選された過去問100問以上 + 毎日50問の模擬試験（自動生成、重複なし） + AIカスタム問題（苦手分野を即座に生成）を提供します。有料プランの方は追加される全ての問題を追加料金なしでご利用いただけます。問題数よりも、解説の深さと受験者がつまずきやすいトピックの理解に重点を置いています。",
   landingFaq7Q: "問題は実際の試験パターンに基づいていますか?",
   landingFaq7A: "すべての問題は、AWS SAA-C03 公式試験ブループリントと Well-Architected Framework に基づいて作成されています。AI(Claude)が初稿生成を補助しますが、公開前にすべての問題を AWS 公式ドキュメントと照合して検証しています。自動生成されたノイズではなく、厳選されたコンテンツで学習できます。",
   landingCtaTitle: "クラウドエンジニアへの第一歩を、今日から。",

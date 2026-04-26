@@ -151,13 +151,13 @@ export const en: Strings = {
   premiumPrice: "$14.99 / month",
   premiumFeature1: "20 problems per day",
   premiumFeature2: "Daily mock exam (50 questions, 130 min)",
-  premiumFeature3: "All difficulty levels",
+  premiumFeature3: "Full past exam pages",
   premiumFeature4: "Completely ad-free",
   premiumUpgradeBtn: "Upgrade Now",
   premiumPlan: "Premium Plan",
   premiumBenefits: "Premium Plan",
   premiumUnlimited: "20 problems per day",
-  premiumAllDifficulty: "All difficulty levels",
+  premiumAllDifficulty: "Full past exam pages",
   premiumAdFree: "Completely ad-free",
   premiumCancelAnytime: "Cancel anytime",
 
@@ -173,7 +173,7 @@ export const en: Strings = {
   premiumFeatureList1: "20 problems per day",
   premiumFeatureList2: "Daily mock exam once per day (50 questions, 130 min)",
   premiumFeatureList3: "Detailed performance analysis",
-  premiumFeatureList4: "All difficulty levels (Medium, Hard, Challenge)",
+  premiumFeatureList4: "AI-tailored questions + CLI labs",
 
   // Status related
   guestStatus: "Guest",
@@ -424,7 +424,7 @@ export const en: Strings = {
   landingFaq5Q: "Is cancellation flexible?",
   landingFaq5A: "Yes. Monthly subscriptions can be cancelled anytime with a single click. You'll retain full access for the remainder of your billing period.",
   landingFaq6Q: "How often is new content added?",
-  landingFaq6A: "New questions and explanations are added weekly. All paid subscribers automatically receive access to new content at no additional cost — the platform grows with you.",
+  landingFaq6A: "100+ curated past exam questions + 50 daily mock exam questions (auto-generated, no duplicates) + AI-tailored questions (instantly generated for your weak areas). Paid subscribers receive all new content at no additional cost. We focus on the depth of Korean explanations and the topics Korean test-takers struggle with most, rather than just the question count.",
   landingFaq7Q: "Are the questions based on real exam patterns?",
   landingFaq7A: "Every question is modeled on the official AWS SAA-C03 exam blueprint and the Well-Architected Framework. AI assists with drafting, but every question is reviewed and verified against AWS documentation before publication. You're studying curated content, not auto-generated noise.",
   landingCtaTitle: "Ready to start your cloud journey?",

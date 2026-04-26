@@ -149,13 +149,13 @@ export const ko = {
   premiumPrice: "$14.99 / 월",
   premiumFeature1: "하루 20개 문제 생성",
   premiumFeature2: "매일 모의시험 (50문제, 130분)",
-  premiumFeature3: "모든 난이도",
+  premiumFeature3: "기출문제 전체 페이지",
   premiumFeature4: "완전히 광고 없음",
   premiumUpgradeBtn: "지금 업그레이드하기",
   premiumPlan: "프리미엄 플랜",
   premiumBenefits: "프리미엄 플랜",
   premiumUnlimited: "하루 20개",
-  premiumAllDifficulty: "모든 난이도",
+  premiumAllDifficulty: "기출문제 전체 페이지",
   premiumAdFree: "완전히 광고 없음",
   premiumCancelAnytime: "언제든 취소 가능",
 
@@ -171,7 +171,7 @@ export const ko = {
   premiumFeatureList1: "하루 20개 문제 생성",
   premiumFeatureList2: "매일 모의시험 1회 (50문제, 130분)",
   premiumFeatureList3: "상세한 성과 분석",
-  premiumFeatureList4: "모든 난이도 (보통, 어려움, 챌린지)",
+  premiumFeatureList4: "AI 맞춤 문제 생성 + CLI 실습",
 
   // 상태 관련
   guestStatus: "게스트",
@@ -422,7 +422,7 @@ export const ko = {
   landingFaq5Q: "취소는 자유로운가요?",
   landingFaq5A: "네. Monthly는 언제든 1-click 해지, 남은 기간까지 쓸 수 있습니다.",
   landingFaq6Q: "지금 문제가 몇 개예요? 계속 추가되나요?",
-  landingFaq6A: "솔직히 말씀드리면, 아직 100문항 미만입니다. 초기 단계라 그렇습니다. 매주 문제를 추가하고 있으며, 유료 이용자는 추가되는 모든 문제를 별도 비용 없이 이용할 수 있습니다. 문제 수보다 한국어 해설의 품질과 한국인이 헷갈리는 주제의 깊이에 더 집중하고 있습니다.",
+  landingFaq6A: "기출문제 100문항 이상 + 매일 50문제 모의시험(자동 생성, 중복 없음) + AI 맞춤 문제(약점 영역 즉석 생성)을 제공합니다. 유료 이용자는 추가되는 모든 문제를 별도 비용 없이 이용할 수 있습니다. 문제 수보다 한국어 해설의 품질과 한국인이 헷갈리는 주제의 깊이에 더 집중하고 있습니다.",
   landingFaq7Q: "AI로 만든 문제라던데, 이상하진 않나요?",
   landingFaq7A: "출발점은 AWS SAA-C03 기출 범위입니다. 제가 직접 한국어로 재작성하고, AI(Claude)는 초안 생성과 한국어 다듬기에 보조적으로 사용합니다. 모든 문항은 AWS 공식 문서·Well-Architected Framework 기준으로 정답 근거를 확인한 후 공개됩니다. \"AI가 실시간으로 만든 문제\"가 아니라, 사람이 검수한 문제만 제공됩니다.",
   landingCtaTitle: "시험에 합격하고 싶으신가요?",

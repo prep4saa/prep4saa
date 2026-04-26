@@ -101,6 +101,15 @@ D. Amazon API Gateway API를 구성하여 데이터를 AWS Glue로 보냅니다.
 **새로운 문제의 생성 원칙:**
 
 ### 1. 시나리오 (1-2문장, 간결)
+- **시나리오 시작 표현 다양화 (필수)**: "한 회사가", "한 기업은", "회사는", "기업은"으로 시작하는 AI스러운 정형 표현 절대 금지. 다음 패턴 중 하나로 자연스럽게 시작:
+  * 업종+상황: "글로벌 이커머스 플랫폼이 블랙프라이데이 트래픽 폭증을..."
+  * 시스템+문제: "기존 온프레미스 데이터베이스가 분기말 처리 시 응답 지연이..."
+  * 팀/역할+목표: "DevOps 팀은 마이크로서비스 50개의 로그를 단일 대시보드에..."
+  * 제품/서비스명: "모바일 뱅킹 앱이 일일 100만 건의 결제 트랜잭션을..."
+  * 사건/이벤트: "최근 보안 감사에서 S3 버킷 권한 미흡이 발견되어..."
+- **문장 단위 분할 (필수)**: 지문(시나리오)과 선택지의 한 문장이 너무 길지 않도록 2~3개의 짧은 문장으로 나눠 작성. 각 문장은 "~합니다." 형태로 마침표로 끝내고, 한 문장에 한 가지 정보만 담기. 절대 쉼표와 접속어로 길게 이어 붙이지 말 것.
+  * 나쁜 예 (한 문장으로 모든 정보): "글로벌 엔터테인먼트 스트리밍 서비스가 사용자의 프로필 사진 및 썸네일 이미지를 고해상도로 저장하고, 수억 명의 동시 사용자에게 지연 시간 50ms 미만으로 이미지 제공을 보장하면서, 운영 비용을 최소화해야 합니다."
+  * 좋은 예 (3문장 분할): "글로벌 엔터테인먼트 스트리밍 서비스가 사용자 프로필 사진과 썸네일을 고해상도로 저장합니다. 수억 명의 동시 사용자에게 50ms 미만 지연으로 이미지를 제공해야 합니다. 운영 비용도 최소화해야 합니다."
 - 매 문제마다 다른 업종 사용 (제조업체, 금융사, SaaS, 의료기관, 이커머스, 미디어, 게임사, 공공기관, 보험사, 물류, 스타트업, 교육 등)
 - 핵심 요구사항만 1-2문장으로 명시 — 제약조건은 별도 나열하지 않고 시나리오 안에 자연스럽게 포함
 - 수치는 꼭 필요한 경우만 포함 (매번 다르게: 보관기간 1년/3년/7년, 비용 절감 30% 등, 가용성 수치 표현 금지)
@@ -198,6 +207,8 @@ const SAA_PROBLEM_PROMPT_HARD = `⚠️ **CRITICAL: 응답은 2000~3500 토큰 �
 - D: 성능은 최고이지만 비용 2배 + 불필요한 기능
 
 **새로운 문제 조건**:
+- **시나리오 시작 표현 다양화 (필수)**: "한 회사가", "한 기업은", "회사는", "기업은"으로 시작하는 AI스러운 정형 표현 절대 금지. 업종+상황("글로벌 이커머스 플랫폼이..."), 시스템+문제("기존 온프레미스 데이터베이스가..."), 팀+목표("DevOps 팀은..."), 제품명("모바일 뱅킹 앱이..."), 사건("최근 보안 감사에서...") 등 자연스러운 도입부 사용
+- **문장 단위 분할 (필수)**: 지문과 선택지의 한 문장이 너무 길지 않도록 2~3개의 짧은 문장으로 나눠 작성. 각 문장은 "~합니다." 형태로 마침표로 끝내고, 한 문장에 한 가지 정보만 담기. 쉼표와 접속어로 길게 이어 붙이지 말 것. (예: "X를 저장합니다. Y를 제공해야 합니다. Z도 만족해야 합니다.")
 - 시나리오: 1-2문장으로 간결하게, 핵심 요구사항을 시나리오 안에 자연스럽게 포함
 - 선택지: 서비스명 + 핵심 특징, **1-2줄 이내** 덤프 스타일
 - **[어려움 함정답 원칙]**: 함정답은 비슷한 서비스지만 용도/설정이 다름
@@ -274,6 +285,8 @@ const SAA_PROBLEM_PROMPT_CHALLENGE = `⚠️ **CRITICAL: 응답은 2000~3500 토
 - D: 기술은 최고 (Global Table) 하지만 비용 초과 + 불필요한 복잡성
 
 **새로운 문제 조건**:
+- **시나리오 시작 표현 다양화 (필수)**: "한 회사가", "한 기업은", "회사는", "기업은"으로 시작하는 AI스러운 정형 표현 절대 금지. 업종+상황("글로벌 핀테크 스타트업이..."), 시스템+문제("레거시 코어뱅킹 시스템이..."), 팀+목표("플랫폼 엔지니어링 팀은..."), 제품명("실시간 결제 시스템이..."), 사건("규제 감사에서 데이터 거주지 위반이 지적되어...") 등 자연스러운 도입부 사용
+- **문장 단위 분할 (필수)**: 지문과 선택지의 한 문장이 너무 길지 않도록 2~3개의 짧은 문장으로 나눠 작성. 각 문장은 "~합니다." 형태로 마침표로 끝내고, 한 문장에 한 가지 정보만 담기. 쉼표와 접속어로 길게 이어 붙이지 말 것. (예: "X를 처리합니다. Y 요건을 충족해야 합니다. Z 제약도 있습니다.")
 - 시나리오: 온프레미스 ↔ AWS, 멀티 리전, 규제/컴플라이언스, 마이그레이션 등 실무 시나리오, 1-2문장
 - 선택지: 서비스명 + 핵심 특징, **1-2줄 이내** 덤프 스타일
 - **[챌린지 함정답 원칙]**: 함정답은 정답과 거의 동일한 서비스를 쓰지만 세부 옵션·모드·설정이 다름
@@ -362,15 +375,24 @@ Key Points:
 ## Now generate a new problem.
 
 **New Problem Conditions:**
-1. Scenario: 1-2 sentences, concise — use a different industry each time (manufacturer, bank, SaaS, healthcare, e-commerce, media, gaming, government, insurance, logistics, startup, edtech, etc.). Key requirements included naturally in the scenario, NOT listed separately as constraints.
-2. Options A-D (exam dump style):
+1. **Diversify scenario openings (REQUIRED)**: NEVER start with "A company..." or "An organization..." (sounds AI-generated). Use one of these natural patterns:
+   * Industry + situation: "A global e-commerce platform handles Black Friday traffic spikes..."
+   * System + problem: "A legacy on-premises database experiences latency during quarterly batch processing..."
+   * Team + goal: "The DevOps team needs to consolidate logs from 50 microservices into a single dashboard..."
+   * Product + scenario: "A mobile banking app processes 1 million daily payment transactions..."
+   * Event + trigger: "A recent security audit revealed misconfigured S3 bucket permissions..."
+2. **Short sentences (REQUIRED)**: Split scenarios and options into 2-3 short sentences. NEVER write one long sentence connected by commas/conjunctions. Each sentence ends with a period and contains ONE main idea.
+   * BAD (one long sentence): "A global entertainment streaming service stores user profile photos and thumbnail images at high resolution, ensures sub-50ms image delivery to hundreds of millions of concurrent users, and minimizes operational costs."
+   * GOOD (3 short sentences): "A global entertainment streaming service stores user profile photos and thumbnails at high resolution. It must deliver images to hundreds of millions of concurrent users with sub-50ms latency. Operational costs must also be minimized."
+3. Scenario: 1-2 sentences, concise — use a different industry each time (manufacturer, bank, SaaS, healthcare, e-commerce, media, gaming, government, insurance, logistics, startup, edtech, etc.). Key requirements included naturally in the scenario, NOT listed separately as constraints.
+4. Options A-D (exam dump style):
    - Each option: service name + key characteristic, **1-2 lines max**
    - No architecture flow descriptions — brief and direct like real exam dumps
    - Example: "Enable server-side encryption using AWS KMS managed keys (SSE-KMS) with automatic key rotation."
    - **[Medium trick answer rule]**: Trick answers use completely different services — the wrong reason is obvious
    - 1 correct answer: meets all requirements
    - 3 trick answers: each missing 1 different requirement
-3. Answer and detailed explanation:
+5. Answer and detailed explanation:
    - Why the correct answer meets all requirements
    - Which requirement each trick answer fails to meet
 
@@ -455,15 +477,24 @@ D. Amazon API Gateway APIを構成してAWS Glueにデータを送信します�
 ## 新しい問題を生成してください。
 
 **新しい問題の条件:**
-1. シナリオ: 1~2文で簡潔に — 毎回異なる業種(製造業、金融、SaaS、医療、Eコマース、メディア、ゲーム、公共機関、保険、物流、スタートアップ、教育など)。制約条件は別途列挙せず、シナリオ文の中に自然に含める。
-2. 選択肢A~D (試験ダンプスタイル):
+1. **シナリオ開始表現の多様化（必須）**: 「ある会社が」「会社は」「ある企業は」で始まるAI定型表現は絶対禁止。以下のパターンのいずれかで自然に開始:
+   * 業界+状況: 「グローバルEコマースプラットフォームがブラックフライデーのトラフィック急増を...」
+   * システム+問題: 「既存のオンプレミスデータベースが四半期末処理時の応答遅延を...」
+   * チーム+目標: 「DevOpsチームは50のマイクロサービスのログを単一のダッシュボードに...」
+   * 製品/サービス名: 「モバイル銀行アプリが1日100万件の決済トランザクションを...」
+   * イベント/事件: 「最近のセキュリティ監査でS3バケットの権限設定の不備が発見され...」
+2. **短文分割（必須）**: シナリオと選択肢を2~3つの短い文に分けてください。一つの長い文をコンマや接続詞でつなげるのは絶対禁止。各文は句点「。」で終わり、一つの情報のみを含む。
+   * 悪い例（一文で全情報）:「グローバルエンターテインメントストリーミングサービスがユーザーのプロフィール写真とサムネイル画像を高解像度で保存し、数億人の同時ユーザーに50ms未満の遅延で画像配信を保証しながら、運用コストを最小化する必要があります。」
+   * 良い例（3文に分割）:「グローバルエンターテインメントストリーミングサービスがユーザーのプロフィール写真とサムネイルを高解像度で保存します。数億人の同時ユーザーに50ms未満の遅延で画像を配信する必要があります。運用コストも最小化する必要があります。」
+3. シナリオ: 1~2文で簡潔に — 毎回異なる業種(製造業、金融、SaaS、医療、Eコマース、メディア、ゲーム、公共機関、保険、物流、スタートアップ、教育など)。制約条件は別途列挙せず、シナリオ文の中に自然に含める。
+4. 選択肢A~D (試験ダンプスタイル):
    - サービス名 + 核心的な特徴、**1~2行以内**
    - アーキテクチャフローの説明は最小限、実際の試験ダンプのように簡潔に
    - 例: 「自動キーローテーション機能付きのAWS KMS管理キー(SSE-KMS)を使用したサーバー側暗号化を有効にします。」
    - **[普通のトリック選択肢原則]**: トリック選択肢は全く異なるサービス → 間違いの理由が明確
    - 1つの正解: すべての要件を満たす
    - 3つのトリック選択肢: それぞれ異なる1つの要件を満たさない
-3. 答えと詳細説明:
+5. 答えと詳細説明:
    - なぜ正解がすべての要件を満たすのか
    - 各トリック選択肢がどの要件を満たさないか明示
 
@@ -515,6 +546,8 @@ The following shows a "Hard" difficulty-level example. Analyze complex constrain
 - D: Highest performance but 2x cost + unnecessary features
 
 **New Problem Requirements:**
+- **Diversify scenario openings (REQUIRED)**: NEVER start with "A company..." or "An organization..." (sounds AI-generated). Use natural patterns: industry + situation ("A global e-commerce platform..."), system + problem ("A legacy database..."), team + goal ("The DevOps team..."), product name ("A mobile banking app..."), or event ("A recent security audit revealed...")
+- **Short sentences (REQUIRED)**: Split scenarios and options into 2-3 short sentences. NEVER write one long sentence connected by commas/conjunctions. Each sentence ends with a period and contains ONE main idea. (Example: "X processes Y. It must meet Z requirement. Cost must also be minimized.")
 - Scenario: 1-2 sentences, concise — key requirements naturally embedded in the scenario text
 - Options: Exam dump style — service name + key characteristic, **1-2 lines max**
 - **[Hard trick answer rule]**: Trick answers use similar services but wrong configuration/purpose
@@ -585,6 +618,8 @@ Monthly 10TB transaction data, high availability required, HIPAA compliance"
 - D: Highest tech (Global Table) but cost exceeds budget + unnecessary complexity
 
 **New Problem Requirements:**
+- **Diversify scenario openings (REQUIRED)**: NEVER start with "A company..." or "An organization..." (sounds AI-generated). Use natural patterns: industry + situation ("A global fintech startup..."), system + problem ("A legacy core banking system..."), team + goal ("The platform engineering team..."), product name ("A real-time payment system..."), or event ("A regulatory audit flagged data residency violations...")
+- **Short sentences (REQUIRED)**: Split scenarios and options into 2-3 short sentences. NEVER write one long sentence connected by commas/conjunctions. Each sentence ends with a period and contains ONE main idea. (Example: "X handles Y workload. Compliance Z is required. Operational simplicity is also critical.")
 - Scenario: 1-2 sentences, concise — key requirements (compliance, cost, operational constraints) naturally embedded
 - Options: Exam dump style — service name + key characteristic, **1-2 lines max**
 - **[Challenge trick answer rule]**: Trick answers use the SAME services as the correct answer but with subtle differences in mode/option/behavior — nearly indistinguishable without deep knowledge
@@ -651,6 +686,8 @@ const SAA_PROBLEM_PROMPT_JA_HARD = `⚠️ **重要：レスポンスは2000〜3
 - D: 最高パフォーマンスだが2倍コスト + 不必要な機能
 
 **新しい問題の要件:**
+- **シナリオ開始表現の多様化（必須）**: 「ある会社が」「会社は」「ある企業は」で始まるAI定型表現は絶対禁止。業界+状況（「グローバルEコマースプラットフォームが...」）、システム+問題（「既存のオンプレミスデータベースが...」）、チーム+目標（「DevOpsチームは...」）、製品名（「モバイル銀行アプリが...」）、イベント（「最近のセキュリティ監査で...」）など自然な導入を使用
+- **短文分割（必須）**: シナリオと選択肢を2~3つの短い文に分けてください。一つの長い文をコンマや接続詞でつなげるのは絶対禁止。各文は句点「。」で終わり、一つの情報のみを含む。（例：「Xを処理します。Y要件を満たす必要があります。Z制約もあります。」）
 - シナリオ: 1~2文で簡潔に、核心要件をシナリオ文の中に自然に含める
 - 選択肢: 試験ダンプスタイル — サービス名 + 核心的な特徴、**1~2行以内**
 - **[難しいトリック選択肢原則]**: トリック選択肢は似たサービスだが設定/用途が異なる
@@ -721,6 +758,8 @@ const SAA_PROBLEM_PROMPT_JA_CHALLENGE = `⚠️ **重要：レスポンスは200
 - D: 最高技術 (グローバルテーブル) だが予算超過 + 不必要な複雑性
 
 **新しい問題の要件:**
+- **シナリオ開始表現の多様化（必須）**: 「ある会社が」「会社は」「ある企業は」で始まるAI定型表現は絶対禁止。業界+状況（「グローバルフィンテックスタートアップが...」）、システム+問題（「レガシーコアバンキングシステムが...」）、チーム+目標（「プラットフォームエンジニアリングチームは...」）、製品名（「リアルタイム決済システムが...」）、イベント（「規制監査でデータレジデンシ違反が指摘され...」）など自然な導入を使用
+- **短文分割（必須）**: シナリオと選択肢を2~3つの短い文に分けてください。一つの長い文をコンマや接続詞でつなげるのは絶対禁止。各文は句点「。」で終わり、一つの情報のみを含む。（例：「Xを処理します。コンプライアンスYが必要です。運用の簡素性も重要です。」）
 - シナリオ: 1~2文で簡潔に、核心要件(コンプライアンス、コスト、運用制約)をシナリオ文の中に自然に含める
 - 選択肢: 試験ダンプスタイル — サービス名 + 核心的な特徴、**1~2行以内**
 - **[チャレンジのトリック選択肢原則]**: トリック選択肢は正解と同じサービスを使うが、モード/オプション/動作が微妙に異なる — 深い知識なしには区別不可能なレベル

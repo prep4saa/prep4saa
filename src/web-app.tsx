@@ -1,7 +1,7 @@
 import html2pdf from "html2pdf.js/dist/html2pdf.js";
 import { useEffect, useRef, useState } from "react";
 import { getDailyVisitorsForMonth, getMonthlyVisitors, getTodayPurchaseCount, getTotalVisitorCount, getWeeklyVisitorsForMonth, trackVisitor } from "./analytics";
-import { Concept, generateSAAProblem, Problem, resolveBackendUrl } from "./api";
+import { Concept, generateSAAProblem, Problem, resolveBackendUrl, selectServicesFromAnalysis } from "./api";
 import CookieConsent from "./components/organisms/CookieConsent";
 import Footer from "./components/organisms/Footer";
 import LandingPage from "./components/pages/LandingPage";
@@ -1356,7 +1356,11 @@ function App() {
  const difficulties = JSON.parse(storedDifficulties);
  const domains = JSON.parse(storedDomains);
  const allProblems = JSON.parse(storedAllProblems);
- const conceptServices: (string | null)[] = storedConceptServices ? JSON.parse(storedConceptServices) : new Array(50).fill(null);
+ // 신규 형식: (string[] | null)[]. 구버전 형식 (string | null)[]도 호환.
+ const rawConceptServices: any[] = storedConceptServices ? JSON.parse(storedConceptServices) : new Array(50).fill(null);
+ const conceptServices: (string[] | null)[] = rawConceptServices.map((v: any) =>
+   v === null ? null : (Array.isArray(v) ? v : [v])
+ );
  let newProblems = [...mockExamProblems];
 
  // 점진적 로딩 패턴: 1 → 4 → 9 → 19 → 50
@@ -1383,8 +1387,7 @@ function App() {
  } else {
  const difficulty = difficulties[startIdx + i] as "medium" | "hard" | "challenge";
  const domain = domains[startIdx + i] as "security" | "resilience" | "performance" | "cost-optimization";
- const conceptService = conceptServices[startIdx + i];
- const serviceList = conceptService ? [conceptService] : [];
+ const serviceList = conceptServices[startIdx + i] ?? [];
  batchPromises.push(generateSAAProblem(serviceList, difficulty, mockExamLocale, domain));
  }
  }
@@ -2156,12 +2159,6 @@ function App() {
  <div className="slots-header">
  <span className="slots-title">{t("slotsTitle")} ({slots.length}/4)</span>
  <div className="difficulty-buttons">
- {(["medium", "hard", "challenge"] as const).map(d => (
- <button key={d} className={`diff-btn ${difficulty === d ? "active" : ""}`}
- onClick={() => setDifficulty(d)}>
- {d === "medium" ? t("diffMedium") : d === "hard" ? t("diffHard") : t("diffChallenge")}
- </button>
- ))}
  <button className="diff-btn reset" onClick={resetSlots}>{t("btnReset")}</button>
  </div>
  </div>
@@ -3349,7 +3346,9 @@ function App() {
    }
  }
 
+ // 화면 밖에 element 추가 (html2pdf가 layout을 계산하려면 DOM에 있어야 함)
  const element = document.createElement("div");
+ element.style.cssText = "position: absolute; left: -9999px; top: 0; width: 190mm;";
 
  // PDF 번역 문자열 준비
  const pdfLabels = {
@@ -3484,7 +3483,14 @@ function App() {
  pagebreak: { mode: ['css', 'legacy'] }
  };
 
- html2pdf().set(options).from(element).save();
+ // DOM에 추가 후 PDF 생성, 완료 후 제거
+ document.body.appendChild(element);
+ (html2pdf() as any).set(options).from(element).save().then(() => {
+ if (element.parentNode) document.body.removeChild(element);
+ }).catch((err: any) => {
+ console.error('PDF generation failed:', err);
+ if (element.parentNode) document.body.removeChild(element);
+ });
  const now = Date.now();
  setMockExamPdfCreatedAt(now);
  localStorage.setItem("mockExamPdfCreatedAt", now.toString());
@@ -3554,8 +3560,9 @@ function App() {
    }
  }
 
+ // 화면 밖에 element 추가 (html2pdf가 layout을 계산하려면 DOM에 있어야 함)
  const element = document.createElement("div");
- element.style.width = "190mm";
+ element.style.cssText = "position: absolute; left: -9999px; top: 0; width: 190mm;";
 
  // PDF 번역 문자열 준비
  const pdfLabels = {
@@ -3640,7 +3647,14 @@ function App() {
  pagebreak: { mode: ['css', 'legacy'] }
  };
 
- html2pdf().set(options).from(element).save();
+ // DOM에 추가 후 PDF 생성, 완료 후 제거
+ document.body.appendChild(element);
+ (html2pdf() as any).set(options).from(element).save().then(() => {
+ if (element.parentNode) document.body.removeChild(element);
+ }).catch((err: any) => {
+ console.error('PDF generation failed:', err);
+ if (element.parentNode) document.body.removeChild(element);
+ });
  }}
  disabled={isPdfExpired}
  style={{
@@ -4842,20 +4856,6 @@ function App() {
  )}
  </div>
 
- {/* 핵심 키워드 */}
- {(problem as any).keywords && (problem as any).keywords.length > 0 && (
- <div style={{ fontSize: "12px", color: "#D1D5DB", marginBottom: "12px", padding: "8px", background: "#2A344A", borderRadius: "4px" }}>
- <strong>{t("quizKeywords")}</strong>
- <div style={{ marginTop: "4px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
- {(problem as any).keywords.map((kw: string, i: number) => (
- <span key={i} style={{ background: "rgba(255,153,0,0.15)", padding: "2px 8px", borderRadius: "12px", color: "var(--accent)" }}>
- <strong>{kw}</strong>
- </span>
- ))}
- </div>
- </div>
- )}
-
  {/* 이지모드 */}
  {(problem as any).easyMode && (
  <div style={{ fontSize: "12px", color: "#D1D5DB", padding: "12px", background: "rgba(245,158,11,0.1)", borderRadius: "6px" }}>
@@ -5060,20 +5060,11 @@ function App() {
  let problems = await getTodayMockExamProblems(locale);
  if (!problems) {
  problems = [];
- // 난이도 분배: 보통 20개, 어려움 20개, 챌린지 10개
- const difficulties = [
- ...Array(40).fill("medium"),
- ...Array(5).fill("hard"),
- ...Array(5).fill("challenge")
- ];
- // 순서 섞기 (shuffle)
- for (let i = difficulties.length - 1; i > 0; i--) {
- const j = Math.floor(Math.random() * (i + 1));
- [difficulties[i], difficulties[j]] = [difficulties[j], difficulties[i]];
- }
+ // 모의시험은 모두 medium 난이도로 고정 (단일 서비스, 중복 없는 출제)
+ const difficulties = Array(50).fill("medium");
 
  for (let i = 0; i < 50; i++) {
- const difficulty = difficulties[i] as "medium" | "hard" | "challenge";
+ const difficulty = "medium" as const;
  const problem = await generateSAAProblem([], difficulty, locale);
  problems.push(problem);
  }
@@ -5142,28 +5133,12 @@ function App() {
  if (existingProblems && existingProblems.length > 0) {
  // 이미 생성된 문제 존재 - 공유 사용
  allProblems = existingProblems;
- // 기존 문제에서 난이도 추출
- difficulties = existingProblems.map(p => {
- if (p.question.includes("Challenge")) return "challenge";
- if (p.question.includes("Hard")) return "hard";
- return "medium";
- });
- // 50개가 안되면 남은 자리만큼 난이도 추가 생성 (백그라운드 로더가 참조)
+ // 모든 문제 medium 고정 (난이도 추출 불필요)
+ difficulties = Array(existingProblems.length).fill("medium");
+ // 50개가 안되면 남은 자리도 모두 medium으로 추가
  const remainingCount = 50 - difficulties.length;
  if (remainingCount > 0) {
- const mediumCount = Math.round(remainingCount * 0.4);
- const hardCount = Math.round(remainingCount * 0.4);
- const challengeCount = remainingCount - mediumCount - hardCount;
- const extraDifficulties = [
- ...Array(mediumCount).fill("medium"),
- ...Array(hardCount).fill("hard"),
- ...Array(challengeCount).fill("challenge")
- ];
- for (let i = extraDifficulties.length - 1; i > 0; i--) {
- const j = Math.floor(Math.random() * (i + 1));
- [extraDifficulties[i], extraDifficulties[j]] = [extraDifficulties[j], extraDifficulties[i]];
- }
- difficulties = [...difficulties, ...extraDifficulties];
+ difficulties = [...difficulties, ...Array(remainingCount).fill("medium")];
  }
  // 기존 문제의 도메인은 알 수 없으므로 균등 분배
  domains = [
@@ -5190,21 +5165,18 @@ function App() {
  ...Array(10).fill("cost-optimization")
  ];
 
- difficulties = [
- ...Array(20).fill("medium"),
- ...Array(20).fill("hard"),
- ...Array(10).fill("challenge")
- ];
+ // 모의시험은 모두 medium 난이도로 고정
+ difficulties = Array(50).fill("medium");
 
- // 순서 섞기 (shuffle) - 도메인과 난이도 동시에
- for (let i = difficulties.length - 1; i > 0; i--) {
+ // 도메인만 순서 섞기 (난이도는 모두 medium이라 섞을 필요 없음)
+ for (let i = domains.length - 1; i > 0; i--) {
  const j = Math.floor(Math.random() * (i + 1));
- [difficulties[i], difficulties[j]] = [difficulties[j], difficulties[i]];
  [domains[i], domains[j]] = [domains[j], domains[i]];
  }
+ }
 
- // 개념 탭 서비스 6개 랜덤 지정 (5~8개 중 6개)
- // NODES에 없는 서비스들로 구성 (보안/분석/거버넌스/마이그레이션/네트워킹 확장)
+ // 50개 서비스 세트 사전 할당 — Firebase에 9개 있으면 41개 새로, 0개면 50개 새로
+ // 중복 방지를 위해 모든 새 슬롯이 usedSets 공유
  const CONCEPT_TAB_SERVICES = [
    "SCP", "GuardDuty", "Amazon Inspector", "Amazon Macie", "AWS Network Firewall",
    "AWS Certificate Manager", "S3 Object Lock",
@@ -5216,20 +5188,37 @@ function App() {
    "Site-to-Site VPN", "VPC Peering"
  ];
  const shuffledConcepts = [...CONCEPT_TAB_SERVICES].sort(() => Math.random() - 0.5);
- const conceptServices: (string | null)[] = new Array(50).fill(null);
- // 6개 위치를 랜덤으로 선택 (0번 제외 - 첫 문제는 즉시 로드)
- const usedPositions = new Set<number>();
- let assigned = 0;
- while (assigned < 6) {
-   const pos = Math.floor(Math.random() * 49) + 1;
-   if (!usedPositions.has(pos)) {
-     usedPositions.add(pos);
-     conceptServices[pos] = shuffledConcepts[assigned];
-     assigned++;
+ const conceptServices: (string[] | null)[] = new Array(50).fill(null);
+ const usedSets = new Set<string>();
+ const startSlot = existingProblems ? existingProblems.length : 0;
+ const availableSlots = 50 - startSlot;
+
+ if (availableSlots > 0) {
+   // 1) concept tab 서비스 — 모든 concept 노드를 매 시험마다 출제 (52%)
+   //    weighted 가중치 기반 단일 서비스(EC2/S3/Lambda 등)만 반복되는 문제 해결
+   const conceptCount = Math.min(shuffledConcepts.length, availableSlots);
+   const usedPositions = new Set<number>();
+   let assigned = 0;
+   let safety = 0;
+   while (assigned < conceptCount && safety < 200) {
+     const pos = startSlot + Math.floor(Math.random() * availableSlots);
+     if (!usedPositions.has(pos)) {
+       usedPositions.add(pos);
+       const service = shuffledConcepts[assigned];
+       conceptServices[pos] = [service];
+       usedSets.add(service);
+       assigned++;
+     }
+     safety++;
+   }
+   // 2) 나머지 새 슬롯 — 가중치 기반 unique 서비스 세트 사전 할당
+   for (let i = startSlot; i < 50; i++) {
+     if (conceptServices[i] === null) {
+       conceptServices[i] = selectServicesFromAnalysis(usedSets);
+     }
    }
  }
  localStorage.setItem("mockExamConceptServices", JSON.stringify(conceptServices));
- }
 
  // 2단계: 첫 1문제만 로드
  let problems = [];
@@ -5238,7 +5227,11 @@ function App() {
  } else {
  const difficulty = difficulties[0] as "medium" | "hard" | "challenge";
  const domain = domains[0] as "security" | "resilience" | "performance" | "cost-optimization";
- const problem = await generateSAAProblem([], difficulty, locale, domain);
+ // 사전 할당된 unique 서비스 세트 사용 (중복 방지)
+ const storedSets = localStorage.getItem("mockExamConceptServices");
+ const firstSlot: any = storedSets ? JSON.parse(storedSets)[0] : null;
+ const firstServices: string[] = firstSlot === null ? [] : (Array.isArray(firstSlot) ? firstSlot : [firstSlot]);
+ const problem = await generateSAAProblem(firstServices, difficulty, locale, domain);
  problems.push(problem);
  allProblems = [problem];
  }
