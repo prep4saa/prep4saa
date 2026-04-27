@@ -5023,8 +5023,8 @@ function App() {
  onClick={async () => {
  setLoading(true);
  try {
- // 서버에서 admin 재검증
- const adminCheck = await fetch('http://localhost:5000/api/checkAdmin', {
+ // 서버에서 admin 재검증 (동적 backend URL)
+ const adminCheck = await fetch(`${resolveBackendUrl()}/api/checkAdmin`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
  body: JSON.stringify({ email: userEmail })
@@ -5036,19 +5036,73 @@ function App() {
  return;
  }
 
- let problems = await getTodayMockExamProblems(locale);
- if (!problems) {
- problems = [];
- // 모의시험은 모두 medium 난이도로 고정 (단일 서비스, 중복 없는 출제)
- const difficulties = Array(50).fill("medium");
+ // 🔥 강제 재생성: 기존 캐시 모두 삭제
+ const today = new Date().toISOString().split("T")[0];
+ const cacheKey = `mockExamProblems_${today}_${locale}`;
+ localStorage.removeItem(cacheKey);
+ localStorage.removeItem("mockExamThemes");
+ localStorage.removeItem("mockExamConceptServices");
+ localStorage.removeItem("mockExamDifficulties");
+ localStorage.removeItem("mockExamDomains");
+ localStorage.removeItem("mockExamAllProblems");
 
+ // 50문제 분배: 36 시나리오 + 4 컨셉 비교 + 10 컨셉 탭 노드
+ const THEMES_36 = [
+   "cdn", "cdn", "cdn",
+   "streaming", "streaming", "streaming",
+   "autoscaling", "autoscaling", "autoscaling",
+   "cost", "cost", "cost",
+   "dr", "dr", "dr",
+   "dbperf", "dbperf", "dbperf",
+   "serverless", "serverless", "serverless",
+   "network", "network", "network",
+   "container", "container", "container",
+   "analytics", "analytics", "analytics",
+   "security", "security", "security",
+   "compliance", "compliance", "compliance",
+ ];
+ const CONCEPT_POOL = [
+   "concept_sqs", "concept_sns_sqs", "concept_storage", "concept_db",
+   "concept_dynamodb", "concept_cache", "concept_compute", "concept_cdn",
+   "concept_s3class", "concept_network", "concept_secg_nacl", "concept_iam",
+   "concept_monitor", "concept_kinesis",
+ ];
+ const FOUR_C = [...CONCEPT_POOL].sort(() => Math.random() - 0.5).slice(0, 4);
+ const TEN_TAB = Array(10).fill("concept_tab_node");
+ const themes = [...THEMES_36, ...FOUR_C, ...TEN_TAB];
+ for (let i = themes.length - 1; i > 0; i--) {
+   const j = Math.floor(Math.random() * (i + 1));
+   [themes[i], themes[j]] = [themes[j], themes[i]];
+ }
+
+ // 도메인 분배
+ const domains = [
+   ...Array(15).fill("security"),
+   ...Array(13).fill("resilience"),
+   ...Array(12).fill("performance"),
+   ...Array(10).fill("cost-optimization"),
+ ];
+ for (let i = domains.length - 1; i > 0; i--) {
+   const j = Math.floor(Math.random() * (i + 1));
+   [domains[i], domains[j]] = [domains[j], domains[i]];
+ }
+
+ // 50문제 생성 (theme + service 사전 할당)
+ const problems: any[] = [];
+ const usedSets = new Set<string>();
  for (let i = 0; i < 50; i++) {
- const difficulty = "medium" as const;
- const problem = await generateSAAProblem([], difficulty, locale);
- problems.push(problem);
+   const t = themes[i];
+   let serviceList: string[] = [];
+   if (t && t.startsWith("concept_") && t !== "concept_tab_node") {
+     serviceList = []; // 비교 문제는 서비스 없음
+   } else {
+     serviceList = selectServicesFromAnalysis(usedSets);
+   }
+   const domain = domains[i] as "security" | "resilience" | "performance" | "cost-optimization";
+   const problem = await generateSAAProblem(serviceList, "medium", locale, domain, t);
+   problems.push(problem);
  }
  await saveTodayMockExamProblems(problems, locale);
- }
  setMockExamProblems(problems);
  } catch (err) {
  setError(t("errorProblemGeneration"));
