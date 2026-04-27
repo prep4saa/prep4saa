@@ -172,7 +172,8 @@ export async function generateSAAProblem(
   serviceNames: string[],
   difficulty: string,
   locale: "ko" | "ja" | "en" = "ko",
-  domain?: "security" | "resilience" | "performance" | "cost-optimization"
+  domain?: "security" | "resilience" | "performance" | "cost-optimization",
+  theme?: string
 ): Promise<Problem> {
   // 📊 모의시험 모드: 빈 배열이면 분석 데이터 기반으로 서비스 선택 (medium 고정)
   let selectedServices = serviceNames;
@@ -194,6 +195,7 @@ export async function generateSAAProblem(
         difficulty,
         locale,
         domain,
+        theme,
       }),
     });
 

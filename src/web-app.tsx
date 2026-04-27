@@ -1348,6 +1348,7 @@ function App() {
  const storedDomains = localStorage.getItem("mockExamDomains");
  const storedAllProblems = localStorage.getItem("mockExamAllProblems");
  const storedConceptServices = localStorage.getItem("mockExamConceptServices");
+ const storedThemes = localStorage.getItem("mockExamThemes");
  // ✅ 시험 시작 시 고정된 언어 사용 (시험 중 언어 변경 방지)
  const mockExamLocale = (localStorage.getItem("mockExamStartedLocale") || "ko") as "ko" | "en" | "ja";
 
@@ -1356,6 +1357,7 @@ function App() {
  const difficulties = JSON.parse(storedDifficulties);
  const domains = JSON.parse(storedDomains);
  const allProblems = JSON.parse(storedAllProblems);
+ const themes: string[] = storedThemes ? JSON.parse(storedThemes) : new Array(50).fill("concept");
  // 신규 형식: (string[] | null)[]. 구버전 형식 (string | null)[]도 호환.
  const rawConceptServices: any[] = storedConceptServices ? JSON.parse(storedConceptServices) : new Array(50).fill(null);
  const conceptServices: (string[] | null)[] = rawConceptServices.map((v: any) =>
@@ -1388,7 +1390,8 @@ function App() {
  const difficulty = difficulties[startIdx + i] as "medium" | "hard" | "challenge";
  const domain = domains[startIdx + i] as "security" | "resilience" | "performance" | "cost-optimization";
  const serviceList = conceptServices[startIdx + i] ?? [];
- batchPromises.push(generateSAAProblem(serviceList, difficulty, mockExamLocale, domain));
+ const theme = themes[startIdx + i] || "concept";
+ batchPromises.push(generateSAAProblem(serviceList, difficulty, mockExamLocale, domain, theme));
  }
  }
  const batchResults = await Promise.all(batchPromises);
@@ -5151,6 +5154,29 @@ function App() {
  }
  }
 
+ // 🎯 50개 시나리오 주제 사전 할당 — 12 themes × 3 = 36 + concept 14 = 50
+ const THEMES_36 = [
+   "cdn", "cdn", "cdn",
+   "streaming", "streaming", "streaming",
+   "autoscaling", "autoscaling", "autoscaling",
+   "cost", "cost", "cost",
+   "dr", "dr", "dr",
+   "dbperf", "dbperf", "dbperf",
+   "serverless", "serverless", "serverless",
+   "network", "network", "network",
+   "container", "container", "container",
+   "analytics", "analytics", "analytics",
+   "security", "security", "security",
+   "compliance", "compliance", "compliance",
+ ];
+ const THEMES_50 = [...THEMES_36, ...Array(14).fill("concept")];
+ // shuffle
+ for (let i = THEMES_50.length - 1; i > 0; i--) {
+   const j = Math.floor(Math.random() * (i + 1));
+   [THEMES_50[i], THEMES_50[j]] = [THEMES_50[j], THEMES_50[i]];
+ }
+ localStorage.setItem("mockExamThemes", JSON.stringify(THEMES_50));
+
  // 50개 서비스 세트 사전 할당 — Firebase에 9개 있으면 41개 새로, 0개면 50개 새로
  // 중복 방지를 위해 모든 새 슬롯이 usedSets 공유
  const CONCEPT_TAB_SERVICES = [
@@ -5211,7 +5237,10 @@ function App() {
  const storedSets = localStorage.getItem("mockExamConceptServices");
  const firstSlot: any = storedSets ? JSON.parse(storedSets)[0] : null;
  const firstServices: string[] = firstSlot === null ? [] : (Array.isArray(firstSlot) ? firstSlot : [firstSlot]);
- const problem = await generateSAAProblem(firstServices, difficulty, locale, domain);
+ // 사전 할당된 시나리오 주제 사용
+ const storedThemes = localStorage.getItem("mockExamThemes");
+ const firstTheme: string = storedThemes ? (JSON.parse(storedThemes)[0] || "concept") : "concept";
+ const problem = await generateSAAProblem(firstServices, difficulty, locale, domain, firstTheme);
  problems.push(problem);
  allProblems = [problem];
  }

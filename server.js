@@ -184,13 +184,13 @@ async function callClaudeFromServer(prompt, maxTokens) {
 
 app.post('/api/generateSAAProblem', async (req, res) => {
   try {
-    const { services, difficulty, locale = 'ko', domain } = req.body || {};
+    const { services, difficulty, locale = 'ko', domain, theme } = req.body || {};
     if (!Array.isArray(services) || !difficulty) {
       return res.status(400).json({ error: { message: 'services(array) and difficulty are required' } });
     }
 
     // 서버에서 프롬프트 생성 (클라이언트에 노출 안 됨)
-    const prompt = generatePrompt(services, difficulty, locale, domain);
+    const prompt = generatePrompt(services, difficulty, locale, domain, theme);
 
     let content;
     let source;

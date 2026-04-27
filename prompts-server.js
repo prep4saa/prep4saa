@@ -986,7 +986,56 @@ const DIFFICULTY_LABELS = {
   en: { medium: "Medium", hard: "Hard", challenge: "Challenge" },
 };
 
-function generatePrompt(serviceNames, difficulty, locale = "ko", domain) {
+// 시나리오 주제별 가이드
+const THEME_GUIDES = {
+  ko: {
+    cdn: "**시나리오 주제: 글로벌 CDN/저지연 콘텐츠 전송** — CloudFront 엣지 캐싱, Global Accelerator, 정적/동적 콘텐츠 가속, 지역별 최적 라우팅 등을 다루는 문제를 생성하세요.",
+    streaming: "**시나리오 주제: 실시간 스트리밍/IoT 데이터 수집** — Kinesis Data Streams, Firehose, MSK, IoT Core, 실시간 분석 파이프라인 등을 다루는 문제를 생성하세요.",
+    autoscaling: "**시나리오 주제: 자동 스케일링/트래픽 폭증 대응** — EC2 Auto Scaling, Lambda 동시성, ECS/EKS 확장, ELB와 함께하는 트래픽 분산 등을 다루는 문제를 생성하세요.",
+    cost: "**시나리오 주제: 비용 최적화/스토리지 라이프사이클** — Reserved/Spot 인스턴스, S3 Intelligent-Tiering, S3 라이프사이클 정책, Glacier 등을 다루는 문제를 생성하세요.",
+    dr: "**시나리오 주제: 재해 복구/RTO·RPO** — Multi-AZ, 크로스 리전 복제, AWS Backup, 페일오버 전략, RPO/RTO 최적화 등을 다루는 문제를 생성하세요.",
+    dbperf: "**시나리오 주제: DB 성능/캐싱/읽기 복제** — ElastiCache, DAX, Aurora 읽기 복제본, RDS Multi-AZ, 데이터베이스 부하 분산 등을 다루는 문제를 생성하세요.",
+    serverless: "**시나리오 주제: 서버리스/이벤트 기반 아키텍처** — Lambda, API Gateway, SQS, SNS, EventBridge, Step Functions를 활용한 이벤트 기반 처리 문제를 생성하세요.",
+    network: "**시나리오 주제: 네트워크/하이브리드 연결** — Direct Connect, VPN, Transit Gateway, VPC Peering, VPC Endpoints, NAT Gateway, 온프레미스↔AWS 연결 등을 다루는 문제를 생성하세요.",
+    container: "**시나리오 주제: 컨테이너/마이크로서비스** — ECS, EKS, Fargate, ECR, 마이크로서비스 통신 패턴 등을 다루는 문제를 생성하세요.",
+    analytics: "**시나리오 주제: 분석/데이터 레이크** — Athena, Glue, EMR, QuickSight, Redshift, Lake Formation, S3 데이터 레이크 등을 다루는 문제를 생성하세요.",
+    security: "**시나리오 주제: 보안/위협 탐지/접근 제어** — IAM, KMS, Secrets Manager, GuardDuty, WAF, Shield, Inspector, Macie, Bastion Host, Security Groups, NACL 등을 다루는 문제를 생성하세요.",
+    compliance: "**시나리오 주제: 컴플라이언스/데이터 보존** — S3 Object Lock (Compliance/Governance 모드), Glacier Vault Lock, 데이터 무결성, 감사 추적 등을 다루는 문제를 생성하세요.",
+    concept: "**🎯 컨셉 비교 문제 (시나리오 없음, 직접 지식 테스트)** — 회사/시나리오 묘사 없이, 특정 AWS 서비스 또는 두 서비스 간 비교/특징/사용 사례를 직접 묻는 문제를 생성하세요. 예: '다음 중 Amazon SQS Standard와 SQS FIFO의 핵심 차이로 옳은 것은?', 'AWS Lambda의 동시성 제한에 대한 설명으로 옳은 것은?', 'Amazon DynamoDB Streams와 Kinesis Data Streams의 가장 큰 차이는?'. 시나리오/회사/요구사항 묘사 일절 금지. 질문은 1문장이며 직접 개념을 묻는 형식.",
+  },
+  en: {
+    cdn: "**Scenario theme: Global CDN/low-latency content delivery** — CloudFront edge caching, Global Accelerator, static/dynamic content acceleration, regional optimal routing.",
+    streaming: "**Scenario theme: Real-time streaming/IoT ingestion** — Kinesis Data Streams, Firehose, MSK, IoT Core, real-time analytics pipelines.",
+    autoscaling: "**Scenario theme: Auto-scaling/traffic spikes** — EC2 Auto Scaling, Lambda concurrency, ECS/EKS scaling, traffic distribution with ELB.",
+    cost: "**Scenario theme: Cost optimization/storage lifecycle** — Reserved/Spot instances, S3 Intelligent-Tiering, lifecycle policies, Glacier.",
+    dr: "**Scenario theme: Disaster recovery/RTO·RPO** — Multi-AZ, cross-region replication, AWS Backup, failover strategies, RPO/RTO optimization.",
+    dbperf: "**Scenario theme: DB performance/caching/read replicas** — ElastiCache, DAX, Aurora read replicas, RDS Multi-AZ, database load balancing.",
+    serverless: "**Scenario theme: Serverless/event-driven** — Lambda, API Gateway, SQS, SNS, EventBridge, Step Functions for event-driven processing.",
+    network: "**Scenario theme: Networking/hybrid connectivity** — Direct Connect, VPN, Transit Gateway, VPC Peering, VPC Endpoints, NAT Gateway, on-prem↔AWS connectivity.",
+    container: "**Scenario theme: Containers/microservices** — ECS, EKS, Fargate, ECR, microservice communication patterns.",
+    analytics: "**Scenario theme: Analytics/data lake** — Athena, Glue, EMR, QuickSight, Redshift, Lake Formation, S3 data lake.",
+    security: "**Scenario theme: Security/threat detection/access control** — IAM, KMS, Secrets Manager, GuardDuty, WAF, Shield, Inspector, Macie, Bastion Host, Security Groups, NACL.",
+    compliance: "**Scenario theme: Compliance/data retention** — S3 Object Lock (Compliance/Governance mode), Glacier Vault Lock, data integrity, audit trail.",
+    concept: "**🎯 Concept comparison question (NO scenario, direct knowledge test)** — Without any company/scenario description, generate a question directly comparing/asking about a specific AWS service feature or use case. Examples: 'Which of the following correctly describes the key difference between Amazon SQS Standard and SQS FIFO?', 'Which statement about AWS Lambda concurrency limits is correct?'. NO scenario/company/requirement descriptions. Question is 1 sentence asking concept directly.",
+  },
+  ja: {
+    cdn: "**シナリオテーマ: グローバルCDN/低遅延コンテンツ配信** — CloudFront、Global Accelerator、静的/動的コンテンツ加速、地域別最適ルーティング。",
+    streaming: "**シナリオテーマ: リアルタイムストリーミング/IoT** — Kinesis、MSK、IoT Core、リアルタイム分析パイプライン。",
+    autoscaling: "**シナリオテーマ: 自動スケーリング/トラフィック急増** — EC2 Auto Scaling、Lambda同時実行、ECS/EKSスケーリング、ELB。",
+    cost: "**シナリオテーマ: コスト最適化/ライフサイクル** — Reserved/Spot、S3 Intelligent-Tiering、ライフサイクル、Glacier。",
+    dr: "**シナリオテーマ: 災害復旧/RTO·RPO** — Multi-AZ、クロスリージョンレプリケーション、AWS Backup、フェイルオーバー。",
+    dbperf: "**シナリオテーマ: DBパフォーマンス/キャッシング/リードレプリカ** — ElastiCache、DAX、Aurora、RDS Multi-AZ。",
+    serverless: "**シナリオテーマ: サーバーレス/イベント駆動** — Lambda、API Gateway、SQS、SNS、EventBridge、Step Functions。",
+    network: "**シナリオテーマ: ネットワーク/ハイブリッド** — Direct Connect、VPN、Transit Gateway、VPC Peering、VPC Endpoints、NAT Gateway。",
+    container: "**シナリオテーマ: コンテナ/マイクロサービス** — ECS、EKS、Fargate、ECR、マイクロサービス通信。",
+    analytics: "**シナリオテーマ: 分析/データレイク** — Athena、Glue、EMR、QuickSight、Redshift、Lake Formation、S3。",
+    security: "**シナリオテーマ: セキュリティ/脅威検出/アクセス制御** — IAM、KMS、Secrets Manager、GuardDuty、WAF、Shield、Inspector、Macie。",
+    compliance: "**シナリオテーマ: コンプライアンス/データ保持** — S3 Object Lock、Glacier Vault Lock、データ整合性、監査証跡。",
+    concept: "**🎯 概念比較問題（シナリオなし、直接知識テスト）** — 会社/シナリオ記述なしで、特定のAWSサービスの機能や用途を直接比較/質問する問題を生成。例：「Amazon SQS StandardとSQS FIFOの主な違いとして正しいものは？」。シナリオ/会社/要件記述は一切禁止。",
+  },
+};
+
+function generatePrompt(serviceNames, difficulty, locale = "ko", domain, theme) {
   // 난이도별로 다른 프롬프트 선택
   let prompt;
 
@@ -1048,9 +1097,14 @@ function generatePrompt(serviceNames, difficulty, locale = "ko", domain) {
     ? `\n\n⚠️ **必須の制約（必ず守る必要があります）**:\n- レスポンスは2000〜3500トークンの間で作成してください。\n- JSON以外の説明やマークダウンは絶対に禁止です。\n- オプション(options): 各選択肢は1-3行の具体的なアーキテクチャ説明。\n- 正答説明(explanation): 各フィールドは専門的で詳細に（2-4行）。\n- goal: 問題の核心的な目標を一文で明確に。\n- correct: 正答がすべての制約を満たす理由を技術的に詳細に（2-3行）。\n- trap_A, B, C: 各々の未充足制約と技術的根拠（2行）。\n- JSON構造は完全である必要があります。`
     : `\n\n⚠️ **Mandatory Constraint (Must Follow)**:\n- Response should be 2000-3500 tokens.\n- NO explanations or markdown outside JSON.\n- options: Each option must be 1-3 lines of detailed architecture description.\n- explanation: Each field must be professional and detailed (2-4 lines).\n- goal: Clearly state the core objective of the problem in one sentence.\n- correct: Explain why answer satisfies all constraints technically (2-3 lines).\n- trap_A, B, C: Each unsatisfied constraint and technical reasoning (2 lines).\n- JSON structure MUST be complete.`;
 
+  // 🎯 시나리오 주제 가이드 (theme이 있으면 강제 적용)
+  const themeGuide = theme && THEME_GUIDES[locale] && THEME_GUIDES[locale][theme]
+    ? `\n\n## 🎯 이 문제의 강제 시나리오 주제 (반드시 이 주제로 작성):\n${THEME_GUIDES[locale][theme]}\n\n다른 주제로 작성하면 응답이 무효 처리됩니다.`
+    : "";
+
   return (prompt
     .replace("${SERVICE_NAMES}", serviceNames.join(", "))
-    .replace("${DIFFICULTY}", diffLabel) + domainGuide + tokenConstraint);
+    .replace("${DIFFICULTY}", diffLabel) + domainGuide + themeGuide + tokenConstraint);
 }
 
 module.exports = {
