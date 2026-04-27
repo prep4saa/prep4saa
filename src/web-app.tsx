@@ -5163,7 +5163,9 @@ function App() {
    "NAT Gateway", "VPC Endpoints", "Transit Gateway", "AWS Global Accelerator",
    "Site-to-Site VPN", "VPC Peering",
    "AWS Snowcone", "AWS Snowball Edge Storage Optimized", "AWS Snowball Edge Compute Optimized",
-   "AWS DataSync", "AWS Storage Gateway"
+   "AWS DataSync", "AWS Storage Gateway",
+   "Public Subnet", "Private Subnet", "Internet Gateway", "Route Tables",
+   "Security Groups", "Network ACLs", "VPC Flow Logs", "Bastion Host"
  ];
  const shuffledConcepts = [...CONCEPT_TAB_SERVICES].sort(() => Math.random() - 0.5);
  const conceptServices: (string[] | null)[] = new Array(50).fill(null);
