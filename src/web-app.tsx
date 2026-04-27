@@ -1465,11 +1465,11 @@ function App() {
  // 로딩 상태 시작
  setPdfGeneratingId(session.sessionTimestamp);
 
- try {
- // HTML 요소 생성
+ // HTML 요소 생성 (offscreen DOM에 부착 — html2canvas가 layout/CJK 폰트를 정상 렌더링하려면 필수)
  const element = document.createElement('div');
- element.style.padding = '20px';
- element.style.fontFamily = 'Arial, sans-serif';
+ element.style.cssText = 'position: absolute; left: -9999px; top: 0; width: 190mm; padding: 20px; background: #fff; color: #000; font-family: "Malgun Gothic", "NanumGothic", "Apple SD Gothic Neo", "Hiragino Sans", "Yu Gothic", "Meiryo", Arial, sans-serif;';
+
+ try {
  element.innerHTML = `
  <h1 style="text-align: center; margin-bottom: 10px; color: black;">AWS SAA-C03 Quiz Problems</h1>
  <p style="text-align: center; color: black; margin-bottom: 20px; font-size: 12px;">
@@ -1555,6 +1555,9 @@ function App() {
 
  const fileName = `SAA-Problems_${session.date.replace(/\//g, '-')}_${session.time.replace(/:/g, '-')}.pdf`;
 
+ // DOM에 부착 (html2canvas가 layout/폰트 계산하려면 필수)
+ document.body.appendChild(element);
+
  // html2pdf 옵션
  const options = {
  margin: [15, 12, 15, 12],
@@ -1602,6 +1605,10 @@ function App() {
  } catch (error) {
  alert(locale === 'en' ? 'PDF generation failed. Please try again.' : locale === 'ja' ? 'PDF生成に失敗しました。' : 'PDF 생성에 실패했습니다. 다시 시도해주세요.');
  } finally {
+ // 부착했던 element 제거
+ if (element.parentNode) {
+ element.parentNode.removeChild(element);
+ }
  // 로딩 상태 종료
  setPdfGeneratingId(null);
  }
@@ -3327,7 +3334,7 @@ function App() {
 
  // 화면 밖에 element 추가 (html2pdf가 layout을 계산하려면 DOM에 있어야 함)
  const element = document.createElement("div");
- element.style.cssText = "position: absolute; left: -9999px; top: 0; width: 190mm;";
+ element.style.cssText = 'position: absolute; left: -9999px; top: 0; width: 190mm; background: #fff; color: #000; font-family: "Malgun Gothic", "NanumGothic", "Apple SD Gothic Neo", "Hiragino Sans", "Yu Gothic", "Meiryo", Arial, sans-serif;';
 
  // PDF 번역 문자열 준비
  const pdfLabels = {
@@ -3349,7 +3356,7 @@ function App() {
  const userAnswer = mockExamAnswers[idx];
  const isCorrect = userAnswer === problem.answer;
  return `
- <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px;">
+ <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; page-break-inside: avoid;">
  <h3 style="margin: 0 0 10px 0; color: #333;">Q${idx + 1}. ${problem.question}</h3>
 
  <!-- 보기 -->
@@ -3541,7 +3548,7 @@ function App() {
 
  // 화면 밖에 element 추가 (html2pdf가 layout을 계산하려면 DOM에 있어야 함)
  const element = document.createElement("div");
- element.style.cssText = "position: absolute; left: -9999px; top: 0; width: 190mm;";
+ element.style.cssText = 'position: absolute; left: -9999px; top: 0; width: 190mm; background: #fff; color: #000; font-family: "Malgun Gothic", "NanumGothic", "Apple SD Gothic Neo", "Hiragino Sans", "Yu Gothic", "Meiryo", Arial, sans-serif;';
 
  // PDF 번역 문자열 준비
  const pdfLabels = {
@@ -3563,7 +3570,7 @@ function App() {
  const userAnswer = mockExamAnswers[idx];
  const isCorrect = userAnswer === problem.answer;
  return `
- <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px;">
+ <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; page-break-inside: avoid;">
  <h3 style="margin: 0 0 10px 0; color: #333;">Q${idx + 1}. ${problem.question}</h3>
 
  <!-- 보기 -->

@@ -1195,9 +1195,66 @@ function generatePrompt(serviceNames, difficulty, locale = "ko", domain, theme) 
       `**Bad example (option)**: "Use Amazon SQS Standard queue to process messages and forward to Lambda." (scenario solution)\n\n` +
       `Violating this rule will invalidate the response.`;
 
+  // 🎯 컨셉 묻기 문제 강제 규칙 (concept_tab_node 전용 — 단일 서비스 컨셉)
+  const isConceptTabNode = theme === "concept_tab_node";
+  const conceptTabRule = !isConceptTabNode ? "" :
+    locale === "ko"
+    ? `\n\n## 🎯🎯🎯 컨셉 묻기 문제 강제 규칙 (절대 위반 금지) 🎯🎯🎯\n` +
+      `이 문제는 **${serviceNames.join(", ")}**라는 단일 서비스의 **핵심 컨셉/기능/사용 사례**를 묻는 문제여야 합니다. 시나리오 형식은 절대 금지.\n\n` +
+      `**필수 형식**:\n` +
+      `1. **시나리오/회사 묘사 절대 금지**: "글로벌 SaaS 기업이...", "스타트업이...", "팀이...", "제조사가..." 같은 도입부 시작 절대 금지.\n` +
+      `2. **요구사항/제약 묘사 금지**: "초당 X건", "낮은 지연 시간", "비용 효율성", "운영 오버헤드 최소화" 같은 시나리오 요소 금지.\n` +
+      `3. **질문은 1문장**으로, 다음 형식 중 하나로 시작:\n` +
+      `   - "다음 중 ${serviceNames[0]}의 특징/기능으로 옳은 것은?"\n` +
+      `   - "${serviceNames[0]}를 사용해야 하는 시점/사용 사례로 가장 적절한 것은?"\n` +
+      `   - "다음 중 ${serviceNames[0]}의 작동 방식에 대한 설명으로 옳은 것은?"\n` +
+      `   - "${serviceNames[0]}의 [특정 기능]에 대한 설명 중 정확한 것은?"\n` +
+      `4. **선택지(A/B/C/D)는 사실 진술형**: "${serviceNames[0]}는 ~한다", "~를 지원한다", "~에 적합하다" 형식. 시나리오 솔루션 묘사 금지.\n` +
+      `5. **정답이 시나리오 솔루션이 아니라 사실 진술**이어야 함.\n` +
+      `6. **easyMode/explanation도 시나리오 없이** 해당 서비스의 컨셉만 설명.\n\n` +
+      `**좋은 예 (질문)**: "다음 중 AWS Snowball Edge Storage Optimized의 특징으로 옳은 것은?"\n` +
+      `**나쁜 예 (질문)**: "글로벌 소매업체가 50TB 데이터를 마이그레이션해야 합니다..." (시나리오 도입부 금지)\n\n` +
+      `**좋은 예 (선택지)**: "AWS Snowball Edge Storage Optimized는 최대 80TB의 데이터를 오프라인으로 전송할 수 있다."\n` +
+      `**나쁜 예 (선택지)**: "AWS Snowball Edge로 50TB 데이터를 옮긴 후 S3에 저장하고 Glue로 분석한다." (시나리오 솔루션 금지)\n\n` +
+      `이 룰을 위반하면 응답 무효 처리됩니다.`
+    : locale === "ja"
+    ? `\n\n## 🎯🎯🎯 概念質問問題の強制ルール（絶対違反禁止）🎯🎯🎯\n` +
+      `この問題は**${serviceNames.join(", ")}**という単一サービスの**コア概念/機能/使用例**を問う問題である必要があります。シナリオ形式は絶対禁止。\n\n` +
+      `**必須形式**:\n` +
+      `1. **シナリオ/会社描写は絶対禁止**: 「グローバルSaaS企業が...」「スタートアップが...」などの導入部禁止。\n` +
+      `2. **要件/制約描写禁止**: 「毎秒X件」「低遅延」「コスト効率」などのシナリオ要素禁止。\n` +
+      `3. **質問は1文**で、以下の形式のいずれかで開始:\n` +
+      `   - 「次のうち、${serviceNames[0]}の特徴/機能として正しいものは？」\n` +
+      `   - 「${serviceNames[0]}を使用すべき時点/使用例として最も適切なものは？」\n` +
+      `   - 「次のうち、${serviceNames[0]}の動作方式に関する説明として正しいものは？」\n` +
+      `4. **選択肢(A/B/C/D)は事実陳述形式**: 「${serviceNames[0]}は～する」「～をサポートする」形式。シナリオ・ソリューション禁止。\n` +
+      `5. **正解はシナリオのソリューションではなく事実陳述**。\n` +
+      `6. **easyMode/explanationもシナリオなし**で当該サービスの概念のみ説明。\n\n` +
+      `**良い例（質問）**: 「次のうち、AWS Snowball Edge Storage Optimizedの特徴として正しいものは？」\n` +
+      `**悪い例（質問）**: 「グローバル小売業者が50TBのデータを移行する必要があります...」（シナリオ禁止）\n\n` +
+      `このルールに違反すると応答は無効化されます。`
+    : `\n\n## 🎯🎯🎯 CONCEPT QUESTION STRICT RULES (NEVER VIOLATE) 🎯🎯🎯\n` +
+      `This problem MUST be a **single-service concept question** about **${serviceNames.join(", ")}** — its core concepts, features, or use cases. NEVER use scenario format.\n\n` +
+      `**Required format**:\n` +
+      `1. **NEVER use scenario/company introduction**: Do NOT start with "A global SaaS company...", "A startup...", "The team...", etc.\n` +
+      `2. **NEVER describe requirements/constraints**: No "X requests per second", "low latency", "cost efficiency", "minimal operational overhead" scenario elements.\n` +
+      `3. **Question is 1 sentence** and starts with ONE of:\n` +
+      `   - "Which of the following is a feature/characteristic of ${serviceNames[0]}?"\n` +
+      `   - "Which is the most appropriate use case for ${serviceNames[0]}?"\n` +
+      `   - "Which statement about how ${serviceNames[0]} works is correct?"\n` +
+      `   - "Which of the following correctly describes ${serviceNames[0]}'s [specific feature]?"\n` +
+      `4. **Options (A/B/C/D) are factual statements**: "${serviceNames[0]} does ~", "supports ~", "is suitable for ~" format. NEVER describe scenario solutions.\n` +
+      `5. **Correct answer is a factual statement**, not a scenario solution.\n` +
+      `6. **easyMode/explanation also without scenarios** — only explain the service's concepts.\n\n` +
+      `**Good example (question)**: "Which of the following is a characteristic of AWS Snowball Edge Storage Optimized?"\n` +
+      `**Bad example (question)**: "A global retailer needs to migrate 50TB of data..." (scenario intro forbidden)\n\n` +
+      `**Good example (option)**: "AWS Snowball Edge Storage Optimized can transfer up to 80TB of data offline."\n` +
+      `**Bad example (option)**: "Use AWS Snowball Edge to migrate 50TB of data, then store in S3 and analyze with Glue." (scenario solution forbidden)\n\n` +
+      `Violating this rule will invalidate the response.`;
+
   return (prompt
     .replace("${SERVICE_NAMES}", serviceNames.join(", "))
-    .replace("${DIFFICULTY}", diffLabel) + domainGuide + themeGuide + conceptStrictRule + tokenConstraint);
+    .replace("${DIFFICULTY}", diffLabel) + domainGuide + themeGuide + conceptStrictRule + conceptTabRule + tokenConstraint);
 }
 
 module.exports = {
