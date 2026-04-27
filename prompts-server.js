@@ -143,7 +143,12 @@ D. Amazon API Gateway API를 구성하여 데이터를 AWS Glue로 보냅니다.
   10. 분석 / 데이터 레이크 (Athena, Glue, EMR, QuickSight)
   11. 보안 / 위협 탐지 (GuardDuty, WAF, Shield, Inspector, Macie)
   12. 컴플라이언스 / 보존 (Object Lock, Compliance mode) ← **1/10 이하로만**
-- **반복 표현 금지**: "불변하게 보관", "변경 불가능한 상태로 보존", "X년 동안 보존되어야 합니다", "데이터 무결성을 보장" 같은 컴플라이언스 정형 문장을 매 문제마다 반복하지 말 것. 시나리오 주제가 다르면 사용 표현도 완전히 달라야 함.
+- **보존/불변 표현 사용 제한 (엄격, 매우 중요)**: "X년 동안 보존", "불변하게 보관", "변경 불가능한 상태로 보존", "데이터 무결성 보장" 같은 표현은 **다음 정답이 나오는 문제에서만** 사용:
+  * S3 Glacier (Instant Retrieval / Flexible Retrieval / Deep Archive)
+  * S3 Standard / Standard-IA / Intelligent-Tiering (스토리지 클래스 + 라이프사이클)
+  * S3 Object Lock (Compliance/Governance mode)
+  * S3 라이프사이클 정책 / 버전 관리
+  그 외 모든 문제 (CDN, 스케일링, DR, DB 성능, 서버리스, 네트워킹, 컨테이너, 분석, 보안 위협 탐지 등)에서는 **이런 표현 절대 사용 금지**. 데이터 보존이 시나리오의 핵심이 아니면 언급하지 말 것.
 - **AWS Snow Family 크기별 선택 기준 (마이그레이션 문제 시 정확히 적용)**:
   * **AWS Snowcone** (8TB): 가장 작은 디바이스, 휴대성 필요한 엣지 환경, < 10TB
   * **AWS Snowcone SSD** (14TB): SSD 기반 빠른 I/O 필요한 엣지 사례
@@ -462,7 +467,12 @@ Key Points:
    10. Analytics / data lake (Athena, Glue, EMR, QuickSight)
    11. Security / threat detection (GuardDuty, WAF, Shield, Inspector, Macie)
    12. Compliance / retention (Object Lock, Compliance mode) ← **≤1 in 10 only**
-3.6. **No repeated boilerplate**: Stop reusing "must be retained immutably for X years", "data integrity must be guaranteed", "regulatory compliance is mandatory" phrases. If theme is different, wording must be completely different.
+3.6. **Restrict retention/immutability phrases (STRICT)**: "retain for X years", "immutable retention", "must be preserved unchanged", "data integrity must be guaranteed" phrases are **ONLY allowed when the correct answer involves**:
+   * S3 Glacier (Instant Retrieval / Flexible Retrieval / Deep Archive)
+   * S3 Standard / Standard-IA / Intelligent-Tiering (storage class + lifecycle)
+   * S3 Object Lock (Compliance/Governance mode)
+   * S3 lifecycle policies / versioning
+   For ALL other problems (CDN, scaling, DR, DB performance, serverless, networking, containers, analytics, threat detection, etc.), **NEVER use retention/immutability phrases**. Don't mention data preservation if it's not the core of the scenario.
 3.7. **AWS Snow Family size-based selection (apply correctly in migration scenarios)**:
    * **AWS Snowcone** (8TB): smallest, portable edge environment, < 10TB
    * **AWS Snowcone SSD** (14TB): SSD-based, faster I/O for edge use cases
@@ -598,7 +608,12 @@ D. Amazon API Gateway APIを構成してAWS Glueにデータを送信します�
    10. 分析 / データレイク (Athena, Glue, EMR, QuickSight)
    11. セキュリティ / 脅威検出 (GuardDuty, WAF, Shield, Inspector, Macie)
    12. コンプライアンス / 保持 (Object Lock, Compliance mode) ← **10問中1問以下**
-3.6. **定型表現の繰り返し禁止**: 「X年間不変に保管」「データ整合性の保証」「規制準拠が必須」などの定型フレーズを毎回繰り返さない。テーマが異なれば表現も完全に異なるべき。
+3.6. **保持/不変表現の使用制限（厳格、非常に重要）**:「X年間保持」「不変に保管」「変更不可能な状態で保存」「データ整合性を保証」などの表現は、**正解が以下に該当する問題でのみ使用可能**:
+   * S3 Glacier (Instant Retrieval / Flexible Retrieval / Deep Archive)
+   * S3 Standard / Standard-IA / Intelligent-Tiering (ストレージクラス + ライフサイクル)
+   * S3 Object Lock (Compliance/Governance モード)
+   * S3 ライフサイクルポリシー / バージョニング
+   それ以外のすべての問題 (CDN、スケーリング、DR、DBパフォーマンス、サーバーレス、ネットワーク、コンテナ、分析、脅威検出など)では、**これらの表現を絶対に使用禁止**。データ保持がシナリオの核心でない場合は言及しないこと。
 3.7. **AWS Snow Family サイズ別選択 (移行シナリオで正確に適用)**:
    * **AWS Snowcone** (8TB): 最小デバイス、携帯性が必要なエッジ環境、< 10TB
    * **AWS Snowcone SSD** (14TB): SSD搭載、高速I/Oが必要なエッジユースケース
