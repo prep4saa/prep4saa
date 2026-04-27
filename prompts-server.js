@@ -1141,9 +1141,63 @@ function generatePrompt(serviceNames, difficulty, locale = "ko", domain, theme) 
     ? `\n\n## 🎯 이 문제의 강제 시나리오 주제 (반드시 이 주제로 작성):\n${THEME_GUIDES[locale][theme]}\n\n다른 주제로 작성하면 응답이 무효 처리됩니다.`
     : "";
 
+  // 🚫 컨셉 비교 문제 강제 규칙 (concept_xxx만 적용, concept_tab_node 제외)
+  const isConceptComparison = theme && theme.startsWith("concept_") && theme !== "concept_tab_node";
+  const conceptStrictRule = !isConceptComparison ? "" :
+    locale === "ko"
+    ? `\n\n## 🚫🚫🚫 컨셉 비교 문제 강제 규칙 (절대 위반 금지) 🚫🚫🚫\n` +
+      `이 문제는 **순수 개념 비교 문제**여야 합니다. 시나리오 형식은 절대 금지.\n\n` +
+      `**필수 형식**:\n` +
+      `1. **시나리오/회사 묘사 절대 금지**: "글로벌 SaaS 기업이...", "스타트업이...", "팀이...", "제조사가...", "글로벌 미디어..." 같은 도입부 시작 절대 금지.\n` +
+      `2. **요구사항/제약 묘사 금지**: "초당 X건 처리", "낮은 지연 시간", "비용 효율성", "운영 오버헤드 최소화" 같은 시나리오 요소 금지.\n` +
+      `3. **질문은 1문장**으로, 다음 형식 중 하나로 시작:\n` +
+      `   - "다음 중 [Service A]와 [Service B]의 핵심 차이점으로 옳은 것은?"\n` +
+      `   - "[Service]의 [기능]에 대한 설명 중 옳은 것은?"\n` +
+      `   - "다음 중 [기능 X]에 대해 가장 정확한 설명은?"\n` +
+      `4. **선택지(A/B/C/D)도 비교형**: "X는 ~하고 Y는 ~한다" 또는 "~를 보장하지만 ~는 보장하지 않는다" 형식. 시나리오 솔루션 묘사 금지.\n` +
+      `5. **정답이 시나리오 솔루션이 아니라 사실 진술**이어야 함.\n` +
+      `6. **easyMode/explanation도 시나리오 없이** 두 개념의 차이만 설명.\n\n` +
+      `**좋은 예 (질문)**: "다음 중 Amazon SQS Standard 큐와 FIFO 큐의 핵심 차이점으로 옳은 것은?"\n` +
+      `**나쁜 예 (질문)**: "글로벌 SaaS 기업이 메시지 큐를 선택해야 합니다. 다음 중..." (시나리오 도입부)\n\n` +
+      `**좋은 예 (선택지)**: "Standard는 최소 한 번 전달, FIFO는 정확히 한 번 전달을 보장한다."\n` +
+      `**나쁜 예 (선택지)**: "Amazon SQS Standard 큐를 사용하여 메시지를 처리하고 Lambda로 전송합니다." (시나리오 솔루션)\n\n` +
+      `이 룰을 위반하면 응답 무효 처리됩니다.`
+    : locale === "ja"
+    ? `\n\n## 🚫🚫🚫 概念比較問題の強制ルール（絶対違反禁止）🚫🚫🚫\n` +
+      `この問題は**純粋な概念比較問題**である必要があります。シナリオ形式は絶対禁止。\n\n` +
+      `**必須形式**:\n` +
+      `1. **シナリオ/会社描写は絶対禁止**: 「グローバルSaaS企業が...」「スタートアップが...」「チームが...」などの導入部禁止。\n` +
+      `2. **要件/制約描写禁止**: 「毎秒X件処理」「低遅延」「コスト効率」などのシナリオ要素禁止。\n` +
+      `3. **質問は1文**で、以下の形式のいずれかで開始:\n` +
+      `   - 「次のうち、[Service A]と[Service B]の主な違いとして正しいものは？」\n` +
+      `   - 「[Service]の[機能]に関する説明として正しいものは？」\n` +
+      `4. **選択肢(A/B/C/D)も比較形式**: 「Xは～、Yは～」形式。シナリオ・ソリューション描写禁止。\n` +
+      `5. **正解はシナリオのソリューションではなく事実陳述**。\n` +
+      `6. **easyMode/explanationもシナリオなし**で概念差のみ説明。\n\n` +
+      `**良い例（質問）**: 「次のうち、Amazon SQS Standard キューと FIFO キューの主な違いとして正しいものは？」\n` +
+      `**悪い例（質問）**: 「グローバルSaaS企業がメッセージキューを選択する必要があります...」（シナリオ）\n\n` +
+      `このルールに違反すると応答は無効化されます。`
+    : `\n\n## 🚫🚫🚫 CONCEPT COMPARISON STRICT RULES (NEVER VIOLATE) 🚫🚫🚫\n` +
+      `This problem MUST be a **pure concept comparison question**. NEVER use scenario format.\n\n` +
+      `**Required format**:\n` +
+      `1. **NEVER use scenario/company introduction**: Do NOT start with "A global SaaS company...", "A startup...", "The team...", "A media company...", etc.\n` +
+      `2. **NEVER describe requirements/constraints**: No "X requests per second", "low latency", "cost efficiency", "minimal operational overhead" scenario elements.\n` +
+      `3. **Question is 1 sentence** and starts with ONE of:\n` +
+      `   - "Which of the following correctly describes the key difference between [Service A] and [Service B]?"\n` +
+      `   - "Which statement about [Service]'s [feature] is correct?"\n` +
+      `   - "Which of the following best describes [feature X]?"\n` +
+      `4. **Options (A/B/C/D) are comparison-style**: "X does ~, while Y does ~" format. NEVER describe scenario solutions.\n` +
+      `5. **Correct answer is a factual statement**, not a scenario solution.\n` +
+      `6. **easyMode/explanation also without scenarios** — only explain conceptual differences.\n\n` +
+      `**Good example (question)**: "Which of the following correctly describes the key difference between Amazon SQS Standard and FIFO queues?"\n` +
+      `**Bad example (question)**: "A global SaaS company needs to choose a message queue..." (scenario intro)\n\n` +
+      `**Good example (option)**: "Standard guarantees at-least-once delivery, while FIFO guarantees exactly-once delivery."\n` +
+      `**Bad example (option)**: "Use Amazon SQS Standard queue to process messages and forward to Lambda." (scenario solution)\n\n` +
+      `Violating this rule will invalidate the response.`;
+
   return (prompt
     .replace("${SERVICE_NAMES}", serviceNames.join(", "))
-    .replace("${DIFFICULTY}", diffLabel) + domainGuide + themeGuide + tokenConstraint);
+    .replace("${DIFFICULTY}", diffLabel) + domainGuide + themeGuide + conceptStrictRule + tokenConstraint);
 }
 
 module.exports = {
