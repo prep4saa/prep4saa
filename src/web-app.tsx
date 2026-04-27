@@ -5161,7 +5161,9 @@ function App() {
    "AWS Trusted Advisor", "IAM Identity Center",
    "AWS DMS", "AWS Transfer Family", "AWS AppFlow",
    "NAT Gateway", "VPC Endpoints", "Transit Gateway", "AWS Global Accelerator",
-   "Site-to-Site VPN", "VPC Peering"
+   "Site-to-Site VPN", "VPC Peering",
+   "AWS Snowcone", "AWS Snowball Edge Storage Optimized", "AWS Snowball Edge Compute Optimized",
+   "AWS DataSync", "AWS Storage Gateway"
  ];
  const shuffledConcepts = [...CONCEPT_TAB_SERVICES].sort(() => Math.random() - 0.5);
  const conceptServices: (string[] | null)[] = new Array(50).fill(null);

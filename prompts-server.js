@@ -130,6 +130,27 @@ D. Amazon API Gateway API를 구성하여 데이터를 AWS Glue로 보냅니다.
   * 트래픽: 다양하게 (초당 100건 / 1000건 / 10000건 / 분당 50만건 등)
   * 가용성 수치 표현(99.9%, 99.99%) 절대 금지 — "고가용성 필수" 같은 정성적 표현 사용
   * 비용/지연 수치도 매번 다르게 사용
+- **시나리오 주제 다양화 (필수, 매우 중요)**: SAA-C03은 4개 도메인을 폭넓게 다룸. **"컴플라이언스/데이터 보존/불변 보관" 주제는 전체의 1/10 이하로만**. 다음 주제를 골고루 회전:
+  1. 글로벌 콘텐츠 전송 / CDN 캐싱 / 저지연 (CloudFront, Global Accelerator)
+  2. 실시간 스트리밍 처리 / IoT (Kinesis, MSK, IoT Core)
+  3. 자동 스케일링 / 트래픽 급증 대응 (ASG, Lambda 동시성)
+  4. 비용 최적화 / 라이프사이클 (Reserved, Spot, S3 Tiering)
+  5. 재해 복구 / 백업 / RTO·RPO (Multi-AZ, Cross-region replication, AWS Backup)
+  6. 데이터베이스 성능 / 캐싱 / 읽기 복제 (ElastiCache, DAX, Read Replica)
+  7. 서버리스 / 이벤트 기반 (Lambda, SQS, EventBridge, Step Functions)
+  8. 네트워크 / 하이브리드 (Direct Connect, VPN, Transit Gateway, VPC Peering)
+  9. 컨테이너 / 마이크로서비스 (ECS, EKS, Fargate)
+  10. 분석 / 데이터 레이크 (Athena, Glue, EMR, QuickSight)
+  11. 보안 / 위협 탐지 (GuardDuty, WAF, Shield, Inspector, Macie)
+  12. 컴플라이언스 / 보존 (Object Lock, Compliance mode) ← **1/10 이하로만**
+- **반복 표현 금지**: "불변하게 보관", "변경 불가능한 상태로 보존", "X년 동안 보존되어야 합니다", "데이터 무결성을 보장" 같은 컴플라이언스 정형 문장을 매 문제마다 반복하지 말 것. 시나리오 주제가 다르면 사용 표현도 완전히 달라야 함.
+- **AWS Snow Family 크기별 선택 기준 (마이그레이션 문제 시 정확히 적용)**:
+  * **AWS Snowcone** (8TB): 가장 작은 디바이스, 휴대성 필요한 엣지 환경, < 10TB
+  * **AWS Snowcone SSD** (14TB): SSD 기반 빠른 I/O 필요한 엣지 사례
+  * **AWS Snowball Edge Storage Optimized** (~80TB usable): 일반적 대용량 마이그레이션 (10TB ~ 수백 TB)
+  * **AWS Snowball Edge Compute Optimized** (~42TB + EC2/Lambda/GPU): 엣지에서 컴퓨팅 처리 필요
+  * **AWS DataSync over Direct Connect**: 온라인 전송 가능한 페타바이트급 + 지속적 동기화
+  * 시나리오의 데이터 양·휴대성·엣지 컴퓨팅 요구에 맞춰 정답 선택. 함정답으로 다른 크기 디바이스 사용 가능 (예: 10TB 시나리오에 Snowmobile은 오답).
 
 ### 2. 선택지 A~D (덤프 스타일, 2-3줄 이내)
 - **서비스명 + 핵심 특징** 위주로 간결하게 작성
@@ -428,6 +449,27 @@ Key Points:
    * Data volume: vary each time (10GB / 100GB / 500GB / 1TB / 5TB / 50TB).
    * Traffic: vary each time (100 req/s / 1k req/s / 10k req/s / 500k req/min).
    * NEVER use availability percentages (99.9%, 99.99%) — use qualitative phrases like "high availability required".
+3.5. **Diversify scenario themes (CRITICAL)**: SAA-C03 covers 4 broad domains. **Compliance/data retention/immutability themes must be ≤1 in every 10 problems**. Rotate through:
+   1. Global content delivery / CDN / low-latency (CloudFront, Global Accelerator)
+   2. Real-time streaming / IoT (Kinesis, MSK, IoT Core)
+   3. Auto-scaling / traffic spikes (ASG, Lambda concurrency)
+   4. Cost optimization / lifecycle (Reserved, Spot, S3 Tiering)
+   5. Disaster recovery / RTO·RPO (Multi-AZ, cross-region replication, AWS Backup)
+   6. Database performance / caching / read replicas (ElastiCache, DAX, Read Replica)
+   7. Serverless / event-driven (Lambda, SQS, EventBridge, Step Functions)
+   8. Networking / hybrid (Direct Connect, VPN, Transit Gateway, VPC Peering)
+   9. Containers / microservices (ECS, EKS, Fargate)
+   10. Analytics / data lake (Athena, Glue, EMR, QuickSight)
+   11. Security / threat detection (GuardDuty, WAF, Shield, Inspector, Macie)
+   12. Compliance / retention (Object Lock, Compliance mode) ← **≤1 in 10 only**
+3.6. **No repeated boilerplate**: Stop reusing "must be retained immutably for X years", "data integrity must be guaranteed", "regulatory compliance is mandatory" phrases. If theme is different, wording must be completely different.
+3.7. **AWS Snow Family size-based selection (apply correctly in migration scenarios)**:
+   * **AWS Snowcone** (8TB): smallest, portable edge environment, < 10TB
+   * **AWS Snowcone SSD** (14TB): SSD-based, faster I/O for edge use cases
+   * **AWS Snowball Edge Storage Optimized** (~80TB usable): general bulk migration (10TB ~ hundreds of TB)
+   * **AWS Snowball Edge Compute Optimized** (~42TB + EC2/Lambda/GPU): edge compute workloads
+   * **AWS DataSync over Direct Connect**: online petabyte-scale + continuous sync
+   * Pick the correct device based on scenario's data volume, portability, and edge compute needs. Use other sizes as trick answers (e.g., Snowmobile is wrong for 10TB scenario).
 4. Scenario: 1-2 sentences, concise — use a different industry each time (manufacturer, bank, SaaS, healthcare, e-commerce, media, gaming, government, insurance, logistics, startup, edtech, etc.). Key requirements included naturally in the scenario, NOT listed separately as constraints.
 5. Options A-D (exam dump style):
    - Each option: service name + key characteristic, **1-2 lines max**
@@ -543,6 +585,27 @@ D. Amazon API Gateway APIを構成してAWS Glueにデータを送信します�
    * データ量: 毎回異なる値 (10GB / 100GB / 500GB / 1TB / 5TB / 50TB)
    * トラフィック: 毎回異なる値 (毎秒100件 / 1000件 / 10000件 / 毎分50万件)
    * 可用性数値（99.9%、99.99%）絶対禁止 — 「高可用性が必要」のような定性的表現を使用。
+3.5. **シナリオテーマの多様化（重要）**: SAA-C03は4つのドメインを幅広くカバー。**「コンプライアンス/データ保持/不変保管」テーマは10問中1問以下のみ**。以下のテーマをローテーション:
+   1. グローバルコンテンツ配信 / CDN / 低遅延 (CloudFront, Global Accelerator)
+   2. リアルタイムストリーミング / IoT (Kinesis, MSK, IoT Core)
+   3. 自動スケーリング / トラフィック急増 (ASG, Lambda)
+   4. コスト最適化 / ライフサイクル (Reserved, Spot, S3 Tiering)
+   5. 災害復旧 / RTO·RPO (Multi-AZ, クロスリージョンレプリケーション, AWS Backup)
+   6. DBパフォーマンス / キャッシング / リードレプリカ (ElastiCache, DAX, Read Replica)
+   7. サーバーレス / イベント駆動 (Lambda, SQS, EventBridge, Step Functions)
+   8. ネットワーク / ハイブリッド (Direct Connect, VPN, Transit Gateway, VPC Peering)
+   9. コンテナ / マイクロサービス (ECS, EKS, Fargate)
+   10. 分析 / データレイク (Athena, Glue, EMR, QuickSight)
+   11. セキュリティ / 脅威検出 (GuardDuty, WAF, Shield, Inspector, Macie)
+   12. コンプライアンス / 保持 (Object Lock, Compliance mode) ← **10問中1問以下**
+3.6. **定型表現の繰り返し禁止**: 「X年間不変に保管」「データ整合性の保証」「規制準拠が必須」などの定型フレーズを毎回繰り返さない。テーマが異なれば表現も完全に異なるべき。
+3.7. **AWS Snow Family サイズ別選択 (移行シナリオで正確に適用)**:
+   * **AWS Snowcone** (8TB): 最小デバイス、携帯性が必要なエッジ環境、< 10TB
+   * **AWS Snowcone SSD** (14TB): SSD搭載、高速I/Oが必要なエッジユースケース
+   * **AWS Snowball Edge Storage Optimized** (~80TB usable): 一般的な大容量移行 (10TB ~ 数百TB)
+   * **AWS Snowball Edge Compute Optimized** (~42TB + EC2/Lambda/GPU): エッジでのコンピュート処理
+   * **AWS DataSync over Direct Connect**: オンライン転送可能なペタバイト規模 + 継続同期
+   * シナリオのデータ量、携帯性、エッジコンピューティング要件に応じて正解を選択。他のサイズはトリック選択肢として使用可能（例：10TB シナリオに Snowmobile は不正解）。
 4. シナリオ: 1~2文で簡潔に — 毎回異なる業種(製造業、金融、SaaS、医療、Eコマース、メディア、ゲーム、公共機関、保険、物流、スタートアップ、教育など)。制約条件は別途列挙せず、シナリオ文の中に自然に含める。
 5. 選択肢A~D (試験ダンプスタイル):
    - サービス名 + 核心的な特徴、**1~2行以内**

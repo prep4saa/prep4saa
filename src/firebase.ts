@@ -1194,6 +1194,36 @@ export async function deletePost(
 // ===== 모의시험 문제 공유 함수 =====
 
 /**
+ * 🚫 "7년" 자동 치환 (캐시된 문제도 정화)
+ * 매 호출마다 다른 값으로 랜덤 치환
+ */
+function sanitizeRetention<T>(obj: T): T {
+  const ko = ['1년', '2년', '5년', '10년', '6개월', '90일'];
+  const en = ['1 year', '2 years', '5 years', '10 years', '6 months', '90 days'];
+  const ja = ['1年', '2年', '5年', '10年', '6ヶ月', '90日'];
+  const pickKo = () => ko[Math.floor(Math.random() * ko.length)];
+  const pickEn = () => en[Math.floor(Math.random() * en.length)];
+  const pickJa = () => ja[Math.floor(Math.random() * ja.length)];
+  const sanitize = (s: string) =>
+    s
+      .replace(/7\s*년/g, pickKo)
+      .replace(/\b7[\s-]?years?\b/gi, pickEn)
+      .replace(/seven\s+years?/gi, pickEn)
+      .replace(/7\s*年/g, pickJa);
+  const walk = (v: any): any => {
+    if (typeof v === 'string') return sanitize(v);
+    if (Array.isArray(v)) return v.map(walk);
+    if (v && typeof v === 'object') {
+      const out: any = {};
+      for (const k of Object.keys(v)) out[k] = walk(v[k]);
+      return out;
+    }
+    return v;
+  };
+  return walk(obj);
+}
+
+/**
  * 오늘의 모의시험 문제 조회 (없으면 null)
  * 언어별로 따로 저장되어 있으므로 같은 언어의 사용자끼리 공유
  */
@@ -1210,7 +1240,7 @@ export async function getTodayMockExamProblems(locale: string = "ko"): Promise<P
     if (cached) {
       try {
         const problems = JSON.parse(cached);
-        return problems;
+        return sanitizeRetention(problems);
       } catch (e) {
       }
     }
@@ -1234,7 +1264,7 @@ export async function getTodayMockExamProblems(locale: string = "ko"): Promise<P
       }
     }
 
-    return problems;
+    return problems ? sanitizeRetention(problems) : null;
   } catch (error: any) {
     throw new Error(error.message || "모의시험 문제를 불러올 수 없습니다");
   }
