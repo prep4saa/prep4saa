@@ -5154,7 +5154,7 @@ function App() {
  }
  }
 
- // 🎯 50개 시나리오 주제 사전 할당 — 12 themes × 3 = 36 + concept 14 = 50
+ // 🎯 50문제 분배: 36 시나리오 + 4 컨셉 비교 + 10 컨셉 탭 노드
  const THEMES_36 = [
    "cdn", "cdn", "cdn",
    "streaming", "streaming", "streaming",
@@ -5169,24 +5169,17 @@ function App() {
    "security", "security", "security",
    "compliance", "compliance", "compliance",
  ];
- // 14개 구체적 컨셉 비교 주제 — AI가 SQS Standard vs FIFO만 반복하는 문제 해결
- const CONCEPT_TOPICS_14 = [
-   "concept_sqs",        // SQS Standard vs FIFO
-   "concept_sns_sqs",    // SNS vs SQS
-   "concept_storage",    // EBS vs EFS vs FSx
-   "concept_db",         // Aurora vs RDS
-   "concept_dynamodb",   // DynamoDB vs DocumentDB
-   "concept_cache",      // ElastiCache Redis vs Memcached
-   "concept_compute",    // Lambda vs ECS Fargate vs EC2
-   "concept_cdn",        // CloudFront vs Global Accelerator
-   "concept_s3class",    // S3 Storage Classes 비교
-   "concept_network",    // Direct Connect vs VPN
-   "concept_secg_nacl",  // Security Group vs NACL
-   "concept_iam",        // IAM Role vs IAM User vs IAM Policy
-   "concept_monitor",    // CloudWatch vs CloudTrail
-   "concept_kinesis",    // Kinesis Streams vs Firehose vs MSK
+ // 14개 컨셉 비교 풀 → 매 시험마다 4개 랜덤 선택
+ const CONCEPT_COMPARISON_POOL = [
+   "concept_sqs", "concept_sns_sqs", "concept_storage", "concept_db",
+   "concept_dynamodb", "concept_cache", "concept_compute", "concept_cdn",
+   "concept_s3class", "concept_network", "concept_secg_nacl", "concept_iam",
+   "concept_monitor", "concept_kinesis",
  ];
- const THEMES_50 = [...THEMES_36, ...CONCEPT_TOPICS_14];
+ const FOUR_CONCEPTS = [...CONCEPT_COMPARISON_POOL].sort(() => Math.random() - 0.5).slice(0, 4);
+ // 10 concept_tab_node — concept tab 서비스 중심 문제 (시나리오 주제 강제 X)
+ const TEN_CONCEPT_TAB_NODES = Array(10).fill("concept_tab_node");
+ const THEMES_50 = [...THEMES_36, ...FOUR_CONCEPTS, ...TEN_CONCEPT_TAB_NODES];
  // shuffle
  for (let i = THEMES_50.length - 1; i > 0; i--) {
    const j = Math.floor(Math.random() * (i + 1));
@@ -5217,27 +5210,35 @@ function App() {
  const availableSlots = 50 - startSlot;
 
  if (availableSlots > 0) {
-   // 1) concept tab 서비스 — 모든 concept 노드를 매 시험마다 출제 (52%)
-   //    weighted 가중치 기반 단일 서비스(EC2/S3/Lambda 등)만 반복되는 문제 해결
-   const conceptCount = Math.min(shuffledConcepts.length, availableSlots);
-   const usedPositions = new Set<number>();
-   let assigned = 0;
-   let safety = 0;
-   while (assigned < conceptCount && safety < 200) {
-     const pos = startSlot + Math.floor(Math.random() * availableSlots);
-     if (!usedPositions.has(pos)) {
-       usedPositions.add(pos);
-       const service = shuffledConcepts[assigned];
-       conceptServices[pos] = [service];
-       usedSets.add(service);
-       assigned++;
+   let tabIdx = 0;
+
+   // 1) 컨셉 비교 (concept_xxx) 슬롯 → 서비스 없음 (비교 문제는 시나리오/서비스 불필요)
+   for (let i = startSlot; i < 50; i++) {
+     const t = THEMES_50[i];
+     if (t && t.startsWith("concept_") && t !== "concept_tab_node") {
+       conceptServices[i] = []; // 서비스 미할당 — AI가 비교 주제만으로 문제 생성
      }
-     safety++;
    }
-   // 2) 나머지 새 슬롯 — 가중치 기반 unique 서비스 세트 사전 할당
+
+   // 2) concept_tab_node 슬롯 (10개) → unique concept tab 서비스 우선 할당
+   for (let i = startSlot; i < 50; i++) {
+     if (THEMES_50[i] === "concept_tab_node" && tabIdx < shuffledConcepts.length) {
+       const service = shuffledConcepts[tabIdx++];
+       conceptServices[i] = [service];
+       usedSets.add(service);
+     }
+   }
+
+   // 3) 시나리오 (12 주제) 슬롯 → 남은 concept tab 서비스 우선, 부족하면 weighted
    for (let i = startSlot; i < 50; i++) {
      if (conceptServices[i] === null) {
-       conceptServices[i] = selectServicesFromAnalysis(usedSets);
+       if (tabIdx < shuffledConcepts.length) {
+         const service = shuffledConcepts[tabIdx++];
+         conceptServices[i] = [service];
+         usedSets.add(service);
+       } else {
+         conceptServices[i] = selectServicesFromAnalysis(usedSets);
+       }
      }
    }
  }
