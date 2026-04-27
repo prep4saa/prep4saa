@@ -10,6 +10,9 @@
  */
 const SAA_PROBLEM_PROMPT_MEDIUM = `⚠️ **CRITICAL: 응답은 2000~3500 토큰 사이로 작성하세요.**
 
+🚫 **절대 금지: "7년" 사용 절대 금지** 🚫
+시나리오나 선택지에 "7년"이라는 표현 자체를 사용하지 마세요. 보존 기간이 필요하면 다음 중 하나를 선택: **30일 / 90일 / 6개월 / 1년 / 2년 / 5년 / 10년**. 매 문제마다 다른 값 사용. "7년" 표현이 들어간 문제는 무효 처리됩니다.
+
 당신은 AWS SAA-C03 시험의 출제 전문가입니다.
 다음 2가지 예시 문제의 스타일, 난이도, 함정답 구조를 정확히 분석하고,
 새로운 문제를 **동일한 수준**으로 만들어주세요.
@@ -107,12 +110,26 @@ D. Amazon API Gateway API를 구성하여 데이터를 AWS Glue로 보냅니다.
   * 팀/역할+목표: "DevOps 팀은 마이크로서비스 50개의 로그를 단일 대시보드에..."
   * 제품/서비스명: "모바일 뱅킹 앱이 일일 100만 건의 결제 트랜잭션을..."
   * 사건/이벤트: "최근 보안 감사에서 S3 버킷 권한 미흡이 발견되어..."
-- **문장 단위 분할 (필수)**: 지문(시나리오)과 선택지의 한 문장이 너무 길지 않도록 2~3개의 짧은 문장으로 나눠 작성. 각 문장은 "~합니다." 형태로 마침표로 끝내고, 한 문장에 한 가지 정보만 담기. 절대 쉼표와 접속어로 길게 이어 붙이지 말 것.
-  * 나쁜 예 (한 문장으로 모든 정보): "글로벌 엔터테인먼트 스트리밍 서비스가 사용자의 프로필 사진 및 썸네일 이미지를 고해상도로 저장하고, 수억 명의 동시 사용자에게 지연 시간 50ms 미만으로 이미지 제공을 보장하면서, 운영 비용을 최소화해야 합니다."
-  * 좋은 예 (3문장 분할): "글로벌 엔터테인먼트 스트리밍 서비스가 사용자 프로필 사진과 썸네일을 고해상도로 저장합니다. 수억 명의 동시 사용자에게 50ms 미만 지연으로 이미지를 제공해야 합니다. 운영 비용도 최소화해야 합니다."
+- **초간결 작성 규칙 (절대 위반 금지)**:
+  * **시나리오**: 정확히 2~3문장. 각 문장 **최대 15단어**. 한 문장에 한 가지 정보만.
+  * **선택지(A/B/C/D)**: 각 선택지 **최대 3문장, 각 문장 최대 15단어**. 4문장 이상 절대 금지.
+  * 쉼표(,)나 "~하고", "~며", "~면서"로 여러 절을 길게 이어 붙이지 말 것. 반드시 마침표로 끊을 것.
+  * 나쁜 시나리오 예 (한 문장에 너무 많은 정보):
+    "글로벌 금융 서비스 기업이 온프레미스의 민감한 금융 거래 데이터를 AWS 클라우드로 안전하게 마이그레이션하며, 실시간 분석 및 보고를 위해 데이터의 완전성과 HIPAA 규정 준수를 보장해야 합니다."
+  * 좋은 시나리오 예 (3개의 짧은 문장):
+    "글로벌 금융사가 온프레미스 거래 데이터를 AWS로 마이그레이션합니다. HIPAA 규정 준수가 필수입니다. 실시간 분석도 지원해야 합니다."
+  * 나쁜 선택지 예 (5문장 이상, 길게 늘어짐):
+    "Direct Connect로 프라이빗 연결을 설정하고, Amazon S3 Intelligent-Tiering으로 데이터를 저장합니다. S3 버킷은 SSE-KMS를 활성화하고, S3 객체 잠금은 컴플라이언스 모드로 구성합니다. 데이터 분석을 위해 AWS Glue로 ETL을 수행합니다. HIPAA 준수를 위해 VPC 엔드포인트를 활용합니다. Multi-Region Access Points를 사용합니다."
+  * 좋은 선택지 예 (3문장 이내):
+    "Direct Connect로 프라이빗 연결을 설정합니다. S3에 SSE-KMS 암호화와 Object Lock 컴플라이언스 모드를 적용합니다. Multi-Region Access Points로 고가용성을 확보합니다."
 - 매 문제마다 다른 업종 사용 (제조업체, 금융사, SaaS, 의료기관, 이커머스, 미디어, 게임사, 공공기관, 보험사, 물류, 스타트업, 교육 등)
 - 핵심 요구사항만 1-2문장으로 명시 — 제약조건은 별도 나열하지 않고 시나리오 안에 자연스럽게 포함
-- 수치는 꼭 필요한 경우만 포함 (매번 다르게: 보관기간 1년/3년/7년, 비용 절감 30% 등, 가용성 수치 표현 금지)
+- **수치는 꼭 필요할 때만, 매번 다른 값 사용 (절대 위반 금지)**:
+  * **"7년"이라는 숫자는 절대 사용 금지**. 보존 기간이 필요하면 다음 중 하나만 사용: 30일, 90일, 6개월, 1년, 2년, 5년, 10년
+  * 데이터 양: 매번 다르게 (10GB / 100GB / 500GB / 1TB / 5TB / 50TB 등)
+  * 트래픽: 다양하게 (초당 100건 / 1000건 / 10000건 / 분당 50만건 등)
+  * 가용성 수치 표현(99.9%, 99.99%) 절대 금지 — "고가용성 필수" 같은 정성적 표현 사용
+  * 비용/지연 수치도 매번 다르게 사용
 
 ### 2. 선택지 A~D (덤프 스타일, 2-3줄 이내)
 - **서비스명 + 핵심 특징** 위주로 간결하게 작성
@@ -208,7 +225,14 @@ const SAA_PROBLEM_PROMPT_HARD = `⚠️ **CRITICAL: 응답은 2000~3500 토큰 �
 
 **새로운 문제 조건**:
 - **시나리오 시작 표현 다양화 (필수)**: "한 회사가", "한 기업은", "회사는", "기업은"으로 시작하는 AI스러운 정형 표현 절대 금지. 업종+상황("글로벌 이커머스 플랫폼이..."), 시스템+문제("기존 온프레미스 데이터베이스가..."), 팀+목표("DevOps 팀은..."), 제품명("모바일 뱅킹 앱이..."), 사건("최근 보안 감사에서...") 등 자연스러운 도입부 사용
-- **문장 단위 분할 (필수)**: 지문과 선택지의 한 문장이 너무 길지 않도록 2~3개의 짧은 문장으로 나눠 작성. 각 문장은 "~합니다." 형태로 마침표로 끝내고, 한 문장에 한 가지 정보만 담기. 쉼표와 접속어로 길게 이어 붙이지 말 것. (예: "X를 저장합니다. Y를 제공해야 합니다. Z도 만족해야 합니다.")
+- **초간결 작성 규칙 (절대 위반 금지)**:
+  * **시나리오**: 2~3문장. 각 문장 **최대 15단어**. 한 문장에 한 가지 정보만.
+  * **선택지(A/B/C/D)**: 각 선택지 **최대 3문장, 각 문장 최대 15단어**. 4문장 이상 절대 금지.
+  * 쉼표(,)나 "~하고/~며/~면서"로 여러 절을 길게 이어 붙이지 말 것. 마침표로 끊기.
+  * 나쁜 시나리오: "글로벌 금융사가 온프레미스 거래 데이터를 AWS로 마이그레이션하며, 실시간 분석을 위해 데이터 완전성과 HIPAA 준수를 보장해야 합니다." (한 문장에 너무 많은 정보)
+  * 좋은 시나리오: "글로벌 금융사가 온프레미스 거래 데이터를 AWS로 마이그레이션합니다. HIPAA 준수가 필수입니다. 실시간 분석도 지원해야 합니다."
+  * 나쁜 선택지: "Direct Connect로 연결을 설정하고, S3 Intelligent-Tiering을 사용하며, SSE-KMS와 Object Lock을 활성화하고, Glue로 ETL을 수행하며, Multi-Region Access Points로 고가용성을 확보합니다." (한 문장 5+절)
+  * 좋은 선택지: "Direct Connect로 프라이빗 연결을 설정합니다. S3에 SSE-KMS와 Object Lock을 적용합니다. Multi-Region Access Points로 고가용성을 확보합니다."
 - 시나리오: 1-2문장으로 간결하게, 핵심 요구사항을 시나리오 안에 자연스럽게 포함
 - 선택지: 서비스명 + 핵심 특징, **1-2줄 이내** 덤프 스타일
 - **[어려움 함정답 원칙]**: 함정답은 비슷한 서비스지만 용도/설정이 다름
@@ -286,7 +310,14 @@ const SAA_PROBLEM_PROMPT_CHALLENGE = `⚠️ **CRITICAL: 응답은 2000~3500 토
 
 **새로운 문제 조건**:
 - **시나리오 시작 표현 다양화 (필수)**: "한 회사가", "한 기업은", "회사는", "기업은"으로 시작하는 AI스러운 정형 표현 절대 금지. 업종+상황("글로벌 핀테크 스타트업이..."), 시스템+문제("레거시 코어뱅킹 시스템이..."), 팀+목표("플랫폼 엔지니어링 팀은..."), 제품명("실시간 결제 시스템이..."), 사건("규제 감사에서 데이터 거주지 위반이 지적되어...") 등 자연스러운 도입부 사용
-- **문장 단위 분할 (필수)**: 지문과 선택지의 한 문장이 너무 길지 않도록 2~3개의 짧은 문장으로 나눠 작성. 각 문장은 "~합니다." 형태로 마침표로 끝내고, 한 문장에 한 가지 정보만 담기. 쉼표와 접속어로 길게 이어 붙이지 말 것. (예: "X를 처리합니다. Y 요건을 충족해야 합니다. Z 제약도 있습니다.")
+- **초간결 작성 규칙 (절대 위반 금지)**:
+  * **시나리오**: 2~3문장. 각 문장 **최대 15단어**. 한 문장에 한 가지 정보만.
+  * **선택지(A/B/C/D)**: 각 선택지 **최대 3문장, 각 문장 최대 15단어**. 4문장 이상 절대 금지.
+  * 쉼표(,)나 "~하고/~며/~면서"로 여러 절을 길게 이어 붙이지 말 것. 마침표로 끊기.
+  * 나쁜 시나리오: "글로벌 핀테크 스타트업이 온프레미스 거래 데이터를 AWS로 마이그레이션하며, HIPAA 준수와 멀티 리전 고가용성, 비용 효율성을 동시에 달성해야 합니다." (한 문장에 너무 많은 정보)
+  * 좋은 시나리오: "글로벌 핀테크 스타트업이 거래 데이터를 AWS로 마이그레이션합니다. HIPAA 준수가 필수입니다. 멀티 리전 고가용성과 비용 효율성도 요구됩니다."
+  * 나쁜 선택지: "Direct Connect로 프라이빗 연결을 설정하고, S3 Intelligent-Tiering으로 저장하며, SSE-KMS 암호화와 Object Lock 컴플라이언스 모드를 활성화하고, Glue ETL과 QuickSight 시각화를 사용하며, VPC 엔드포인트로 비공개 통신을 보장합니다." (5+절 연결)
+  * 좋은 선택지: "Direct Connect로 프라이빗 연결을 설정합니다. S3에 SSE-KMS와 Object Lock 컴플라이언스 모드를 적용합니다. Multi-Region Access Points로 고가용성을 확보합니다."
 - 시나리오: 온프레미스 ↔ AWS, 멀티 리전, 규제/컴플라이언스, 마이그레이션 등 실무 시나리오, 1-2문장
 - 선택지: 서비스명 + 핵심 특징, **1-2줄 이내** 덤프 스타일
 - **[챌린지 함정답 원칙]**: 함정답은 정답과 거의 동일한 서비스를 쓰지만 세부 옵션·모드·설정이 다름
@@ -328,6 +359,9 @@ JSON 형식으로 응답 (마크다운 없이 순수 JSON, 모든 값은 한 줄
 }`;
 
 const SAA_PROBLEM_PROMPT_EN = `⚠️ **CRITICAL: Response should be 2000-3500 tokens.**
+
+🚫 **ABSOLUTE BAN: NEVER use "7 years" / "7-year" / "seven years"** 🚫
+NEVER use the phrase "7 years" in scenario or options. If retention period is needed, use ONLY one of: **30 days / 90 days / 6 months / 1 year / 2 years / 5 years / 10 years**. Vary across problems. Any problem containing "7 years" will be rejected.
 
 You are an AWS SAA-C03 exam expert.
 Analyze the style, difficulty level, and trick answer structure of the following 2 example questions,
@@ -381,18 +415,28 @@ Key Points:
    * Team + goal: "The DevOps team needs to consolidate logs from 50 microservices into a single dashboard..."
    * Product + scenario: "A mobile banking app processes 1 million daily payment transactions..."
    * Event + trigger: "A recent security audit revealed misconfigured S3 bucket permissions..."
-2. **Short sentences (REQUIRED)**: Split scenarios and options into 2-3 short sentences. NEVER write one long sentence connected by commas/conjunctions. Each sentence ends with a period and contains ONE main idea.
-   * BAD (one long sentence): "A global entertainment streaming service stores user profile photos and thumbnail images at high resolution, ensures sub-50ms image delivery to hundreds of millions of concurrent users, and minimizes operational costs."
-   * GOOD (3 short sentences): "A global entertainment streaming service stores user profile photos and thumbnails at high resolution. It must deliver images to hundreds of millions of concurrent users with sub-50ms latency. Operational costs must also be minimized."
-3. Scenario: 1-2 sentences, concise — use a different industry each time (manufacturer, bank, SaaS, healthcare, e-commerce, media, gaming, government, insurance, logistics, startup, edtech, etc.). Key requirements included naturally in the scenario, NOT listed separately as constraints.
-4. Options A-D (exam dump style):
+2. **Ultra-concise rule (NEVER violate)**:
+   * **Scenario**: 2-3 sentences. Each sentence **max 15 words**. ONE idea per sentence.
+   * **Options (A/B/C/D)**: Each option **max 3 sentences, each sentence max 15 words**. NEVER 4+ sentences per option.
+   * NEVER chain multiple clauses with commas, "while", "and", "that". Use periods.
+   * BAD scenario (one long sentence): "A rapidly growing fintech startup needs to ingest millions of real-time transaction events per minute from its mobile application and legacy banking systems, process these events for fraud detection, and store them durably for auditing purposes, all while minimizing operational overhead."
+   * GOOD scenario (3 short sentences): "A fintech startup ingests millions of transaction events per minute. Real-time fraud detection is required. Audit logs must be stored durably with minimal operational overhead."
+   * BAD option (5+ clauses chained): "Use Direct Connect for private connectivity, enable S3 Intelligent-Tiering, apply SSE-KMS encryption with Object Lock in Compliance mode, run Glue ETL with QuickSight visualization, and configure Multi-Region Access Points for high availability."
+   * GOOD option (3 short sentences): "Set up Direct Connect for private connectivity. Apply SSE-KMS and Object Lock Compliance mode on S3. Use Multi-Region Access Points for high availability."
+3. **Numeric values must vary every time (NEVER violate)**:
+   * **NEVER use "7 years"** for retention. Use one of: 30 days, 90 days, 6 months, 1 year, 2 years, 5 years, 10 years.
+   * Data volume: vary each time (10GB / 100GB / 500GB / 1TB / 5TB / 50TB).
+   * Traffic: vary each time (100 req/s / 1k req/s / 10k req/s / 500k req/min).
+   * NEVER use availability percentages (99.9%, 99.99%) — use qualitative phrases like "high availability required".
+4. Scenario: 1-2 sentences, concise — use a different industry each time (manufacturer, bank, SaaS, healthcare, e-commerce, media, gaming, government, insurance, logistics, startup, edtech, etc.). Key requirements included naturally in the scenario, NOT listed separately as constraints.
+5. Options A-D (exam dump style):
    - Each option: service name + key characteristic, **1-2 lines max**
    - No architecture flow descriptions — brief and direct like real exam dumps
    - Example: "Enable server-side encryption using AWS KMS managed keys (SSE-KMS) with automatic key rotation."
    - **[Medium trick answer rule]**: Trick answers use completely different services — the wrong reason is obvious
    - 1 correct answer: meets all requirements
    - 3 trick answers: each missing 1 different requirement
-5. Answer and detailed explanation:
+6. Answer and detailed explanation:
    - Why the correct answer meets all requirements
    - Which requirement each trick answer fails to meet
 
@@ -430,6 +474,9 @@ Respond in JSON format (pure JSON, all values on single line, no markdown):
 }`;
 
 const SAA_PROBLEM_PROMPT_JA = `⚠️ **重要：レスポンスは正確に2000トークン以内である必要があります。超過しないでください。**
+
+🚫 **絶対禁止：「7年」の使用は絶対禁止** 🚫
+シナリオや選択肢に「7年」という表現を絶対に使用しないでください。保持期間が必要な場合は、次のいずれかを使用: **30日 / 90日 / 6ヶ月 / 1年 / 2年 / 5年 / 10年**。問題ごとに異なる値を使用。「7年」を含む問題は無効化されます。
 
 あなたはAWS SAA-C03試験の専門家です。
 以下の2つの例題のスタイル、難易度レベル、トリック選択肢の構造を分析し、
@@ -483,18 +530,28 @@ D. Amazon API Gateway APIを構成してAWS Glueにデータを送信します�
    * チーム+目標: 「DevOpsチームは50のマイクロサービスのログを単一のダッシュボードに...」
    * 製品/サービス名: 「モバイル銀行アプリが1日100万件の決済トランザクションを...」
    * イベント/事件: 「最近のセキュリティ監査でS3バケットの権限設定の不備が発見され...」
-2. **短文分割（必須）**: シナリオと選択肢を2~3つの短い文に分けてください。一つの長い文をコンマや接続詞でつなげるのは絶対禁止。各文は句点「。」で終わり、一つの情報のみを含む。
-   * 悪い例（一文で全情報）:「グローバルエンターテインメントストリーミングサービスがユーザーのプロフィール写真とサムネイル画像を高解像度で保存し、数億人の同時ユーザーに50ms未満の遅延で画像配信を保証しながら、運用コストを最小化する必要があります。」
-   * 良い例（3文に分割）:「グローバルエンターテインメントストリーミングサービスがユーザーのプロフィール写真とサムネイルを高解像度で保存します。数億人の同時ユーザーに50ms未満の遅延で画像を配信する必要があります。運用コストも最小化する必要があります。」
-3. シナリオ: 1~2文で簡潔に — 毎回異なる業種(製造業、金融、SaaS、医療、Eコマース、メディア、ゲーム、公共機関、保険、物流、スタートアップ、教育など)。制約条件は別途列挙せず、シナリオ文の中に自然に含める。
-4. 選択肢A~D (試験ダンプスタイル):
+2. **超簡潔ルール（絶対違反禁止）**:
+   * **シナリオ**: 2~3文。各文**最大15語**。一文に一つの情報のみ。
+   * **選択肢(A/B/C/D)**: 各選択肢**最大3文、各文最大15語**。4文以上絶対禁止。
+   * コンマや「~しながら」「~であり」「~して」で複数の情報を連結禁止。句点で区切る。
+   * 悪いシナリオ例（一文に多すぎる情報）:「フィンテックスタートアップが毎分数百万件のトランザクションイベントをモバイルアプリとレガシーバンキングから取り込み、不正検知のために処理し、運用オーバーヘッドを最小化しながら監査用に永続的に保存する必要があります。」
+   * 良いシナリオ例（3文に分割）:「フィンテックスタートアップが毎分数百万件のトランザクションを取り込みます。リアルタイム不正検知が必要です。監査ログは最小限の運用負荷で永続保存する必要があります。」
+   * 悪い選択肢例（5+節を連結）:「Direct Connectで接続を構築し、S3 Intelligent-Tieringで保存し、SSE-KMSとObject Lockコンプライアンスモードを有効化し、Glue ETLを実行し、Multi-Region Access Pointsで高可用性を確保します。」
+   * 良い選択肢例（3文以内）:「Direct Connectでプライベート接続を構築します。S3にSSE-KMSとObject Lockを適用します。Multi-Region Access Pointsで高可用性を確保します。」
+3. **数値は毎回変更必須（絶対違反禁止）**:
+   * **「7年」は絶対使用禁止**。保持期間が必要なら、30日 / 90日 / 6ヶ月 / 1年 / 2年 / 5年 / 10年 から選択。
+   * データ量: 毎回異なる値 (10GB / 100GB / 500GB / 1TB / 5TB / 50TB)
+   * トラフィック: 毎回異なる値 (毎秒100件 / 1000件 / 10000件 / 毎分50万件)
+   * 可用性数値（99.9%、99.99%）絶対禁止 — 「高可用性が必要」のような定性的表現を使用。
+4. シナリオ: 1~2文で簡潔に — 毎回異なる業種(製造業、金融、SaaS、医療、Eコマース、メディア、ゲーム、公共機関、保険、物流、スタートアップ、教育など)。制約条件は別途列挙せず、シナリオ文の中に自然に含める。
+5. 選択肢A~D (試験ダンプスタイル):
    - サービス名 + 核心的な特徴、**1~2行以内**
    - アーキテクチャフローの説明は最小限、実際の試験ダンプのように簡潔に
    - 例: 「自動キーローテーション機能付きのAWS KMS管理キー(SSE-KMS)を使用したサーバー側暗号化を有効にします。」
    - **[普通のトリック選択肢原則]**: トリック選択肢は全く異なるサービス → 間違いの理由が明確
    - 1つの正解: すべての要件を満たす
    - 3つのトリック選択肢: それぞれ異なる1つの要件を満たさない
-5. 答えと詳細説明:
+6. 答えと詳細説明:
    - なぜ正解がすべての要件を満たすのか
    - 各トリック選択肢がどの要件を満たさないか明示
 
@@ -547,7 +604,14 @@ The following shows a "Hard" difficulty-level example. Analyze complex constrain
 
 **New Problem Requirements:**
 - **Diversify scenario openings (REQUIRED)**: NEVER start with "A company..." or "An organization..." (sounds AI-generated). Use natural patterns: industry + situation ("A global e-commerce platform..."), system + problem ("A legacy database..."), team + goal ("The DevOps team..."), product name ("A mobile banking app..."), or event ("A recent security audit revealed...")
-- **Short sentences (REQUIRED)**: Split scenarios and options into 2-3 short sentences. NEVER write one long sentence connected by commas/conjunctions. Each sentence ends with a period and contains ONE main idea. (Example: "X processes Y. It must meet Z requirement. Cost must also be minimized.")
+- **Ultra-concise rule (NEVER violate)**:
+  * **Scenario**: 2-3 sentences. Each sentence **max 15 words**. ONE idea per sentence.
+  * **Options (A/B/C/D)**: Each option **max 3 sentences, each sentence max 15 words**. NEVER 4+ sentences per option.
+  * NEVER chain clauses with commas/"while/and/that". Use periods.
+  * BAD scenario: "A fintech startup ingests millions of events per minute from mobile and legacy systems, processes them for fraud detection, and stores them durably for audit while minimizing overhead." (one sentence, too much)
+  * GOOD scenario: "A fintech startup ingests millions of events per minute. Real-time fraud detection is required. Audit logs need durable storage with minimal overhead."
+  * BAD option: "Use Direct Connect, enable S3 Intelligent-Tiering, apply SSE-KMS with Object Lock Compliance mode, run Glue ETL, and configure Multi-Region Access Points." (5 clauses)
+  * GOOD option: "Set up Direct Connect for private connectivity. Apply SSE-KMS and Object Lock on S3. Use Multi-Region Access Points for high availability."
 - Scenario: 1-2 sentences, concise — key requirements naturally embedded in the scenario text
 - Options: Exam dump style — service name + key characteristic, **1-2 lines max**
 - **[Hard trick answer rule]**: Trick answers use similar services but wrong configuration/purpose
@@ -619,7 +683,14 @@ Monthly 10TB transaction data, high availability required, HIPAA compliance"
 
 **New Problem Requirements:**
 - **Diversify scenario openings (REQUIRED)**: NEVER start with "A company..." or "An organization..." (sounds AI-generated). Use natural patterns: industry + situation ("A global fintech startup..."), system + problem ("A legacy core banking system..."), team + goal ("The platform engineering team..."), product name ("A real-time payment system..."), or event ("A regulatory audit flagged data residency violations...")
-- **Short sentences (REQUIRED)**: Split scenarios and options into 2-3 short sentences. NEVER write one long sentence connected by commas/conjunctions. Each sentence ends with a period and contains ONE main idea. (Example: "X handles Y workload. Compliance Z is required. Operational simplicity is also critical.")
+- **Ultra-concise rule (NEVER violate)**:
+  * **Scenario**: 2-3 sentences. Each sentence **max 15 words**. ONE idea per sentence.
+  * **Options (A/B/C/D)**: Each option **max 3 sentences, each sentence max 15 words**. NEVER 4+ sentences per option.
+  * NEVER chain clauses with commas/"while/and/that". Use periods.
+  * BAD scenario: "A global financial firm migrates sensitive on-premises transaction data to AWS while ensuring HIPAA compliance, data integrity, multi-region high availability, and cost efficiency for 10TB monthly volume." (one sentence, too much)
+  * GOOD scenario: "A global financial firm migrates on-premises transaction data to AWS. HIPAA compliance and multi-region availability are required. Cost efficiency for 10TB monthly volume is critical."
+  * BAD option: "Use Direct Connect for private connectivity, enable S3 Intelligent-Tiering, apply SSE-KMS with Object Lock Compliance mode, run Glue ETL with QuickSight, use VPC endpoints, and configure Multi-Region Access Points." (6+ clauses)
+  * GOOD option: "Set up Direct Connect for private connectivity. Apply SSE-KMS and Object Lock Compliance mode on S3. Use Multi-Region Access Points for high availability."
 - Scenario: 1-2 sentences, concise — key requirements (compliance, cost, operational constraints) naturally embedded
 - Options: Exam dump style — service name + key characteristic, **1-2 lines max**
 - **[Challenge trick answer rule]**: Trick answers use the SAME services as the correct answer but with subtle differences in mode/option/behavior — nearly indistinguishable without deep knowledge
@@ -687,7 +758,14 @@ const SAA_PROBLEM_PROMPT_JA_HARD = `⚠️ **重要：レスポンスは2000〜3
 
 **新しい問題の要件:**
 - **シナリオ開始表現の多様化（必須）**: 「ある会社が」「会社は」「ある企業は」で始まるAI定型表現は絶対禁止。業界+状況（「グローバルEコマースプラットフォームが...」）、システム+問題（「既存のオンプレミスデータベースが...」）、チーム+目標（「DevOpsチームは...」）、製品名（「モバイル銀行アプリが...」）、イベント（「最近のセキュリティ監査で...」）など自然な導入を使用
-- **短文分割（必須）**: シナリオと選択肢を2~3つの短い文に分けてください。一つの長い文をコンマや接続詞でつなげるのは絶対禁止。各文は句点「。」で終わり、一つの情報のみを含む。（例：「Xを処理します。Y要件を満たす必要があります。Z制約もあります。」）
+- **超簡潔ルール（絶対違反禁止）**:
+  * **シナリオ**: 2~3文。各文**最大15語**。一文に一つの情報のみ。
+  * **選択肢(A/B/C/D)**: 各選択肢**最大3文、各文最大15語**。4文以上絶対禁止。
+  * コンマや「~しながら/~であり/~して」で複数の節を連結禁止。句点で区切る。
+  * 悪いシナリオ:「グローバル金融機関がオンプレミスのトランザクションデータをAWSに移行しながら、HIPAA準拠、データ整合性、マルチリージョン高可用性、コスト効率性を同時に達成する必要があります。」（一文に多すぎる情報）
+  * 良いシナリオ:「グローバル金融機関がオンプレミスのトランザクションデータをAWSに移行します。HIPAA準拠が必須です。マルチリージョン高可用性とコスト効率も求められます。」
+  * 悪い選択肢:「Direct Connectで接続を構築し、S3 Intelligent-Tieringで保存し、SSE-KMSとObject Lockを有効化し、Glue ETLを実行し、Multi-Region Access Pointsで高可用性を確保します。」（5+節）
+  * 良い選択肢:「Direct Connectでプライベート接続を構築します。S3にSSE-KMSとObject Lockを適用します。Multi-Region Access Pointsで高可用性を確保します。」
 - シナリオ: 1~2文で簡潔に、核心要件をシナリオ文の中に自然に含める
 - 選択肢: 試験ダンプスタイル — サービス名 + 核心的な特徴、**1~2行以内**
 - **[難しいトリック選択肢原則]**: トリック選択肢は似たサービスだが設定/用途が異なる
@@ -759,7 +837,14 @@ const SAA_PROBLEM_PROMPT_JA_CHALLENGE = `⚠️ **重要：レスポンスは200
 
 **新しい問題の要件:**
 - **シナリオ開始表現の多様化（必須）**: 「ある会社が」「会社は」「ある企業は」で始まるAI定型表現は絶対禁止。業界+状況（「グローバルフィンテックスタートアップが...」）、システム+問題（「レガシーコアバンキングシステムが...」）、チーム+目標（「プラットフォームエンジニアリングチームは...」）、製品名（「リアルタイム決済システムが...」）、イベント（「規制監査でデータレジデンシ違反が指摘され...」）など自然な導入を使用
-- **短文分割（必須）**: シナリオと選択肢を2~3つの短い文に分けてください。一つの長い文をコンマや接続詞でつなげるのは絶対禁止。各文は句点「。」で終わり、一つの情報のみを含む。（例：「Xを処理します。コンプライアンスYが必要です。運用の簡素性も重要です。」）
+- **超簡潔ルール（絶対違反禁止）**:
+  * **シナリオ**: 2~3文。各文**最大15語**。一文に一つの情報のみ。
+  * **選択肢(A/B/C/D)**: 各選択肢**最大3文、各文最大15語**。4文以上絶対禁止。
+  * コンマや「~しながら/~であり/~して」で複数の節を連結禁止。句点で区切る。
+  * 悪いシナリオ:「グローバルフィンテックスタートアップがオンプレミスのトランザクションデータをAWSに移行しながら、HIPAA準拠、マルチリージョン高可用性、コスト効率を同時に達成する必要があります。」（一文に多すぎる情報）
+  * 良いシナリオ:「グローバルフィンテックスタートアップがトランザクションデータをAWSに移行します。HIPAA準拠が必須です。マルチリージョン高可用性とコスト効率も求められます。」
+  * 悪い選択肢:「Direct Connectでプライベート接続を構築し、S3 Intelligent-Tieringで保存し、SSE-KMS暗号化とObject Lockコンプライアンスモードを有効化し、Glue ETLとQuickSight可視化を使用し、VPCエンドポイントで非公開通信を保証します。」（5+節）
+  * 良い選択肢:「Direct Connectでプライベート接続を構築します。S3にSSE-KMSとObject Lockコンプライアンスモードを適用します。Multi-Region Access Pointsで高可用性を確保します。」
 - シナリオ: 1~2文で簡潔に、核心要件(コンプライアンス、コスト、運用制約)をシナリオ文の中に自然に含める
 - 選択肢: 試験ダンプスタイル — サービス名 + 核心的な特徴、**1~2行以内**
 - **[チャレンジのトリック選択肢原則]**: トリック選択肢は正解と同じサービスを使うが、モード/オプション/動作が微妙に異なる — 深い知識なしには区別不可能なレベル

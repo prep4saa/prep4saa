@@ -212,6 +212,21 @@ app.post('/api/generateSAAProblem', async (req, res) => {
       }
     }
 
+    // 🚫 안전장치: AI가 프롬프트 무시하고 "7년"을 사용한 경우 자동 치환
+    // 매 호출마다 다른 값으로 바뀌도록 랜덤 선택
+    const replacementsKo = ['1년', '2년', '5년', '10년', '6개월', '90일'];
+    const replacementsEn = ['1 year', '2 years', '5 years', '10 years', '6 months', '90 days'];
+    const replacementsJa = ['1年', '2年', '5年', '10年', '6ヶ月', '90日'];
+    const pickKo = () => replacementsKo[Math.floor(Math.random() * replacementsKo.length)];
+    const pickEn = () => replacementsEn[Math.floor(Math.random() * replacementsEn.length)];
+    const pickJa = () => replacementsJa[Math.floor(Math.random() * replacementsJa.length)];
+    if (typeof content === 'string') {
+      content = content.replace(/7년/g, pickKo);
+      content = content.replace(/\b7[\s-]?years?\b/gi, pickEn);
+      content = content.replace(/seven\s+years?/gi, pickEn);
+      content = content.replace(/7年/g, pickJa);
+    }
+
     res.json({ content, source });
   } catch (error) {
     console.error('❌ generateSAAProblem error:', error);
