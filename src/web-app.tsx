@@ -5169,7 +5169,24 @@ function App() {
    "security", "security", "security",
    "compliance", "compliance", "compliance",
  ];
- const THEMES_50 = [...THEMES_36, ...Array(14).fill("concept")];
+ // 14개 구체적 컨셉 비교 주제 — AI가 SQS Standard vs FIFO만 반복하는 문제 해결
+ const CONCEPT_TOPICS_14 = [
+   "concept_sqs",        // SQS Standard vs FIFO
+   "concept_sns_sqs",    // SNS vs SQS
+   "concept_storage",    // EBS vs EFS vs FSx
+   "concept_db",         // Aurora vs RDS
+   "concept_dynamodb",   // DynamoDB vs DocumentDB
+   "concept_cache",      // ElastiCache Redis vs Memcached
+   "concept_compute",    // Lambda vs ECS Fargate vs EC2
+   "concept_cdn",        // CloudFront vs Global Accelerator
+   "concept_s3class",    // S3 Storage Classes 비교
+   "concept_network",    // Direct Connect vs VPN
+   "concept_secg_nacl",  // Security Group vs NACL
+   "concept_iam",        // IAM Role vs IAM User vs IAM Policy
+   "concept_monitor",    // CloudWatch vs CloudTrail
+   "concept_kinesis",    // Kinesis Streams vs Firehose vs MSK
+ ];
+ const THEMES_50 = [...THEMES_36, ...CONCEPT_TOPICS_14];
  // shuffle
  for (let i = THEMES_50.length - 1; i > 0; i--) {
    const j = Math.floor(Math.random() * (i + 1));
