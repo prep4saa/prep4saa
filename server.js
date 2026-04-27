@@ -212,8 +212,7 @@ app.post('/api/generateSAAProblem', async (req, res) => {
       }
     }
 
-    // 🚫 안전장치: AI가 프롬프트 무시하고 "7년"을 사용한 경우 자동 치환
-    // 매 호출마다 다른 값으로 바뀌도록 랜덤 선택
+    // 🚫 안전장치 1: AI가 프롬프트 무시하고 "7년"을 사용한 경우 자동 치환
     const replacementsKo = ['1년', '2년', '5년', '10년', '6개월', '90일'];
     const replacementsEn = ['1 year', '2 years', '5 years', '10 years', '6 months', '90 days'];
     const replacementsJa = ['1年', '2年', '5年', '10年', '6ヶ月', '90日'];
@@ -221,10 +220,43 @@ app.post('/api/generateSAAProblem', async (req, res) => {
     const pickEn = () => replacementsEn[Math.floor(Math.random() * replacementsEn.length)];
     const pickJa = () => replacementsJa[Math.floor(Math.random() * replacementsJa.length)];
     if (typeof content === 'string') {
-      content = content.replace(/7년/g, pickKo);
+      content = content.replace(/7\s*년/g, pickKo);
       content = content.replace(/\b7[\s-]?years?\b/gi, pickEn);
       content = content.replace(/seven\s+years?/gi, pickEn);
-      content = content.replace(/7年/g, pickJa);
+      content = content.replace(/7\s*年/g, pickJa);
+    }
+
+    // 🚫 안전장치 2: 컴플라이언스 표현 검증
+    // 정답이 S3 Object Lock/Glacier/Lifecycle 관련이 아니면 보존/불변 표현 정화
+    if (typeof content === 'string') {
+      const isStorageLifecycleProblem = /Object\s*Lock|Glacier|Lifecycle|S3\s*Standard-IA|Intelligent-Tiering/i.test(content);
+      if (!isStorageLifecycleProblem) {
+        // 컴플라이언스 정형 표현을 중립적 표현으로 치환
+        content = content.replace(/(\d+)\s*년\s*동안\s*변경\s*불가능[하한]?\s*(?:게|상태로)?\s*보존[되하한][어아여]?[야는]?\s*합니다\.?/g, '높은 가용성과 확장성이 요구됩니다.');
+        content = content.replace(/(\d+)\s*년\s*동안\s*보존[되하한][어아여]?[야는]?\s*합니다\.?/g, '비용 효율적인 운영이 필요합니다.');
+        content = content.replace(/변경\s*불가능[하한]?\s*(?:게|상태로)?\s*보존/g, '안정적으로 운영');
+        content = content.replace(/불변[하한]?\s*(?:게|상태로)?\s*보관/g, '안정적으로 운영');
+        content = content.replace(/데이터\s*무결성[을를]?\s*보장[하한]?[어아여]?[야는]?\s*합니다\.?/g, '신뢰성 높은 응답이 필요합니다.');
+        content = content.replace(/감사\s*추적\s*기능[이가]?\s*[필요필수]+합니다\.?/g, '관찰 가능성이 중요합니다.');
+        content = content.replace(/규정\s*준수[를을]?\s*위[해한]/g, '안정성을 위해');
+
+        // 영어 동등 표현
+        content = content.replace(/must be (?:retained|preserved|kept) (?:immutably|unchanged|in an immutable state) for \d+\s*years?/gi, 'must support high availability and scalability');
+        content = content.replace(/data integrity must be guaranteed/gi, 'reliable response is required');
+        content = content.replace(/audit trail is required/gi, 'observability is critical');
+        content = content.replace(/regulatory compliance is mandatory/gi, 'high reliability is mandatory');
+
+        // 일본어 동등 표현
+        content = content.replace(/(\d+)\s*年間\s*(?:変更不可能に|不変に)\s*保存/g, '高可用性とスケーラビリティで運用');
+        content = content.replace(/データ整合性[をが]?保証/g, '信頼性の高い応答を保証');
+      }
+    }
+
+    // 🚫 안전장치 3: 가용성 수치 표현(99.9%, 99.99%)을 정성적 표현으로 치환
+    if (typeof content === 'string') {
+      content = content.replace(/99\.9{1,2}%\s*(?:이상의?\s*)?가용성/g, '고가용성');
+      content = content.replace(/(?:guarantee|ensure|provide|achieve)\s+99\.9{1,2}%\s+availability/gi, 'guarantee high availability');
+      content = content.replace(/99\.9{1,2}%\s*の?可用性/g, '高可用性');
     }
 
     res.json({ content, source });
