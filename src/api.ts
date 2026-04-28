@@ -21,7 +21,7 @@ export function resolveBackendUrl(): string {
  * - usedSets 전달 시 중복 방지: 단일 서비스 모두 소진되면 2개 조합으로 fallback
  *   ([EC2] 이미 사용 → [EC2, S3] 같은 조합은 허용)
  */
-export function selectServicesFromAnalysis(usedSets?: Set<string>): string[] {
+export function selectServicesFromAnalysis(usedSets?: Set<string>, count: number = 1): string[] {
   const weights = examAnalysis.generationStrategy.serviceSelectionWeights as any;
   const serviceList = Object.keys(weights).filter(s => s !== "Others");
 
@@ -37,7 +37,29 @@ export function selectServicesFromAnalysis(usedSets?: Set<string>): string[] {
 
   const MAX_TRIES = 50;
 
-  // 1단계: 단일 서비스 시도 (medium 고정 → 1개)
+  // count >= 2: weighted 분포로 N개 unique 서비스 조합 (중복 슬롯 방지)
+  if (count >= 2) {
+    for (let attempt = 0; attempt < MAX_TRIES; attempt++) {
+      const picked = new Set<string>();
+      let tries = 0;
+      while (picked.size < count && tries < 100) {
+        picked.add(pickWeighted());
+        tries++;
+      }
+      const combo = [...picked].sort();
+      const key = combo.join("|");
+      if (!usedSets || !usedSets.has(key)) {
+        usedSets?.add(key);
+        return combo;
+      }
+    }
+    // fallback: 그냥 반환 (대규모 조합은 거의 unique)
+    const picked = new Set<string>();
+    while (picked.size < count) picked.add(pickWeighted());
+    return [...picked].sort();
+  }
+
+  // count === 1: 단일 서비스 시도 (medium 고정 → 1개)
   for (let i = 0; i < MAX_TRIES; i++) {
     const single = [pickWeighted()];
     const key = single.join("|");
@@ -47,7 +69,7 @@ export function selectServicesFromAnalysis(usedSets?: Set<string>): string[] {
     }
   }
 
-  // 2단계: 단일 서비스 모두 사용됨 → 2개 조합 fallback
+  // 단일 서비스 모두 사용됨 → 2개 조합 fallback
   for (let i = 0; i < MAX_TRIES; i++) {
     const a = pickWeighted();
     let b = pickWeighted();

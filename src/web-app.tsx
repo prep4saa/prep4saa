@@ -5094,6 +5094,21 @@ function App() {
    [domains[i], domains[j]] = [domains[j], domains[i]];
  }
 
+ // 시나리오 슬롯(36개) 분배: 3슬롯×5서비스 + 10슬롯×2서비스 + 23슬롯×1서비스
+ const scenarioIndices: number[] = [];
+ for (let i = 0; i < 50; i++) {
+   const t = themes[i];
+   if (t && !t.startsWith("concept_")) scenarioIndices.push(i);
+ }
+ for (let i = scenarioIndices.length - 1; i > 0; i--) {
+   const j = Math.floor(Math.random() * (i + 1));
+   [scenarioIndices[i], scenarioIndices[j]] = [scenarioIndices[j], scenarioIndices[i]];
+ }
+ const slotCounts = new Map<number, number>();
+ scenarioIndices.forEach((slotIdx, idx) => {
+   slotCounts.set(slotIdx, idx < 3 ? 5 : idx < 13 ? 2 : 1);
+ });
+
  // 50문제 생성 (theme + service 사전 할당)
  const problems: any[] = [];
  const usedSets = new Set<string>();
@@ -5102,8 +5117,10 @@ function App() {
    let serviceList: string[] = [];
    if (t && t.startsWith("concept_") && t !== "concept_tab_node") {
      serviceList = []; // 비교 문제는 서비스 없음
+   } else if (t === "concept_tab_node") {
+     serviceList = selectServicesFromAnalysis(usedSets, 1);
    } else {
-     serviceList = selectServicesFromAnalysis(usedSets);
+     serviceList = selectServicesFromAnalysis(usedSets, slotCounts.get(i) || 1);
    }
    const domain = domains[i] as "security" | "resilience" | "performance" | "cost-optimization";
    const problem = await generateSAAProblem(serviceList, "medium", locale, domain, t);
@@ -5290,16 +5307,24 @@ function App() {
      }
    }
 
-   // 3) 시나리오 (12 주제) 슬롯 → 남은 concept tab 서비스 우선, 부족하면 weighted
+   // 3) 시나리오 (12 주제) 슬롯 36개 분배: 3개 슬롯 × 5서비스 + 10개 × 2서비스 + 23개 × 1서비스
+   const scenarioSlots: number[] = [];
    for (let i = startSlot; i < 50; i++) {
-     if (conceptServices[i] === null) {
-       if (tabIdx < shuffledConcepts.length) {
-         const service = shuffledConcepts[tabIdx++];
-         conceptServices[i] = [service];
-         usedSets.add(service);
-       } else {
-         conceptServices[i] = selectServicesFromAnalysis(usedSets);
-       }
+     if (conceptServices[i] === null) scenarioSlots.push(i);
+   }
+   for (let i = scenarioSlots.length - 1; i > 0; i--) {
+     const j = Math.floor(Math.random() * (i + 1));
+     [scenarioSlots[i], scenarioSlots[j]] = [scenarioSlots[j], scenarioSlots[i]];
+   }
+   for (let idx = 0; idx < scenarioSlots.length; idx++) {
+     const slotIdx = scenarioSlots[idx];
+     const count = idx < 3 ? 5 : idx < 13 ? 2 : 1;
+     if (count === 1 && tabIdx < shuffledConcepts.length) {
+       const service = shuffledConcepts[tabIdx++];
+       conceptServices[slotIdx] = [service];
+       usedSets.add(service);
+     } else {
+       conceptServices[slotIdx] = selectServicesFromAnalysis(usedSets, count);
      }
    }
  }
