@@ -1598,11 +1598,15 @@ export async function uploadCurrentMockExamToPastExams(
     }
   });
 
-  // 3. 신규 문제 dedup
+  // 3. 신규 문제 dedup + 필수 필드 검증 (Firestore가 undefined 거부)
   const today = new Date().toISOString().split("T")[0];
   const newProblems: Array<{ hash: string; p: Problem }> = [];
   let skipped = 0;
   for (const p of problems) {
+    if (!p?.question || !p?.answer || !p?.options) {
+      skipped++;
+      continue;
+    }
     const hash = await sha256(p.question);
     if (existingHashes.has(hash)) {
       skipped++;
@@ -1678,7 +1682,7 @@ export async function uploadCurrentMockExamToPastExams(
       keywords: p.keywords || [],
       goal: p.goal || "",
       easyMode: p.easyMode || null,
-      explanation: p.explanation,
+      explanation: p.explanation || null,
       patterns: p.patterns || [],
       sourceMockDate: today,
       locale,
