@@ -1141,6 +1141,52 @@ function generatePrompt(serviceNames, difficulty, locale = "ko", domain, theme) 
     ? `\n\n## 🎯 이 문제의 강제 시나리오 주제 (반드시 이 주제로 작성):\n${THEME_GUIDES[locale][theme]}\n\n다른 주제로 작성하면 응답이 무효 처리됩니다.`
     : "";
 
+  // 🎨 시나리오 다양성 강제 룰 (시나리오 12주제 공통 — concept_ 제외)
+  // 목적: Gemini/Claude가 가이드 첫 번째 키워드만 반복 사용하는 단조로움 방지
+  const isScenarioTheme = theme && !theme.startsWith("concept_") && THEME_GUIDES[locale] && THEME_GUIDES[locale][theme];
+  const diversityRule = !isScenarioTheme ? "" :
+    locale === "ko"
+    ? `\n\n## 🎨🎨🎨 시나리오 다양성 강제 룰 (절대 위반 금지) 🎨🎨🎨\n` +
+      `위 시나리오 주제 가이드에 나열된 키워드 중 **첫 번째 항목만 반복적으로 사용 절대 금지**.\n\n` +
+      `**필수 다양성 규칙**:\n` +
+      `1. 가이드에 나열된 **여러 AWS 서비스/기술/패턴 중 최소 2개 이상을 조합**해서 시나리오를 구성하세요.\n` +
+      `2. 같은 주제(${theme})로 다른 문제가 생성될 수 있으므로, **다양한 sub-주제**를 다루세요.\n` +
+      `3. 예시:\n` +
+      `   - **network 주제**: "Direct Connect만" ❌ → "Direct Connect + VPC Endpoints" 또는 "프라이빗 서브넷 + NAT Gateway + 다중 AZ" 또는 "Transit Gateway + VPC Peering" ✅\n` +
+      `   - **cdn 주제**: "CloudFront만" ❌ → "CloudFront + Lambda@Edge" 또는 "Global Accelerator + Origin Shield" 또는 "CloudFront + S3 + OAC" ✅\n` +
+      `   - **dr 주제**: "Multi-AZ만" ❌ → "Aurora Global Database + Route 53 페일오버" 또는 "AWS Backup + 크로스 리전 복제" 또는 "파일럿 라이트 + DMS" ✅\n` +
+      `   - **dbperf 주제**: "ElastiCache만" ❌ → "DAX + DynamoDB" 또는 "Aurora 읽기 복제본 + RDS Proxy" 또는 "ElastiCache Redis 클러스터 모드 + 읽기 복제본" ✅\n` +
+      `   - **security 주제**: "IAM만" ❌ → "GuardDuty + Security Hub" 또는 "KMS + Secrets Manager + IAM Role" 또는 "WAF + Shield + Config" ✅\n` +
+      `4. **시나리오의 핵심 솔루션이 단일 서비스에만 의존하지 마세요**. 정답 옵션도 2개 이상의 AWS 서비스를 조합한 아키텍처여야 합니다.\n\n` +
+      `다양성이 결여되어 단일 서비스만 반복적으로 등장하면 응답이 무효 처리됩니다.`
+    : locale === "en"
+    ? `\n\n## 🎨🎨🎨 Scenario Diversity Mandatory Rule (NEVER violate) 🎨🎨🎨\n` +
+      `From keywords listed in the scenario theme guide above, **DO NOT repeatedly use only the FIRST keyword**.\n\n` +
+      `**Mandatory Diversity Rules**:\n` +
+      `1. Combine **at least 2 different AWS services/techniques/patterns** from the theme guide.\n` +
+      `2. Other questions may share the same theme (${theme}), so cover **diverse sub-topics**.\n` +
+      `3. Examples:\n` +
+      `   - **network theme**: "Direct Connect alone" ❌ → "Direct Connect + VPC Endpoints" or "Private subnet + NAT Gateway + Multi-AZ" or "Transit Gateway + VPC Peering" ✅\n` +
+      `   - **cdn theme**: "CloudFront alone" ❌ → "CloudFront + Lambda@Edge" or "Global Accelerator + Origin Shield" or "CloudFront + S3 + OAC" ✅\n` +
+      `   - **dr theme**: "Multi-AZ alone" ❌ → "Aurora Global Database + Route 53 failover" or "AWS Backup + cross-region replication" or "Pilot Light + DMS" ✅\n` +
+      `   - **dbperf theme**: "ElastiCache alone" ❌ → "DAX + DynamoDB" or "Aurora read replica + RDS Proxy" or "ElastiCache Redis cluster mode + read replica" ✅\n` +
+      `   - **security theme**: "IAM alone" ❌ → "GuardDuty + Security Hub" or "KMS + Secrets Manager + IAM Role" or "WAF + Shield + Config" ✅\n` +
+      `4. **The core solution must NOT rely on a single service**. The correct option must combine 2+ AWS services into a real architecture.\n\n` +
+      `Lack of diversity (single repeated service) will invalidate the response.`
+    : `\n\n## 🎨🎨🎨 シナリオ多様性強制ルール（絶対に違反禁止） 🎨🎨🎨\n` +
+      `上記シナリオテーマガイドに列挙されたキーワードの中で、**最初の項目だけを繰り返し使用することは絶対禁止**。\n\n` +
+      `**必須多様性ルール**:\n` +
+      `1. ガイドに列挙された**複数のAWSサービス/技術/パターンの中から最低2つ以上を組み合わせて**シナリオを構成してください。\n` +
+      `2. 同じテーマ(${theme})で別の問題が生成される可能性があるため、**多様なサブテーマ**を扱ってください。\n` +
+      `3. 例:\n` +
+      `   - **networkテーマ**: 「Direct Connectのみ」❌ → 「Direct Connect + VPC Endpoints」または「プライベートサブネット + NAT Gateway + マルチAZ」または「Transit Gateway + VPC Peering」✅\n` +
+      `   - **cdnテーマ**: 「CloudFrontのみ」❌ → 「CloudFront + Lambda@Edge」または「Global Accelerator + Origin Shield」または「CloudFront + S3 + OAC」✅\n` +
+      `   - **drテーマ**: 「Multi-AZのみ」❌ → 「Aurora Global Database + Route 53フェイルオーバー」または「AWS Backup + クロスリージョンレプリケーション」または「パイロットライト + DMS」✅\n` +
+      `   - **dbperfテーマ**: 「ElastiCacheのみ」❌ → 「DAX + DynamoDB」または「Aurora読み取りレプリカ + RDS Proxy」または「ElastiCache Redisクラスターモード + 読み取りレプリカ」✅\n` +
+      `   - **securityテーマ**: 「IAMのみ」❌ → 「GuardDuty + Security Hub」または「KMS + Secrets Manager + IAM Role」または「WAF + Shield + Config」✅\n` +
+      `4. **コアソリューションは単一サービスのみに依存しないでください**。正解オプションも2つ以上のAWSサービスを組み合わせたアーキテクチャである必要があります。\n\n` +
+      `多様性が欠如し単一サービスのみが繰り返し登場する場合、応答は無効となります。`;
+
   // 🚫 컨셉 비교 문제 강제 규칙 (concept_xxx만 적용, concept_tab_node 제외)
   const isConceptComparison = theme && theme.startsWith("concept_") && theme !== "concept_tab_node";
   const conceptStrictRule = !isConceptComparison ? "" :
@@ -1254,7 +1300,7 @@ function generatePrompt(serviceNames, difficulty, locale = "ko", domain, theme) 
 
   return (prompt
     .replace("${SERVICE_NAMES}", serviceNames.join(", "))
-    .replace("${DIFFICULTY}", diffLabel) + domainGuide + themeGuide + conceptStrictRule + conceptTabRule + tokenConstraint);
+    .replace("${DIFFICULTY}", diffLabel) + domainGuide + themeGuide + diversityRule + conceptStrictRule + conceptTabRule + tokenConstraint);
 }
 
 module.exports = {
