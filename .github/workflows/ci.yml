@@ -41,8 +41,9 @@ jobs:
   validate:
     name: Validate
     runs-on: ubuntu-latest
-    # PR base 브랜치에 따라 환경별 secrets 사용 (Firebase 키 등)
-    environment: ${{ github.base_ref == 'staging' && 'staging' || 'production' }}
+    # CI는 "검증"이지 "배포"가 아니므로 environment 사용 X
+    # → repository-level secrets로 빌드 (배포 브랜치 정책에 막히지 않음)
+    # 향후 staging Firebase 분리 시: base_ref 기반 조건부 secret 주입으로 변경
 
     steps:
       - name: Checkout
