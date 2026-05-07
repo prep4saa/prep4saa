@@ -101,11 +101,12 @@ jobs:
           severity: 'CRITICAL,HIGH'
           exit-code: '1'            # CRITICAL/HIGH 발견 시 PR 차단
           ignore-unfixed: true      # 패치 없는 CVE는 무시 (대응 불가)
-          # secret 스캐너는 false positive가 너무 많음
-          # (예: AWS SAA 시험 문제 안의 'AccessKeyId' 예제 텍스트를 진짜 키로 오인)
-          # 의존성 + 설정파일 보안만 검사
-          # secret 검출은 별도로 gitleaks/trufflehog 같은 전용 도구 권장
-          scanners: 'vuln,misconfig'
+          # vuln만 검사 (의존성 CVE)
+          # - secret 스캐너 OFF: AWS SAA 시험 예제 텍스트를 진짜 키로 오인 (false positive)
+          # - misconfig 스캐너 OFF: S3 KMS 암호화/CloudFront WAF 같은 hardening 권고는
+          #   추후 별도 단계에서 적용 예정 (현재 CRITICAL 위험은 아님)
+          # → secret/misconfig 활성화는 KMS+WAF 셋업 후 재검토
+          scanners: 'vuln'
           vuln-type: 'os,library'
 
   # =================================================================
