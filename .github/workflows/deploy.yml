@@ -124,6 +124,22 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       # =============================================================
+      # 백업 — 배포 직전 현재 S3 상태를 timestamp prefix로 sync
+      # 헬스체크 실패 시 이 백업에서 즉시 복원 (자동 롤백)
+      # 7일 후 자동 삭제 (Terraform lifecycle)
+      # =============================================================
+      - name: Backup current deployment
+        id: backup
+        run: |
+          BACKUP_PREFIX="$(date -u +%Y%m%dT%H%M%SZ)-${GITHUB_SHA::7}"
+          echo "prefix=$BACKUP_PREFIX" >> $GITHUB_OUTPUT
+          echo "📦 Backing up current deployment to s3://${{ vars.S3_BUCKET }}-backups/$BACKUP_PREFIX/"
+          aws s3 sync "s3://${{ vars.S3_BUCKET }}/" \
+                      "s3://${{ vars.S3_BUCKET }}-backups/$BACKUP_PREFIX/" \
+                      --quiet
+          echo "✅ Backup complete"
+
+      # =============================================================
       # 정적 자산 업로드 (JS/CSS/이미지)
       # --delete: dist에 없는 파일은 S3에서도 삭제 (동기화)
       # cache-control 1년 + immutable (해시 붙은 파일명이라 안전)
@@ -150,10 +166,70 @@ jobs:
             --paths "/index.html" "/*"
 
       # =============================================================
-      # ▼▼▼ Phase A5/A6에서 추가 예정 ▼▼▼
-      # - Pre-deploy: 현재 S3 백업 (롤백용)
-      # - Post-deploy: smoke test (curl /health)
-      # - Failure 시: 백업으로 자동 롤백
+      # 헬스체크 — CDN 전파 후 사이트가 정상인지 검증
+      # 30초 대기: CloudFront invalidation이 엣지로 퍼지는 시간
+      # curl로 200 + 파일이 정상 HTML인지 확인
+      # 실패 시 → 다음 step "Rollback" 자동 실행 (if: failure() && backup 성공)
+      # =============================================================
+      - name: Wait for CDN propagation
+        run: sleep 30
+
+      - name: Health check
+        id: health
+        run: |
+          SITE_URL="${{ vars.SITE_URL }}"
+          echo "🩺 Checking $SITE_URL"
+
+          # 상태코드 + body 같이 받기
+          HTTP_CODE=$(curl -s -o /tmp/response.html -w "%{http_code}" -L "$SITE_URL")
+          BODY_SIZE=$(wc -c < /tmp/response.html)
+
+          echo "HTTP status: $HTTP_CODE"
+          echo "Body size: $BODY_SIZE bytes"
+
+          # 200 아니면 실패
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Health check failed: expected 200, got $HTTP_CODE"
+            exit 1
+          fi
+
+          # 응답이 너무 작으면 SPA 빌드 결과물이 아닐 가능성 → 실패 처리
+          # (정상 index.html은 보통 1KB 이상)
+          if [ "$BODY_SIZE" -lt 500 ]; then
+            echo "❌ Health check failed: response too small ($BODY_SIZE bytes)"
+            head -c 200 /tmp/response.html
+            exit 1
+          fi
+
+          # <html> 태그 존재 확인 (DOCTYPE 포함 검사)
+          if ! grep -qi "<html" /tmp/response.html; then
+            echo "❌ Health check failed: <html> tag not found in response"
+            exit 1
+          fi
+
+          echo "✅ Health check passed"
+
+      # =============================================================
+      # 자동 롤백 — 위 step들 중 하나라도 실패 + 백업이 있으면 복원
+      # 롤백 절차:
+      #   1) 백업 prefix에서 운영 버킷으로 sync (--delete로 새 파일 제거)
+      #   2) CloudFront invalidation으로 옛 버전 즉시 노출
+      # =============================================================
+      - name: Rollback on failure
+        if: failure() && steps.backup.outcome == 'success'
+        run: |
+          echo "🔥 Deploy failed — rolling back to ${{ steps.backup.outputs.prefix }}"
+          aws s3 sync "s3://${{ vars.S3_BUCKET }}-backups/${{ steps.backup.outputs.prefix }}/" \
+                      "s3://${{ vars.S3_BUCKET }}/" \
+                      --delete
+
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}" \
+            --paths "/index.html" "/*"
+
+          echo "♻️ Rolled back. Site restored to previous version."
+
+      # =============================================================
       # ▼▼▼ Phase C에서 추가 예정 ▼▼▼
       # - Slack 성공/실패 알림
       # - GitHub Issue 자동 생성 (롤백 발생 시)
