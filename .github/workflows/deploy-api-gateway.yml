@@ -1,7 +1,21 @@
+# ===================================================================
+# API Gateway 배포 워크플로우
+# - lambda-webhook/api-gateway-config.yaml 변경 시 자동 트리거
+# - CloudFormation 템플릿으로 API Gateway 스택 생성/업데이트
+#
+# ⚠️ 주의: 현재 영구 AWS 키(secrets.AWS_ACCESS_KEY_ID/SECRET) 사용 중
+#         Day 1 OIDC 마이그레이션에서 이 키들이 삭제되었으므로
+#         이 워크플로우는 트리거되면 실패함.
+#         → TODO: OIDC Role assume 방식으로 전환 필요 (deploy.yml 참고)
+# ===================================================================
 name: Deploy API Gateway
 
 on:
-  workflow_dispatch:  # Manual trigger
+  # 수동 실행 (GitHub UI "Run workflow" 버튼)
+  workflow_dispatch:
+
+  # API Gateway 설정 파일이 main에 push될 때만 자동 실행
+  # (lambda-webhook/api-gateway-config.yaml만 감시)
   push:
     branches:
       - main
@@ -15,6 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # ⚠️ 영구 AWS 키 인증 — OIDC로 마이그레이션 예정
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -22,6 +37,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      # CloudFormation으로 API Gateway 스택 배포 (idempotent)
+      # --no-fail-on-empty-changeset: 변경사항 없어도 실패 처리 안 함
+      # CAPABILITY_IAM: IAM 리소스 생성 권한 명시 (CloudFormation 요구사항)
       - name: Deploy API Gateway CloudFormation Stack
         run: |
           aws cloudformation deploy \
@@ -31,6 +49,8 @@ jobs:
             --no-fail-on-empty-changeset \
             --capabilities CAPABILITY_IAM
 
+      # 배포된 API endpoint URL을 출력
+      # → 새 endpoint면 VITE_BACKEND_URL secret 업데이트 필요
       - name: Get API Gateway Endpoint
         run: |
           API_ENDPOINT=$(aws cloudformation describe-stacks \
