@@ -154,6 +154,7 @@ export const ja: Strings = {
   premiumFeature3: "過去問全ページ",
   premiumFeature4: "完全に広告なし",
   premiumUpgradeBtn: "今すぐアップグレード",
+  btnComingSoon: "準備中",
   premiumPlan: "プレミアムプラン",
   premiumBenefits: "プレミアムプラン",
   premiumUnlimited: "1日20問",

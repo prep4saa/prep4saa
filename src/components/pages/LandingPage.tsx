@@ -506,12 +506,24 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, o
                     <div className="pro-feature-title">{t.landingProPlanFeature4Title}</div>
                   </div>
                 </div>
-                <button className="btn-pro" onClick={handleProClick}>
-                  {userStatus === "paid" ? (locale === 'ko' ? '퀴즈 시작하기' : locale === 'ja' ? 'クイズを始める' : 'Start Quiz') : t.landingProPlanBtn}
-                  {userStatus !== "paid" && <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={{ marginLeft: '6px' }}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>}
-                </button>
+                {userStatus === "paid" ? (
+                  <button className="btn-pro" onClick={handleProClick}>
+                    {locale === 'ko' ? '퀴즈 시작하기' : locale === 'ja' ? 'クイズを始める' : 'Start Quiz'}
+                  </button>
+                ) : (
+                  <button
+                    className="btn-pro"
+                    disabled
+                    style={{
+                      background: "#4B5563",
+                      color: "#9CA3AF",
+                      cursor: "not-allowed",
+                      opacity: 0.7
+                    }}
+                  >
+                    {t.btnComingSoon}
+                  </button>
+                )}
               </div>
             </div>
           </div>

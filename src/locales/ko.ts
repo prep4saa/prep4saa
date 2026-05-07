@@ -152,6 +152,7 @@ export const ko = {
   premiumFeature3: "기출문제 전체 페이지",
   premiumFeature4: "완전히 광고 없음",
   premiumUpgradeBtn: "지금 업그레이드하기",
+  btnComingSoon: "준비중",
   premiumPlan: "프리미엄 플랜",
   premiumBenefits: "프리미엄 플랜",
   premiumUnlimited: "하루 20개",

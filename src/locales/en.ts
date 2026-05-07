@@ -154,6 +154,7 @@ export const en: Strings = {
   premiumFeature3: "Full past exam pages",
   premiumFeature4: "Completely ad-free",
   premiumUpgradeBtn: "Upgrade Now",
+  btnComingSoon: "Coming Soon",
   premiumPlan: "Premium Plan",
   premiumBenefits: "Premium Plan",
   premiumUnlimited: "20 problems per day",

@@ -2661,18 +2661,19 @@ function App() {
                    {t("pastExamPaidLockDesc")}
                  </p>
                  <button
-                   onClick={() => setShowPaymentModal(true)}
+                   disabled
                    style={{
                      padding: "12px 24px",
-                     background: "#FF9900",
-                     color: "#0F1629",
+                     background: "#4B5563",
+                     color: "#9CA3AF",
                      border: "none",
                      borderRadius: "8px",
                      fontSize: "14px",
                      fontWeight: 700,
-                     cursor: "pointer"
+                     cursor: "not-allowed",
+                     opacity: 0.7
                    }}
-                 >{t("pastExamUpgradeCta")}</button>
+                 >{t("btnComingSoon")}</button>
                </div>
              ) : pastExamLoading ? (
                /* 로딩 스피너 */
@@ -3719,27 +3720,22 @@ function App() {
  </div>
 
  <button
- onClick={() => {
- if (!userEmail) {
- setShowLoginModal(true);
- } else {
- setShowPaymentModal(true);
- }
- }}
+ disabled
  style={{
  width: "100%",
  padding: "12px 16px",
- background: "linear-gradient(135deg, rgba(249, 115, 22, 0.3), rgba(59, 130, 246, 0.3))",
- border: "2px solid rgba(249, 115, 22, 0.6)",
+ background: "#4B5563",
+ border: "2px solid #6B7280",
  borderRadius: "8px",
- color: "#fb923c",
- cursor: "pointer",
+ color: "#9CA3AF",
+ cursor: "not-allowed",
  fontSize: "14px",
  fontWeight: "bold",
- marginBottom: "12px"
+ marginBottom: "12px",
+ opacity: 0.7
  }}
  >
- {t("mockExamPremiumUpgradeBtn")}
+ {t("btnComingSoon")}
  </button>
 
  {userStatus === "guest" && (

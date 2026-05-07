@@ -14,7 +14,10 @@ interface PremiumBannerProps {
  * 비로그인 상태에서 업그레이드 버튼을 누르면 로그인 모달로 유도.
  */
 export default function PremiumBanner({
-  userStatus, userEmail, onLoginClick, onUpgradeClick,
+  userStatus,
+  userEmail: _userEmail,
+  onLoginClick: _onLoginClick,
+  onUpgradeClick: _onUpgradeClick,
 }: PremiumBannerProps) {
   const { t } = useLocale();
 
@@ -36,18 +39,16 @@ export default function PremiumBanner({
         {t("mockExamPremiumDaily")}
       </div>
       <button
-        onClick={() => {
-          if (!userEmail) onLoginClick();
-          else onUpgradeClick();
-        }}
+        disabled
         style={{
           width: "100%", padding: "10px",
-          background: "#FF9900", color: "#0F1629",
+          background: "#4B5563", color: "#9CA3AF",
           border: "none", borderRadius: "6px",
-          cursor: "pointer", fontSize: "12px", fontWeight: "bold"
+          cursor: "not-allowed", fontSize: "12px", fontWeight: "bold",
+          opacity: 0.7
         }}
       >
-        {t("premiumUpgradeBtn")}
+        {t("btnComingSoon")}
       </button>
     </div>
   );

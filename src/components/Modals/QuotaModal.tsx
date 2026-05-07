@@ -12,7 +12,7 @@ interface QuotaModalProps {
 }
 
 export default function QuotaModal({
-  open, userStatus, onClose, onLoginAsLoggedIn, onCheckout,
+  open, userStatus, onClose, onLoginAsLoggedIn, onCheckout: _onCheckout,
 }: QuotaModalProps) {
   const { t } = useLocale();
 
@@ -96,25 +96,27 @@ export default function QuotaModal({
                 로그인
               </button>
               <button
-                onClick={() => { void onCheckout(); }}
+                disabled
                 style={{
-                  flex: 1, padding: "12px", background: "#FF9900", color: "#0F1629",
-                  border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold"
+                  flex: 1, padding: "12px", background: "#4B5563", color: "#9CA3AF",
+                  border: "none", borderRadius: "6px", cursor: "not-allowed", fontWeight: "bold",
+                  opacity: 0.7
                 }}
               >
-                프리미엄 업그레이드
+                {t("btnComingSoon")}
               </button>
             </>
           )}
           {userStatus === "loggedIn" && (
             <button
-              onClick={() => { void onCheckout(); }}
+              disabled
               style={{
-                flex: 1, padding: "12px", background: "#FF9900", color: "#0F1629",
-                border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold"
+                flex: 1, padding: "12px", background: "#4B5563", color: "#9CA3AF",
+                border: "none", borderRadius: "6px", cursor: "not-allowed", fontWeight: "bold",
+                opacity: 0.7
               }}
             >
-              프리미엄 업그레이드
+              {t("btnComingSoon")}
             </button>
           )}
           <button
