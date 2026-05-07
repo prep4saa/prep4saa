@@ -1,0 +1,160 @@
+# ===================================================================
+# Deploy 워크플로우 — main/staging push 시 빌드 + 배포
+# - OIDC 인증 (영구 AWS 키 사용 X, 임시 토큰)
+# - 환경별 IAM Role / S3 / CloudFront 자동 선택
+# - 배포 후 헬스체크 → 실패 시 자동 롤백 (Phase A6에서 추가)
+# - 운영 환경은 GitHub UI에서 승인 게이트 통과해야 진행
+# ===================================================================
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main      # → 운영 (prep4saa.com)
+      - staging   # → 스테이징 (staging.prep4saa.com)
+    paths-ignore:
+      - 'lambda-webhook/**'
+      - '.github/workflows/deploy-api-gateway.yml'
+      - '.github/workflows/lambda-deploy.yml'
+      - '**/*.md'
+
+  # GitHub UI에서 수동 실행 (롤백 등 비상시)
+  workflow_dispatch:
+
+# -------------------------------------------------------------------
+# 동시 실행 제어 — 같은 환경에 동시 배포 금지 (S3 충돌 방지)
+# 진행 중인 배포는 끝까지 기다림 (cancel-in-progress: false)
+# -------------------------------------------------------------------
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
+
+# -------------------------------------------------------------------
+# 권한 — OIDC 토큰 발급용 id-token: write 필수
+# -------------------------------------------------------------------
+permissions:
+  contents: read    # 코드 읽기
+  id-token: write   # OIDC 토큰 발급 (AWS 인증용) — 핵심!
+
+env:
+  NODE_VERSION: '22'
+  AWS_REGION: us-east-1
+
+jobs:
+  # =================================================================
+  # JOB 1: 빌드 (validate)
+  #   - lint + build → artifact 업로드
+  #   - 환경별 Firebase 키로 빌드 (vars/secrets는 environment에 따라 자동 주입)
+  # =================================================================
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'staging' && 'staging' || 'production' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+        env:
+          # Firebase 키 — environment(staging/production)별 secrets 자동 주입
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_ADMIN_UID: ${{ secrets.VITE_ADMIN_UID }}
+          VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
+          VITE_LEMON_SQUEEZY_STORE_ID: ${{ secrets.VITE_LEMON_SQUEEZY_STORE_ID }}
+          VITE_LEMON_SQUEEZY_PRODUCT_ID: ${{ secrets.VITE_LEMON_SQUEEZY_PRODUCT_ID }}
+
+      # 빌드 결과물을 다음 deploy job으로 전달
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ github.ref_name }}-${{ github.sha }}
+          path: dist/
+          retention-days: 7  # 7일간 보관 (롤백 디버깅용)
+
+  # =================================================================
+  # JOB 2: 배포 (deploy)
+  #   - OIDC로 AWS 임시 자격증명 획득
+  #   - S3 sync + CloudFront invalidation
+  #   - environment 보호 규칙 통과해야 시작 (production은 수동 승인)
+  # =================================================================
+  deploy:
+    name: Deploy to ${{ github.ref_name == 'staging' && 'staging' || 'production' }}
+    runs-on: ubuntu-latest
+    needs: build  # build 성공해야만 시작
+    environment:
+      name: ${{ github.ref_name == 'staging' && 'staging' || 'production' }}
+      url: ${{ vars.SITE_URL }}
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-${{ github.ref_name }}-${{ github.sha }}
+          path: dist/
+
+      # =============================================================
+      # OIDC 인증 — 핵심 보안 기능
+      # GitHub이 발급한 JWT 토큰으로 AWS IAM Role assume
+      # → 영구 access key 불필요, 1시간만 유효한 임시 자격증명 획득
+      # =============================================================
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}    # 환경별 Role ARN
+          role-session-name: github-actions-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # =============================================================
+      # 정적 자산 업로드 (JS/CSS/이미지)
+      # --delete: dist에 없는 파일은 S3에서도 삭제 (동기화)
+      # cache-control 1년 + immutable (해시 붙은 파일명이라 안전)
+      # =============================================================
+      - name: Deploy static assets
+        run: |
+          aws s3 sync dist/ "s3://${{ vars.S3_BUCKET }}/" \
+            --delete \
+            --exclude "index.html" \
+            --cache-control "public,max-age=31536000,immutable"
+
+      # index.html은 캐시 금지 (사용자가 옛 버전 보면 안 됨)
+      - name: Deploy entrypoint
+        run: |
+          aws s3 cp dist/index.html "s3://${{ vars.S3_BUCKET }}/index.html" \
+            --cache-control "no-cache,no-store,must-revalidate" \
+            --content-type "text/html"
+
+      # CloudFront 엣지 서버의 캐시 폐기 → 전 세계 즉시 반영
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}" \
+            --paths "/index.html" "/*"
+
+      # =============================================================
+      # ▼▼▼ Phase A5/A6에서 추가 예정 ▼▼▼
+      # - Pre-deploy: 현재 S3 백업 (롤백용)
+      # - Post-deploy: smoke test (curl /health)
+      # - Failure 시: 백업으로 자동 롤백
+      # ▼▼▼ Phase C에서 추가 예정 ▼▼▼
+      # - Slack 성공/실패 알림
+      # - GitHub Issue 자동 생성 (롤백 발생 시)
+      # =============================================================

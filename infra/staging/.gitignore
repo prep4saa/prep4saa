@@ -1,0 +1,19 @@
+# Terraform 작업 파일 (커밋 X)
+.terraform/
+.terraform.lock.hcl
+
+# 상태 파일 (실제 인프라 상태 — 절대 커밋 금지, 자격증명 포함될 수 있음)
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# 로컬 변수 오버라이드 파일
+*.tfvars
+!*.tfvars.example
+
+# Crash log
+crash.log
+crash.*.log
+
+# 플랜 결과
+*.tfplan
