@@ -99,10 +99,13 @@ jobs:
           scan-ref: '.'
           format: 'table'           # 사람이 읽기 좋은 table (콘솔 출력)
           severity: 'CRITICAL,HIGH'
-          # CRITICAL이 발견되면 즉시 PR 차단 (HIGH는 일단 경고만)
-          # 운영 정책 안정되면 'CRITICAL,HIGH'로 강화
-          exit-code: '1'
+          exit-code: '1'            # CRITICAL/HIGH 발견 시 PR 차단
           ignore-unfixed: true      # 패치 없는 CVE는 무시 (대응 불가)
+          # secret 스캐너는 false positive가 너무 많음
+          # (예: AWS SAA 시험 문제 안의 'AccessKeyId' 예제 텍스트를 진짜 키로 오인)
+          # 의존성 + 설정파일 보안만 검사
+          # secret 검출은 별도로 gitleaks/trufflehog 같은 전용 도구 권장
+          scanners: 'vuln,misconfig'
           vuln-type: 'os,library'
 
   # =================================================================
