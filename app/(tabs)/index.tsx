@@ -6,7 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import AWSGraph, { NODES, CAT, AWSNode } from '@/components/aws-graph';
 import { CONCEPTS, ConceptKey } from '@/components/aws-concepts';
-import { generateSAAProblem, Problem } from '@/components/api';
+import { generateSAAProblem, Problem } from '@/src/api';
 
 export default function HomeScreen() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
