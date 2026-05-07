@@ -1,0 +1,92 @@
+# ===================================================================
+# Dependabot — 의존성 자동 업데이트 PR 생성 봇 (GitHub 내장, 무료)
+# - 매주 월요일 새 버전 체크
+# - 보안 패치는 즉시 별도 PR 생성 (스케줄 무관)
+# - 그룹화로 PR 수 줄이기 (minor/patch는 묶어서 1개 PR)
+# ===================================================================
+version: 2
+
+updates:
+  # -----------------------------------------------------------------
+  # npm 의존성 (root)
+  # -----------------------------------------------------------------
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Seoul"
+
+    # PR 그룹화 — 비슷한 업데이트는 하나의 PR로 묶음
+    groups:
+      production-minor:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+        patterns:
+          - "*"
+      development-minor:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+        patterns:
+          - "*"
+      # major는 그룹화 X — 깨질 가능성 높아 PR마다 따로 검토 필요
+
+    # 한 번에 열 수 있는 PR 최대 개수 (스팸 방지)
+    open-pull-requests-limit: 5
+
+    # PR에 자동으로 붙일 라벨
+    labels:
+      - "dependencies"
+      - "npm"
+
+    # 커밋 메시지 prefix (Conventional Commits 스타일)
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+      include: "scope"
+
+  # -----------------------------------------------------------------
+  # GitHub Actions 워크플로우 의존성
+  # 예: actions/checkout@v4 → v5 나오면 자동 PR
+  # -----------------------------------------------------------------
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "github-actions"
+    commit-message:
+      prefix: "ci(deps)"
+
+  # -----------------------------------------------------------------
+  # Terraform provider 버전 업데이트
+  # 인프라는 자주 안 바꾸니 월간 체크
+  # -----------------------------------------------------------------
+  - package-ecosystem: "terraform"
+    directory: "/infra/iam"
+    schedule:
+      interval: "monthly"
+    labels:
+      - "terraform"
+    commit-message:
+      prefix: "infra(deps)"
+
+  - package-ecosystem: "terraform"
+    directory: "/infra/staging"
+    schedule:
+      interval: "monthly"
+    labels:
+      - "terraform"
+    commit-message:
+      prefix: "infra(deps)"
+
+  - package-ecosystem: "terraform"
+    directory: "/infra/backups"
+    schedule:
+      interval: "monthly"
+    labels:
+      - "terraform"
+    commit-message:
+      prefix: "infra(deps)"

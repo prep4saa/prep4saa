@@ -1,0 +1,26 @@
+{
+  "ci": {
+    "collect": {
+      "_comment_collect": "빌드된 dist/를 로컬 server로 띄우고 3번 측정해 평균",
+      "staticDistDir": "./dist",
+      "numberOfRuns": 3,
+      "settings": {
+        "_comment_settings": "데스크톱 + 모바일 둘 다 보고 싶으면 preset 추가",
+        "preset": "desktop"
+      }
+    },
+    "assert": {
+      "_comment_assert": "임계치. 'warn'이면 PR 통과, 'error'면 차단",
+      "assertions": {
+        "categories:performance":     ["warn", { "minScore": 0.8 }],
+        "categories:accessibility":   ["warn", { "minScore": 0.9 }],
+        "categories:best-practices":  ["warn", { "minScore": 0.9 }],
+        "categories:seo":             ["warn", { "minScore": 0.9 }]
+      }
+    },
+    "upload": {
+      "_comment_upload": "결과 HTML 리포트를 임시 무료 호스팅에 업로드 (PR 댓글에 링크)",
+      "target": "temporary-public-storage"
+    }
+  }
+}
