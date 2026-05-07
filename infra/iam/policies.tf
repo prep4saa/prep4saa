@@ -9,7 +9,7 @@
 # Production 배포 정책
 # -----------------------------------------------------
 data "aws_iam_policy_document" "production_deploy" {
-  # S3 버킷 자체 작업 (목록 조회용)
+  # S3 버킷 자체 작업 (목록 조회용) — 운영 + 백업 버킷
   statement {
     sid    = "S3BucketLevel"
     effect = "Allow"
@@ -17,10 +17,14 @@ data "aws_iam_policy_document" "production_deploy" {
       "s3:ListBucket",
       "s3:GetBucketLocation"
     ]
-    resources = ["arn:aws:s3:::${var.production_bucket_name}"]
+    resources = [
+      "arn:aws:s3:::${var.production_bucket_name}",
+      "arn:aws:s3:::${var.production_bucket_name}-backups"
+    ]
   }
 
-  # S3 객체 작업 (실제 파일 업/다운/삭제)
+  # S3 객체 작업 (실제 파일 업/다운/삭제) — 운영 + 백업 버킷
+  # 백업 버킷 접근 이유: 배포 직전 백업 sync, 롤백 시 복원
   statement {
     sid    = "S3ObjectLevel"
     effect = "Allow"
@@ -29,7 +33,10 @@ data "aws_iam_policy_document" "production_deploy" {
       "s3:PutObject",
       "s3:DeleteObject"
     ]
-    resources = ["arn:aws:s3:::${var.production_bucket_name}/*"]
+    resources = [
+      "arn:aws:s3:::${var.production_bucket_name}/*",
+      "arn:aws:s3:::${var.production_bucket_name}-backups/*"
+    ]
   }
 
   # CloudFront 캐시 무효화 (운영 배포만)
@@ -66,7 +73,10 @@ data "aws_iam_policy_document" "staging_deploy" {
       "s3:ListBucket",
       "s3:GetBucketLocation"
     ]
-    resources = ["arn:aws:s3:::${var.staging_bucket_name}"]
+    resources = [
+      "arn:aws:s3:::${var.staging_bucket_name}",
+      "arn:aws:s3:::${var.staging_bucket_name}-backups"
+    ]
   }
 
   statement {
@@ -77,7 +87,10 @@ data "aws_iam_policy_document" "staging_deploy" {
       "s3:PutObject",
       "s3:DeleteObject"
     ]
-    resources = ["arn:aws:s3:::${var.staging_bucket_name}/*"]
+    resources = [
+      "arn:aws:s3:::${var.staging_bucket_name}/*",
+      "arn:aws:s3:::${var.staging_bucket_name}-backups/*"
+    ]
   }
 
   # staging_cloudfront_id가 비어있으면 모든 distribution 허용 (임시)
