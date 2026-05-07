@@ -1,0 +1,86 @@
+# ===================================================================
+# CI 워크플로우 — PR 검증 전용 (배포 X)
+# - PR이 main 또는 staging으로 들어올 때 실행
+# - lint / typecheck / build 검증 + (향후) test/scan 추가 예정
+# - 실패 시 PR 머지 차단 (브랜치 보호 규칙과 연동)
+# ===================================================================
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - staging
+    paths-ignore:
+      - 'lambda-webhook/**'                        # 람다 코드는 별도 워크플로우
+      - '.github/workflows/deploy-api-gateway.yml' # API Gateway 워크플로우
+      - '.github/workflows/lambda-deploy.yml'      # Lambda 배포
+      - '**/*.md'                                  # 문서
+
+# -------------------------------------------------------------------
+# 동시 실행 제어 — 같은 PR에 새 커밋 push되면 이전 CI 자동 취소
+# (PR 검증은 최신만 의미 있음, 비용 절감)
+# -------------------------------------------------------------------
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+# -------------------------------------------------------------------
+# 권한 — 코드 읽기만 (CI는 외부 리소스 변경 X)
+# -------------------------------------------------------------------
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  # =================================================================
+  # JOB: lint + typecheck + build 검증
+  # =================================================================
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    # CI는 "검증"이지 "배포"가 아니므로 environment 사용 X
+    # → repository-level secrets로 빌드 (배포 브랜치 정책에 막히지 않음)
+    # 향후 staging Firebase 분리 시: base_ref 기반 조건부 secret 주입으로 변경
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # 빌드만 통과하는지 검증 (artifact는 저장 X — 어차피 deploy.yml에서 다시 빌드)
+      - name: Build
+        run: npm run build
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_ADMIN_UID: ${{ secrets.VITE_ADMIN_UID }}
+          VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
+          VITE_LEMON_SQUEEZY_STORE_ID: ${{ secrets.VITE_LEMON_SQUEEZY_STORE_ID }}
+          VITE_LEMON_SQUEEZY_PRODUCT_ID: ${{ secrets.VITE_LEMON_SQUEEZY_PRODUCT_ID }}
+
+      # =============================================================
+      # ▼▼▼ Phase B에서 추가 예정 step들 ▼▼▼
+      # - npm test                     (단위 테스트)
+      # - github/codeql-action/analyze (코드 보안 스캔)
+      # - aquasecurity/trivy-action    (의존성 취약점 스캔)
+      # - bundle-size 모니터링          (PR 댓글에 변화량 표시)
+      # - lighthouse-ci-action         (성능 회귀 차단)
+      # =============================================================
