@@ -1,6 +1,37 @@
 name: Deploy Flow Test
 
 on:
+  pull_request:
+    branches:
+      - main
+      - staging
+    paths:
+      - '.github/workflows/deploy.yml'
+      - '.github/workflows/deploy-test.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'src/**'
+      - 'app/**'
+      - 'components/**'
+      - 'public/**'
+      - 'index.html'
+      - 'vite.config.ts'
+
+  push:
+    branches:
+      - 'feature/**'
+    paths:
+      - '.github/workflows/deploy.yml'
+      - '.github/workflows/deploy-test.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'src/**'
+      - 'app/**'
+      - 'components/**'
+      - 'public/**'
+      - 'index.html'
+      - 'vite.config.ts'
+
   workflow_dispatch:
     inputs:
       force_health_failure:
