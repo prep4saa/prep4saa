@@ -1,3 +1,17 @@
+# ===================================================================
+# Lambda 함수 배포 워크플로우
+# - lambda-webhook/ 디렉토리 변경 시 자동 트리거
+# - Lambda 함수 코드 + 환경변수 업데이트
+#
+# 처리하는 Lambda 함수:
+#   lemon-squeezy-webhook
+#   → Lemon Squeezy 결제 웹훅 수신 → Firebase에 paid 상태 업데이트
+#
+# ⚠️ 주의: 현재 영구 AWS 키(secrets.AWS_ACCESS_KEY_ID/SECRET) 사용 중
+#         Day 1 OIDC 마이그레이션에서 이 키들이 삭제되었으므로
+#         이 워크플로우는 트리거되면 실패함.
+#         → TODO: OIDC Role assume 방식으로 전환 필요 (deploy.yml 참고)
+# ===================================================================
 name: Deploy Lambda
 
 on:
@@ -5,7 +19,7 @@ on:
     branches:
       - main
     paths:
-      - 'lambda-webhook/**'
+      - 'lambda-webhook/**'   # lambda-webhook/ 안의 어떤 파일이든 변경되면 트리거
 
 jobs:
   deploy:
@@ -14,20 +28,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Lambda 런타임 매칭 (Node 20 사용)
+      # 운영용 의존성만 설치 (--production)
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
+      # devDependencies 제외하고 dependencies만 설치 → 패키지 크기 최소화
       - name: Install Lambda dependencies
         working-directory: lambda-webhook
         run: npm install --production
 
+      # =============================================================
+      # Lambda 배포 패키지 생성 (zip)
+      # - lambda-webhook/ 내용을 lambda-webhook.zip으로 압축
+      # - .git 관련 파일 제외 (-x "*.git*")
+      # =============================================================
       - name: Create deployment package
         working-directory: lambda-webhook
         run: |
           zip -r ../lambda-webhook.zip . -x "*.git*"
 
+      # =============================================================
+      # Lambda 함수 코드 업데이트
+      # ⚠️ 영구 AWS 키 인증 — OIDC로 마이그레이션 예정
+      # =============================================================
       - name: Deploy to AWS Lambda
         run: |
           aws lambda update-function-code \
@@ -39,6 +65,12 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: us-east-1
 
+      # =============================================================
+      # Lambda 환경변수 설정 (코드 외부 의존성 주입)
+      # - FIREBASE_SERVICE_ACCOUNT: Firebase Admin SDK 인증 (JSON 통째로)
+      # - LEMON_SQUEEZY_API_KEY: 결제 정보 조회용
+      # - LEMON_SQUEEZY_WEBHOOK_SECRET: 웹훅 서명 검증용
+      # =============================================================
       - name: Configure Lambda Environment Variables
         run: |
           aws lambda update-function-configuration \
@@ -50,9 +82,12 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: us-east-1
 
+      # Lambda 환경변수 변경은 비동기로 적용됨 → 5초 대기
       - name: Wait for Lambda update
         run: sleep 5
 
+      # 배포 후 상태 확인 (디버깅 + 배포 완료 검증)
+      # 출력값에서 Runtime, Handler, Environment 등 확인 가능
       - name: Verify Lambda deployment
         run: |
           aws lambda get-function-configuration \
