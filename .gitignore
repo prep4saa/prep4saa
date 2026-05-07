@@ -34,6 +34,14 @@ yarn-error.*
 .env
 .env*.local
 
+# Terraform local state and plans
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+*.tfplan
+
 # typescript
 *.tsbuildinfo
 
@@ -45,3 +53,18 @@ app-example
 
 # Project documentation with sensitive info (admin emails, UIDs, etc.)
 CLAUDE.md
+
+# ===================================================================
+# Secrets / credentials — 절대 커밋 금지
+# ===================================================================
+firebase-key.json
+firebase-adminsdk-*.json
+*-service-account.json
+*-credentials.json
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+gcp-key.json
+aws-credentials.json

@@ -67,5 +67,9 @@
     "typescript": "~5.8.3",
     "vite": "^8.0.3"
   },
+  "overrides": {
+    "protobufjs": "^7.5.5",
+    "@xmldom/xmldom": "^0.8.13"
+  },
   "private": true
 }
