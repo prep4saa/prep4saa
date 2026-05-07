@@ -31,7 +31,7 @@ jobs:
       # Lambda 런타임 매칭 (Node 20 사용)
       # 운영용 의존성만 설치 (--production)
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
