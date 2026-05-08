@@ -1,0 +1,19 @@
+github_owner      = "choijai"
+github_repository = "prep4saa"
+
+required_approving_review_count = 1
+
+production_environment_reviewers = [
+  "choijai",
+]
+
+staging_environment_reviewers = [
+  "choijai",
+]
+
+# Add teammates here when this becomes a team repository.
+# Permission values: pull, triage, push, maintain, admin.
+repository_collaborators = {
+  # "teammate-github-id" = "push"
+  # "tech-lead-github-id" = "maintain"
+}
