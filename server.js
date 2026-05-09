@@ -2,7 +2,11 @@
 const cors = require('cors');
 const helmet = require('helmet');
 const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
+const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
 const crypto = require('crypto');
+
+const sqsClient = new SQSClient({ region: 'us-east-1' });
+const SQS_QUEUE_URL = 'https://sqs.us-east-1.amazonaws.com/973294444983/problem-generation-queue';
 const admin = require('firebase-admin');
 const { generatePrompt } = require('./prompts-server');
 require('dotenv').config();
@@ -206,6 +210,18 @@ app.post('/api/generateSAAProblem', async (req, res) => {
         source = 'claude';
       } catch (claudeError) {
         console.error('❌ Both Gemini and Claude failed');
+
+        // AI 두 곳 모두 실패 시 SQS로 오류 알림 전송
+        await sqsClient.send(new SendMessageCommand({
+          QueueUrl: SQS_QUEUE_URL,
+          MessageBody: JSON.stringify({
+            type: 'ERROR',
+            userId: req.body?.userId || 'unknown',
+            errorMessage: `Gemini: ${geminiError?.message} | Claude: ${claudeError?.message}`,
+            occurredAt: new Date().toISOString(),
+          }),
+        })).catch(sqsErr => console.error('❌ SQS 전송 실패:', sqsErr?.message));
+
         return res.status(500).json({
           error: { message: `Gemini: ${geminiError?.message} | Claude: ${claudeError?.message}` }
         });
@@ -661,28 +677,21 @@ app.post('/api/recordProblemGeneration', async (req, res) => {
       return res.status(400).json({ error: 'userId is required' });
     }
 
-    const today = new Date().toISOString().split('T')[0];
-    const dailyStatsRef = db.collection('users').doc(userId).collection('dailyStats').doc(today);
-    const dailyStats = await dailyStatsRef.get();
+    // DynamoDB에 카운트 증가
+    const userType = req.body.userStatus === 'paid' ? 'premium' : 'loggedIn';
+    const apiUrl = `https://to0up7hmjh.execute-api.us-east-1.amazonaws.com/prod/count/${encodeURIComponent(userId)}`;
+    const countResponse = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userType })
+    });
+    const countData = await countResponse.json();
 
-    if (dailyStats.exists) {
-      // 기존 기록 업데이트
-      const newCount = (dailyStats.data().problemCount || 0) + 1;
-      await dailyStatsRef.update({
-        problemCount: newCount,
-        lastGeneratedAt: new Date().toISOString()
-      });
-      console.log(`✅ Problem recorded: ${newCount} problems generated today (userId: ${userId})`);
-    } else {
-      // 새 기록 생성
-      await dailyStatsRef.set({
-        date: today,
-        problemCount: 1,
-        createdAt: new Date().toISOString(),
-        lastGeneratedAt: new Date().toISOString()
-      });
-      console.log(`✅ First problem recorded today (userId: ${userId})`);
+    if (countResponse.status === 429) {
+      return res.status(429).json({ error: 'Daily limit reached', ...countData });
     }
+
+    console.log(`✅ Problem recorded: ${countData.count}/${countData.limit} today (userId: ${userId})`);
 
     // 문제를 quizResults에 저장
     if (problem) {
@@ -711,7 +720,7 @@ app.post('/api/recordProblemGeneration', async (req, res) => {
   }
 });
 
-// 오늘 생성한 문제 개수 조회 (보안: 서버에서 검증)
+// 오늘 생성한 문제 개수 조회 (DynamoDB via API Gateway)
 app.post('/api/getProblemCountToday', async (req, res) => {
   try {
     const { userId, userStatus } = req.body;
@@ -720,29 +729,16 @@ app.post('/api/getProblemCountToday', async (req, res) => {
       return res.status(400).json({ error: 'userId is required' });
     }
 
-    const today = new Date().toISOString().split('T')[0];
-
     // 상태별 제한
     let limit = 2;
-    if (userStatus === 'paid') {
-      limit = 20;
-    } else if (userStatus === 'loggedIn') {
-      limit = 2;
-    } else {
-      limit = 2;
-    }
+    if (userStatus === 'paid') limit = 20;
 
-    // quizResults 컬렉션에서 오늘 생성된 문제 개수 세기
-    const resultsRef = db.collection('users').doc(userId).collection('quizResults');
-    const snapshot = await resultsRef.where('date', '==', today).get();
+    // DynamoDB에서 오늘 카운트 조회
+    const apiUrl = `https://to0up7hmjh.execute-api.us-east-1.amazonaws.com/prod/count/${encodeURIComponent(userId)}`;
+    const response = await fetch(apiUrl);
+    const data = await response.json();
 
-    const now = new Date().getTime();
-    const validDocs = snapshot.docs.filter(doc => {
-      const expiresAt = doc.data().expiresAt;
-      return !expiresAt || expiresAt >= now;
-    });
-
-    const count = validDocs.length;
+    const count = data.count || 0;
 
     console.log(`📊 Today's problem count for ${userId}: ${count}/${limit}`);
 
@@ -753,12 +749,7 @@ app.post('/api/getProblemCountToday', async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Error getting problem count:', error);
-    // Fallback: 허용하지만 로그에 에러 기록
-    return res.json({
-      count: 0,
-      limit: 20,
-      canGenerate: true
-    });
+    return res.json({ count: 0, limit: 20, canGenerate: true });
   }
 });
 

@@ -1,0 +1,6 @@
+{
+  "userId":  {"S": "imjaichoipro@gmail.com"},
+  "count":   {"N": "1"},
+  "date":    {"S": "2026-05-08"},
+  "ttl":     {"N": "1746889200"}
+}

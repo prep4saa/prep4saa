@@ -1,0 +1,8 @@
+{
+    "httpMethod": "POST",
+    "pathParameters": {
+        "usdId": "imjaichoipro@gmail.com"
+    },
+    "body": "{\"userType\": \"loggedIn\"}"
+
+}
