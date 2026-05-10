@@ -15,7 +15,6 @@ import EmailVerificationModal from "./components/Modals/EmailVerificationModal";
 import QuotaModal from "./components/Modals/QuotaModal";
 import PostFormModal from "./components/Modals/PostFormModal";
 import { CognitoTestPage } from "./components/CognitoTestPage";
-import { MigrateDataPage } from "./components/MigrateDataPage";
 import { CognitoSignupModal } from "./components/Modals/CognitoSignupModal";
 import { CognitoLoginModal } from "./components/Modals/CognitoLoginModal";
 import { CAT, CONCEPTS_KO, LINKS, NODES } from "./data";

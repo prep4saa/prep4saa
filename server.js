@@ -7,7 +7,6 @@ const crypto = require('crypto');
 
 const sqsClient = new SQSClient({ region: 'us-east-1' });
 const SQS_QUEUE_URL = 'https://sqs.us-east-1.amazonaws.com/973294444983/problem-generation-queue';
-const admin = require('firebase-admin');
 const { generatePrompt } = require('./prompts-server');
 require('dotenv').config();
 
@@ -15,57 +14,7 @@ require('dotenv').config();
 const { query: pgQuery } = require('./lib/db');
 const { requireAuth, requireAdmin, USE_COGNITO_AUTH } = require('./middleware/auth');
 
-function loadFirebaseServiceAccount() {
-  // Try environment variable first
-  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-    try {
-      return JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    } catch (error) {
-      console.error('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT:', error?.message || error);
-      return null;
-    }
-  }
-
-  // Fallback to firebase-key.json file
-  try {
-    return require('./firebase-key.json');
-  } catch (error) {
-    return null;
-  }
-}
-
-// Firebase 자격증명이 없어도 server 는 시작되도록 (Cognito 마이그레이션 기간)
-// - db 가 null 이면 Firebase 사용 API 들은 503 반환
-const serviceAccount = loadFirebaseServiceAccount();
-let db = null;
-
-if (serviceAccount) {
-  console.log('🔐 Firebase service account loaded:', {
-    projectId: serviceAccount.project_id,
-    clientEmail: serviceAccount.client_email,
-  });
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: process.env.FIREBASE_DATABASE_URL,
-  });
-  db = admin.firestore();
-} else {
-  console.warn('⚠️ Firebase 자격증명 없음 - 결제(LemonSqueezy) endpoint 503 반환');
-}
-
-// Firestore 가 필요한 라우트 가드
-// - Phase 7 에서 결제 endpoint 들도 PostgreSQL 로 변환 예정
-const requireFirestore = (req, res, next) => {
-  if (!db) {
-    return res.status(503).json({
-      error: {
-        message: 'Payment endpoints are being migrated to PostgreSQL. Temporarily unavailable.',
-        migration_status: 'in_progress',
-      },
-    });
-  }
-  next();
-};
+console.log('✅ Server starting (Cognito + PostgreSQL only, Firebase removed)');
 
 const app = express();
 const PORT = 5000;
@@ -1238,408 +1187,40 @@ async function uploadPastExamsHandler(req, res) {
 }
 
 //Lemon Squeezy Checkout API
-app.post('/api/lemonsqueezy/checkout', requireFirestore, async (req, res) => {
-  try {
-    const { email, returnUrl } = req.body;
-
-    if (!email) {
-      return res.status(400).json({ error: 'Email is required' });
-    }
-
-    const storeId = process.env.VITE_LEMON_SQUEEZY_STORE_ID;
-    const productId = process.env.VITE_LEMON_SQUEEZY_PRODUCT_ID;
-
-    if (!storeId || !productId) {
-      return res.status(400).json({
-        error: 'Lemon Squeezy store/product environment variables are missing',
-      });
-    }
-
-    const checkoutParams = new URLSearchParams({
-      'checkout[email]': email,
-      'checkout[custom][email]': email,
-    });
-
-    if (returnUrl) {
-      checkoutParams.set('checkout[custom][return_url]', returnUrl);
-    }
-
-    const checkoutUrl = `https://${storeId}.lemonsqueezy.com/checkout/buy/${productId}?${checkoutParams.toString()}`;
-
-    console.log('✅ Checkout URL generated:', checkoutUrl);
-
-    return res.json({
-      checkoutUrl,
-      email,
-    });
-  } catch (error) {
-    console.error('⚠️ Checkout error:', error);
-    res.status(500).json({ error: { message: error.message } });
-  }
+app.post('/api/lemonsqueezy/checkout', (req, res) => {
+  // TODO Phase 7: PostgreSQL users.is_premium 변환 + LemonSqueezy webhook
+  res.status(503).json({
+    error: {
+      message: 'Payment is being migrated to PostgreSQL. Coming soon.',
+    },
+  });
 });
 
 /**
  * //이찓//寃利?留곹겕 諛쒖넚
  * 푸썝媛////사슜에뿉寃//뺤씤 硫붿씪 諛쒖넚
  */
-app.post('/api/send-verification-email', async (req, res) => {
-  try {
-    const { email, userName } = req.body;
-
-    if (!email) {
-      return res.status(400).json({ error: 'Email is required' });
-    }
-
-    // Firebase Admin SDK를 통해 이메일 확인 링크 생성
-    let verificationLink = '';
-    try {
-      verificationLink = await admin.auth().generateEmailVerificationLink(email);
-      console.log(`✅ Generated verification link for ${email}`);
-    } catch (linkError) {
-      console.error('Failed to generate verification link:', linkError?.message);
-      return res.status(500).json({ error: 'Failed to generate verification link' });
-    }
-
-    // HTML 이메일 템플릿 (버튼 포함)
-    let greeting = userName ? `안녕하세요, ${userName}!` : '안녕하세요!';
-    let htmlContent = `
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    body { font-family: Arial, sans-serif; color: #333; line-height: 1.6; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .button { background: #FF9900; color: white; padding: 14px 32px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold; font-size: 16px; }
-    .footer { color: #999; font-size: 12px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <p>${greeting}</p>
-    <p>AWS SAA-C03 준비 플랫폼 계정을 생성해주셔서 감사합니다!</p>
-    <p>아래 버튼을 클릭하여 이메일을 확인해주세요:</p>
-    <p style="text-align: center; margin: 30px 0;">
-      <a href="${verificationLink}" class="button">✅ 이메일 확인하기</a>
-    </p>
-    <p style="color: #666; font-size: 14px;">
-      위 버튼이 작동하지 않으면 아래 링크를 복사하여 브라우저에 붙여넣으세요:
-    </p>
-    <p style="word-break: break-all; background: #f5f5f5; padding: 10px; border-radius: 4px; font-size: 12px;">
-      <a href="${verificationLink}" style="color: #0066cc;">${verificationLink}</a>
-    </p>
-    <div class="footer">
-      <p>이 이메일을 요청하지 않았다면 무시해도 됩니다.</p>
-      <p>AWS SAA-C03 Preparation Platform</p>
-    </div>
-  </div>
-</body>
-</html>
-    `;
-
-    // AWS SES로 이메일 전송
-    const senderEmail = process.env.SES_FROM_EMAIL || 'noreply@prep4saa.com';
-    const command = new SendEmailCommand({
-      Source: senderEmail,
-      Destination: {
-        ToAddresses: [email],
-      },
-      Message: {
-        Subject: {
-          Data: '🔒 이메일 확인 - AWS SAA-C03',
-          Charset: 'UTF-8',
-        },
-        Body: {
-          Html: {
-            Data: htmlContent,
-            Charset: 'UTF-8',
-          },
-        },
-      },
-    });
-
-    const response = await sesClient.send(command);
-    console.log(`✅ Verification email sent to ${email} (MessageId: ${response.MessageId})`);
-    return res.json({ success: true, message: 'Verification email sent.' });
-  } catch (error) {
-    console.error('❌ Verification email send failed:', error?.message);
-    return res.status(500).json({ error: error?.message || 'Verification email send failed.' });
-  }
+app.post('/api/send-verification-email', (req, res) => {
+  // Cognito 가 가입 시 자동으로 verification 이메일 발송
+  // 이 endpoint 는 Phase 6 에서 deprecated
+  res.status(410).json({
+    error: {
+      message: 'Deprecated. Cognito sends verification email automatically on signup.',
+    },
+  });
 });
 
-app.post('/api/lemonsqueezy/cancel-subscription', requireFirestore, async (req, res) => {
-  try {
-    const { userId, email } = req.body || {};
-    const apiKey = process.env.LEMON_SQUEEZY_API_KEY || process.env.VITE_LEMON_SQUEEZY_API_KEY || '';
-
-    console.log('🧾 Cancel subscription request received', {
-      hasUserId: !!userId,
-      hasEmail: !!email,
-      hasApiKey: !!apiKey,
-      userId,
-      email,
-    });
-
-    if (!apiKey) {
-      console.error('❌ LEMON_SQUEEZY_API_KEY not configured');
-      return res.status(500).json({ error: 'LEMON_SQUEEZY_API_KEY not configured' });
-    }
-
-    let userRef = null;
-    let userData = null;
-
-    if (userId) {
-      userRef = db.collection('users').doc(userId);
-      const snap = await userRef.get();
-      if (snap.exists) {
-        userData = snap.data();
-      }
-    } else if (email) {
-      const snap = await db.collection('users').where('email', '==', email).limit(1).get();
-      if (!snap.empty) {
-        const docSnap = snap.docs[0];
-        userRef = docSnap.ref;
-        userData = docSnap.data();
-      }
-    }
-
-    if (!userRef || !userData) {
-      console.warn('⚠️ Cancel subscription user not found', { userId, email });
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const subscriptionId = userData.lemonSqueezySubscriptionId;
-    if (!subscriptionId) {
-      console.warn('⚠️ No Lemon Squeezy subscription found for user', {
-        userId,
-        email,
-        docId: userRef.id,
-      });
-      return res.status(404).json({ error: 'No Lemon Squeezy subscription found for this user' });
-    }
-
-    console.log('🧾 Cancelling Lemon Squeezy subscription', {
-      subscriptionId,
-      userId,
-      email,
-      docId: userRef.id,
-    });
-
-    const response = await fetch(`https://api.lemonsqueezy.com/v1/subscriptions/${subscriptionId}`, {
-      method: 'DELETE',
-      headers: {
-        'Accept': 'application/vnd.api+json',
-        'Content-Type': 'application/vnd.api+json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-    });
-
-    const responseText = await response.text();
-
-    if (!response.ok) {
-      console.error('❌ Lemon Squeezy cancel API error', {
-        status: response.status,
-        errorText: responseText,
-        subscriptionId,
-      });
-      return res.status(response.status).json({ error: responseText || 'Failed to cancel subscription' });
-    }
-
-    let result = {};
-    if (responseText) {
-      try {
-        result = JSON.parse(responseText);
-      } catch (parseError) {
-        console.warn('⚠️ Lemon Squeezy cancel response was not JSON', {
-          subscriptionId,
-          responseTextPreview: responseText.slice(0, 300),
-        });
-      }
-    }
-
-    const attributes = result?.data?.attributes || {};
-    const isPaid = attributes.status === 'active' || attributes.status === 'on_trial' || attributes.status === 'cancelled';
-
-    await userRef.set({
-      isPaid,
-      userStatus: isPaid ? 'paid' : 'loggedIn',
-      subscriptionStatus: attributes.status || 'cancelled',
-      subscriptionCancelledAt: new Date().toISOString(),
-      subscriptionEndsAt: attributes.ends_at || null,
-      subscriptionRenewsAt: attributes.renews_at || null,
-      lemonSqueezySubscriptionId: subscriptionId,
-      updatedAt: new Date().toISOString(),
-    }, { merge: true });
-
-    return res.json({
-      success: true,
-      subscriptionStatus: attributes.status || 'cancelled',
-      subscriptionEndsAt: attributes.ends_at || null,
-    });
-  } catch (error) {
-    console.error('Cancel subscription failed:', error?.stack || error);
-    return res.status(500).json({ error: error.message || 'Cancel subscription failed' });
-  }
+app.post('/api/lemonsqueezy/cancel-subscription', (req, res) => {
+  // TODO Phase 7
+  res.status(503).json({
+    error: { message: 'Payment is being migrated to PostgreSQL. Coming soon.' },
+  });
 });
 
-app.post('/api/webhooks/lemon-squeezy', requireFirestore, async (req, res) => {
-  try {
-    const signature = req.headers['x-signature'] || req.headers['x-lemon-squeezy-signature'] || req.headers['X-Signature'] || req.headers['X-Lemon-Squeezy-Signature'];
-    const body = req.rawBody || JSON.stringify(req.body);
-    const webhookSecret = process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
-
-    if (!webhookSecret) {
-      console.warn('⚠️  LEMON_SQUEEZY_WEBHOOK_SECRET not configured');
-    } else {
-      const expectedSignature = crypto
-        .createHmac('sha256', webhookSecret)
-        .update(body)
-        .digest('hex');
-
-      if (signature !== expectedSignature) {
-        console.error('❌ Invalid webhook signature');
-        return res.status(401).json({ error: 'Invalid signature' });
-      }
-    }
-
-    const event = req.body.meta?.event_name;
-    const data = req.body.data;
-    const customData = req.body.meta?.custom_data || data?.attributes?.custom_data || {};
-
-    console.log(`🧭 Lemon Squeezy Webhook: ${event}`);
-
-    const paidEvents = ['order_created', 'subscription_created', 'subscription_payment_success'];
-    const cancelEvents = ['subscription_cancelled'];
-    const expiredEvents = ['subscription_expired'];
-
-    if (paidEvents.includes(event)) {
-      const subscription = data.attributes;
-      const userId = customData.user_id;
-      const email = customData.email || subscription.user_email || subscription.customer_email;
-
-      if (!userId && !email) {
-        console.warn('⚠️  No user_id or email in webhook data');
-        return res.json({ received: true });
-      }
-
-      try {
-        let userRef;
-        if (userId) {
-          userRef = db.collection('users').doc(userId);
-        } else {
-          const userRecord = await admin.auth().getUserByEmail(email);
-          userRef = db.collection('users').doc(userRecord.uid);
-        }
-
-        const updateData = {
-          isPaid: subscription.status === 'active' || subscription.status === 'on_trial',
-          lemonSqueezySubscriptionId: data.id,
-          lemonSqueezyCustomerId: subscription.customer_id,
-          subscriptionStatus: subscription.status,
-          subscriptionCreatedAt: subscription.created_at,
-          subscriptionUpdatedAt: subscription.updated_at,
-          subscriptionRenewsAt: subscription.renews_at,
-          updatedAt: new Date().toISOString()
-        };
-
-        await userRef.set(updateData, { merge: true });
-
-        console.log(`✅ Firebase updated for user ${userId || email}:`, {
-          isPaid: updateData.isPaid,
-          status: subscription.status,
-          subscriptionId: data.id
-        });
-
-        return res.json({ received: true });
-      } catch (error) {
-        console.error('❌ Firebase update error:', error);
-        return res.status(500).json({ error: 'Firebase update failed' });
-      }
-    }
-
-    if (cancelEvents.includes(event)) {
-      const subscription = data.attributes;
-      const userId = customData.user_id;
-      const email = customData.email || subscription.user_email || subscription.customer_email;
-
-      if (!userId && !email) {
-        console.warn('⚠️  No user_id or email in webhook data');
-        return res.json({ received: true });
-      }
-
-      try {
-        let userRef;
-        if (userId) {
-          userRef = db.collection('users').doc(userId);
-        } else {
-          const userRecord = await admin.auth().getUserByEmail(email);
-          userRef = db.collection('users').doc(userRecord.uid);
-        }
-
-        const isPaid = subscription.status === 'active' || subscription.status === 'on_trial' || subscription.status === 'cancelled';
-
-        await userRef.set({
-          isPaid,
-          userStatus: isPaid ? 'paid' : 'loggedIn',
-          subscriptionStatus: subscription.status || 'cancelled',
-          subscriptionCancelledAt: new Date().toISOString(),
-          subscriptionEndsAt: subscription.ends_at || null,
-          subscriptionRenewsAt: subscription.renews_at || null,
-          lemonSqueezySubscriptionId: data.id,
-          updatedAt: new Date().toISOString()
-        }, { merge: true });
-
-        console.log(`✅ Subscription cancelled for user ${userId || email}`);
-        return res.json({ received: true });
-      } catch (error) {
-        console.error('❌ Firebase update error:', error);
-        return res.status(500).json({ error: 'Firebase update failed' });
-      }
-    }
-
-    if (expiredEvents.includes(event)) {
-      const subscription = data.attributes;
-      const userId = customData.user_id;
-      const email = customData.email || subscription.user_email || subscription.customer_email;
-
-      if (!userId && !email) {
-        console.warn('⚠️  No user_id or email in webhook data');
-        return res.json({ received: true });
-      }
-
-      try {
-        let userRef;
-        if (userId) {
-          userRef = db.collection('users').doc(userId);
-        } else {
-          const userRecord = await admin.auth().getUserByEmail(email);
-          userRef = db.collection('users').doc(userRecord.uid);
-        }
-
-        await userRef.set({
-          isPaid: false,
-          userStatus: 'loggedIn',
-          subscriptionStatus: subscription.status || 'expired',
-          subscriptionExpiredAt: new Date().toISOString(),
-          subscriptionEndsAt: subscription.ends_at || null,
-          subscriptionRenewsAt: subscription.renews_at || null,
-          lemonSqueezySubscriptionId: data.id,
-          updatedAt: new Date().toISOString()
-        }, { merge: true });
-
-        console.log(`✅ Subscription expired for user ${userId || email}`);
-        return res.json({ received: true });
-      } catch (error) {
-        console.error('❌ Firebase update error:', error);
-        return res.status(500).json({ error: 'Firebase update failed' });
-      }
-    }
-
-    console.log(`ℹ️ Unhandled event: ${event}`);
-    return res.json({ received: true });
-  } catch (error) {
-    console.error('❌ Webhook error:', error);
-    return res.status(500).json({ error: error.message });
-  }
+app.post('/api/webhooks/lemon-squeezy', (req, res) => {
+  // TODO Phase 7: webhook -> PostgreSQL users.is_premium update
+  console.log('LemonSqueezy webhook received (no-op during migration)');
+  res.status(200).json({ received: true });
 });
 
 // Start server on port 5000

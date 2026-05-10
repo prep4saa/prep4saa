@@ -634,27 +634,13 @@ export async function deleteExpiredResults(_userId: string): Promise<number> {
  * PDF 파일을 Cloud Storage에 업로드
  */
 export async function uploadPDFToStorage(
-  userId: string,
-  pdfBlob: Blob,
-  sessionDate: string,
-  sessionTime: string
-): Promise<string> {
-  try {
-    const fileName = `${sessionDate.replace(/\//g, '-')}_${sessionTime.replace(/:/g, '-')}.pdf`;
-    const filePath = `users/${userId}/pdfs/${fileName}`;
-    const storageRef = ref(storage, filePath);
-
-    await uploadBytes(storageRef, pdfBlob);
-    return filePath;
-  } catch (error) {
-    // 에러 처리만 수행 (로깅 제거)
-    throw error;
-  }
+  ..._args: any[]
+): Promise<string | null> {
+  // TODO Phase 7: S3 로 변환 (Firebase Storage 제거)
+  return null;
 }
 
-/**
- * 시험 시작일을 Firebase에 저장
- */
+
 export async function saveExamStartDate(_userId: string, examDate: string): Promise<void> {
   // 임시: localStorage 만 사용 (Phase 7 에서 PostgreSQL users.exam_start_date 로 이전)
   if (typeof window !== "undefined") {
@@ -704,226 +690,38 @@ async function hashPassword(password: string): Promise<string> {
  * 게시글 작성
  */
 export async function createPost(
-  title: string,
-  content: string,
-  authorName: string,
-  authorId: string,
-  isPublic: boolean,
-  password?: string
-): Promise<string> {
-  try {
-    // 입력값 검증
-    if (!title.trim() || title.length > 100) {
-      throw new Error("제목은 1자 이상 100자 이하여야 합니다");
-    }
-    if (!content.trim() || content.length > 800) {
-      throw new Error("내용은 1자 이상 800자 이하여야 합니다");
-    }
-    if (!authorName.trim() || authorName.length > 50) {
-      throw new Error("작성자 이름은 1자 이상 50자 이하여야 합니다");
-    }
-
-    let passwordHash = "";
-    if (!isPublic && password) {
-      if (password.length < 4 || password.length > 20) {
-        throw new Error("비밀번호는 4자 이상 20자 이하여야 합니다");
-      }
-      passwordHash = await hashPassword(password);
-    }
-
-    const postsCollection = collection(db, "posts");
-    const docRef = await addDoc(postsCollection, {
-      title: title.trim(),
-      content: content.trim(),
-      authorName: authorName.trim(),
-      authorId,
-      isPublic,
-      passwordHash,
-      createdAt: new Date().toISOString(),
-      views: 0
-    });
-
-    return docRef.id;
-  } catch (error: any) {
-    throw new Error(`게시글 작성 실패: ${error.message}`);
-  }
+  ..._args: any[]
+): Promise<{ id: string }> {
+  // TODO Phase 7: PostgreSQL posts 테이블 변환
+  console.warn("createPost: not implemented (Firebase removed)");
+  return { id: "" };
 }
 
-/**
- * 게시글 목록 조회 (페이지네이션)
- */
+
 export async function getPosts(
-  page: number = 1,
-  pageSize: number = 20,
-  searchQuery: string = "",
-  filterAuthorId: string = "",
-  currentUserId: string = ""
-): Promise<{ posts: PostItem[]; totalCount: number }> {
-  try {
-    const postsCollection = collection(db, "posts");
-    const snapshot = await getDocs(postsCollection);
-
-    let allPosts = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    } as any));
-
-    // 필터링: 비공개 글은 작성자만 볼 수 있음
-    allPosts = allPosts.filter(p => {
-      if (p.isPublic) return true;
-      // 비공개 글: 현재 사용자만 볼 수 있음
-      return currentUserId === p.authorId;
-    });
-
-    // 필터링: 제목 검색
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      allPosts = allPosts.filter(p =>
-        p.title.toLowerCase().includes(query) ||
-        p.authorName.toLowerCase().includes(query)
-      );
-    }
-
-    // 필터링: 내가 쓴 글
-    if (filterAuthorId) {
-      allPosts = allPosts.filter(p => p.authorId === filterAuthorId);
-    }
-
-    // 최신순 정렬
-    allPosts.sort((a, b) =>
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-
-    const totalCount = allPosts.length;
-
-    // 페이지네이션
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    const paginatedPosts = allPosts.slice(start, end);
-
-    // 공개글은 content 표시, 비공개는 본인이나 관리자만 content 표시
-    const posts: PostItem[] = paginatedPosts.map(p => ({
-      id: p.id,
-      title: p.title,
-      content: p.content,
-      authorName: p.authorName,
-      authorId: p.authorId,
-      isPublic: p.isPublic,
-      hasPassword: p.passwordHash !== "",
-      createdAt: p.createdAt,
-      views: p.views || 0
-    }));
-
-    return { posts, totalCount };
-  } catch (error: any) {
-    return { posts: [], totalCount: 0 };
-  }
+  ..._args: any[]
+): Promise<any[]> {
+  // TODO Phase 7: PostgreSQL posts 테이블 변환
+  return [];
 }
 
-/**
- * 게시글 상세 조회 (비공개 글은 관리자 또는 작성자만 조회 가능)
- */
-export async function getPostById(postId: string, currentUserId: string = ""): Promise<PostItem | null> {
-  try {
-    const postRef = doc(db, "posts", postId);
-    const postDoc = await getDoc(postRef);
 
-    if (!postDoc.exists()) {
-      return null;
-    }
-
-    const data = postDoc.data();
-
-    // 비공개 글 권한 검사: 작성자만 조회 가능
-    if (!data.isPublic && currentUserId !== data.authorId) {
-      throw new Error("접근 권한이 없습니다");
-    }
-
-    // 조회수 증가
-    await updateDoc(postRef, {
-      views: (data.views || 0) + 1
-    });
-
-    return {
-      id: postDoc.id,
-      title: data.title,
-      content: data.content,
-      authorName: data.authorName,
-      authorId: data.authorId,
-      isPublic: data.isPublic,
-      hasPassword: data.passwordHash !== "",
-      createdAt: data.createdAt,
-      views: (data.views || 0) + 1
-    };
-  } catch (error: any) {
-    throw new Error(error.message || "게시글을 불러올 수 없습니다");
-  }
+export async function getPostById(
+  ..._args: any[]
+): Promise<any | null> {
+  // TODO Phase 7
+  return null;
 }
 
-/**
- * 게시글 삭제
- */
+
 export async function deletePost(
-  postId: string,
-  authorId: string
-): Promise<void> {
-  try {
-    const postRef = doc(db, "posts", postId);
-    const postDoc = await getDoc(postRef);
-
-    if (!postDoc.exists()) {
-      throw new Error("게시글을 찾을 수 없습니다");
-    }
-
-    const data = postDoc.data();
-
-    // 작성자만 삭제 가능
-    if (data.authorId !== authorId) {
-      throw new Error("본인이 작성한 글만 삭제할 수 있습니다");
-    }
-
-    await deleteDoc(postRef);
-  } catch (error: any) {
-    throw new Error(error.message || "게시글 삭제에 실패했습니다");
-  }
+  ..._args: any[]
+): Promise<{ success: boolean }> {
+  // TODO Phase 7
+  return { success: false };
 }
 
-// ===== 모의시험 문제 공유 함수 =====
 
-/**
- * 🚫 "7년" 자동 치환 (캐시된 문제도 정화)
- * 매 호출마다 다른 값으로 랜덤 치환
- */
-function sanitizeRetention<T>(obj: T): T {
-  const ko = ['1년', '2년', '5년', '10년', '6개월', '90일'];
-  const en = ['1 year', '2 years', '5 years', '10 years', '6 months', '90 days'];
-  const ja = ['1年', '2年', '5年', '10年', '6ヶ月', '90日'];
-  const pickKo = () => ko[Math.floor(Math.random() * ko.length)];
-  const pickEn = () => en[Math.floor(Math.random() * en.length)];
-  const pickJa = () => ja[Math.floor(Math.random() * ja.length)];
-  const sanitize = (s: string) =>
-    s
-      .replace(/7\s*년/g, pickKo)
-      .replace(/\b7[\s-]?years?\b/gi, pickEn)
-      .replace(/seven\s+years?/gi, pickEn)
-      .replace(/7\s*年/g, pickJa);
-  const walk = (v: any): any => {
-    if (typeof v === 'string') return sanitize(v);
-    if (Array.isArray(v)) return v.map(walk);
-    if (v && typeof v === 'object') {
-      const out: any = {};
-      for (const k of Object.keys(v)) out[k] = walk(v[k]);
-      return out;
-    }
-    return v;
-  };
-  return walk(obj);
-}
-
-/**
- * 오늘의 모의시험 문제 조회 (없으면 null)
- * 언어별로 따로 저장되어 있으므로 같은 언어의 사용자끼리 공유
- */
 export async function getTodayMockExamProblems(locale: string = "ko"): Promise<Problem[] | null> {
   try {
     const userEmail = auth.currentUser?.email;
@@ -1038,51 +836,13 @@ export async function canGenerateProblemToday(
  * 클라이언트에서 수정 불가능
  */
 export async function recordProblemGeneration(userId: string, problem?: Problem): Promise<void> {
+  // 통합된 backend endpoint 사용 (PostgreSQL + DynamoDB API Gateway)
   try {
     if (!userId) return;
-
-    const today = new Date().toISOString().split("T")[0];
-    const dailyStatsRef = doc(db, "users", userId, "dailyStats", today);
-    const dailyStats = await getDoc(dailyStatsRef);
-
-    if (dailyStats.exists()) {
-      // 기존 기록 업데이트
-      const newCount = (dailyStats.data()?.problemCount || 0) + 1;
-      await updateDoc(dailyStatsRef, {
-        problemCount: newCount,
-        lastGeneratedAt: new Date().toISOString()
-      });
-    } else {
-      // 새 기록 생성
-      await setDoc(dailyStatsRef, {
-        date: today,
-        problemCount: 1,
-        createdAt: new Date().toISOString(),
-        lastGeneratedAt: new Date().toISOString()
-      });
-    }
-
-    // 문제를 quizResults에 저장 (현황 탭 PDF 다운로드용)
-    if (problem) {
-      const timestamp = Date.now();
-      const sessionId = `${today}_session`;
-      const quizResultRef = doc(db, "users", userId, "quizResults", `${timestamp}_${Math.random()}`);
-
-      await setDoc(quizResultRef, {
-        sessionId: sessionId,
-        timestamp: timestamp,
-        date: today,
-        difficulty: "medium", // 기본값
-        fullProblem: problem,
-        userAnswer: null,
-        isCorrect: null,
-        timeSpent: 0,
-        expiresAt: new Date().getTime() + 24 * 60 * 60 * 1000 // 1일(24시간) 뒤 삭제
-      });
-    }
-
+    const { api } = await import("./auth/apiClient");
+    await api.post("/api/recordProblemGeneration", { userId, problem });
   } catch (error: any) {
-    console.error(`❌ Error recording problem generation:`, error?.message || error);
+    console.error("recordProblemGeneration error:", error?.message);
   }
 }
 
@@ -1092,30 +852,17 @@ export async function recordProblemGeneration(userId: string, problem?: Problem)
  * 유저가 오늘 모의시험을 봤는지 Firebase에서 확인 (UTC 기준)
  * localStorage 대신 Firestore를 source of truth로 사용
  */
-export async function getUserMockExamDate(userId: string): Promise<string | null> {
-  try {
-    if (!userId) return null;
-    const userRef = doc(db, "users", userId);
-    const userDoc = await getDoc(userRef);
-    if (!userDoc.exists()) return null;
-    return userDoc.data()?.lastMockExamDate ?? null;
-  } catch {
-    return null;
-  }
+export async function getUserMockExamDate(_userId: string): Promise<string | null> {
+  // PostgreSQL mock_exams 의 exam_date 가 곧 마지막 모의시험 날짜
+  // 임시 localStorage 사용 (Phase 7 에서 backend API 추가)
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("lastMockExamDate");
 }
 
-/**
- * 유저의 모의시험 날짜를 Firebase에 저장 (UTC 기준 오늘 날짜)
- */
-export async function recordMockExamDate(userId: string): Promise<void> {
-  try {
-    if (!userId) return;
-    const today = new Date().toISOString().split("T")[0];
-    const userRef = doc(db, "users", userId);
-    await setDoc(userRef, { lastMockExamDate: today }, { merge: true });
-  } catch (error: any) {
-    // Error saving mock exam date
-  }
+export async function recordMockExamDate(_userId: string): Promise<void> {
+  if (typeof window === "undefined") return;
+  const today = new Date().toISOString().split("T")[0];
+  localStorage.setItem("lastMockExamDate", today);
 }
 
 // ═══════════════════════════════════════════════════════════
