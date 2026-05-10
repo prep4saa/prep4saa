@@ -905,18 +905,26 @@ const PAST_EXAM_MAX = 800;
  *    → order는 항상 1~800 범위 내 유지, 페이지네이션 일관성 보장
  */
 export async function uploadCurrentMockExamToPastExams(
-  locale: string,
-  problems: any[]
-): Promise<{ uploaded: number }> {
-  try {
-    const { api } = await import("./auth/apiClient");
-    const res = await api.post("/api/uploadPastExams", { locale, problems });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
-  } catch (error: any) {
-    console.error("uploadCurrentMockExamToPastExams error:", error?.message);
-    return { uploaded: 0 };
+  locale: string
+): Promise<{ added: number; skipped: number; deleted: number; totalCount: number }> {
+  // backend 가 PostgreSQL mock_exams 에서 오늘 문제 읽고 past_exams 에 INSERT
+  // - userId 는 Cognito 또는 Firebase 어느 쪽이든 (backend 가 자동 매핑)
+  const { getCurrentUserEmail } = await import("./auth/cognito");
+  let userEmail: string | null = await getCurrentUserEmail();
+  if (!userEmail && auth.currentUser) {
+    userEmail = auth.currentUser.email;
   }
+  if (!userEmail) {
+    throw new Error("Not logged in");
+  }
+
+  const { api } = await import("./auth/apiClient");
+  const res = await api.post("/api/uploadMockToPastExams", { userId: userEmail, locale });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `HTTP ${res.status}`);
+  }
+  return await res.json();
 }
 
 

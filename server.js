@@ -1133,8 +1133,102 @@ app.post('/api/migrate-firebase-to-pg', async (req, res) => {
   }
 });
 
-// 기출문제 일괄 업로드 (admin 전용)
-// - 모의시험 → 기출문제 이전 시 호출
+// 오늘의 모의시험 → 기출문제로 일괄 업로드 (admin 전용)
+// - PostgreSQL mock_exams 에서 오늘 problems 읽음
+// - past_exams 와 question 텍스트로 중복 비교
+// - 새 문제만 INSERT
+// - 응답: { added, skipped, deleted, totalCount }
+app.post('/api/uploadMockToPastExams', async (req, res) => {
+  if (USE_COGNITO_AUTH) {
+    return requireAuth(req, res, () => requireAdmin(req, res, () => uploadMockToPastHandler(req, res)));
+  }
+  return uploadMockToPastHandler(req, res);
+});
+
+async function uploadMockToPastHandler(req, res) {
+  try {
+    const { userId, locale = 'ko' } = req.body;
+    if (!userId) return res.status(400).json({ error: { message: 'userId required' } });
+
+    // 1. user 조회
+    const userRow = await pgQuery(
+      `SELECT id FROM users WHERE email = $1 OR cognito_sub = $1 LIMIT 1`,
+      [userId]
+    );
+    if (!userRow.rows[0]) return res.status(404).json({ error: { message: 'User not found' } });
+    const internalUserId = userRow.rows[0].id;
+
+    // 2. 오늘의 모의시험 problems 읽기
+    const mockResult = await pgQuery(
+      `SELECT problems FROM mock_exams
+       WHERE user_id = $1 AND locale = $2 AND exam_date = CURRENT_DATE`,
+      [internalUserId, locale]
+    );
+    if (!mockResult.rows[0]) {
+      return res.status(404).json({ error: { message: 'No mock exam for today' } });
+    }
+    const problems = mockResult.rows[0].problems || [];
+    if (problems.length === 0) {
+      return res.json({ added: 0, skipped: 0, deleted: 0, totalCount: 0 });
+    }
+
+    // 3. 기존 past_exams 의 question 추출 (중복 체크)
+    const existingResult = await pgQuery(
+      `SELECT problem_data->>'question' AS question FROM past_exams WHERE locale = $1`,
+      [locale]
+    );
+    const existingQuestions = new Set(existingResult.rows.map(r => r.question));
+
+    // 4. 다음 order_num
+    const maxResult = await pgQuery(
+      `SELECT COALESCE(MAX(order_num), 0) AS max_order FROM past_exams WHERE locale = $1`,
+      [locale]
+    );
+    let nextOrder = parseInt(maxResult.rows[0].max_order) + 1;
+
+    // 5. 트랜잭션으로 새 문제만 INSERT
+    const pool = require('./lib/db').getPool();
+    const client = await pool.connect();
+    let added = 0;
+    let skipped = 0;
+    try {
+      await client.query('BEGIN');
+      for (const problem of problems) {
+        const q = problem?.question || '';
+        if (existingQuestions.has(q)) {
+          skipped++;
+          continue;
+        }
+        await client.query(
+          `INSERT INTO past_exams (locale, order_num, problem_data) VALUES ($1, $2, $3)`,
+          [locale, nextOrder++, problem]
+        );
+        added++;
+      }
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+
+    // 6. 총 개수
+    const totalResult = await pgQuery(
+      `SELECT COUNT(*) AS total FROM past_exams WHERE locale = $1`,
+      [locale]
+    );
+    const totalCount = parseInt(totalResult.rows[0].total);
+
+    console.log(`[uploadMockToPastExams] ${locale}: added=${added}, skipped=${skipped}, total=${totalCount}`);
+    return res.json({ added, skipped, deleted: 0, totalCount });
+  } catch (error) {
+    console.error('uploadMockToPastExams error:', error);
+    return res.status(500).json({ error: { message: error.message } });
+  }
+}
+
+// 기출문제 일괄 업로드 (admin 전용 - 임의 problems 배열)
 app.post('/api/uploadPastExams', async (req, res) => {
   // admin 인증 확인 (legacy or Cognito)
   if (USE_COGNITO_AUTH) {
