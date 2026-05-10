@@ -14,6 +14,7 @@ import ExamDateModal from "./components/Modals/ExamDateModal";
 import EmailVerificationModal from "./components/Modals/EmailVerificationModal";
 import QuotaModal from "./components/Modals/QuotaModal";
 import PostFormModal from "./components/Modals/PostFormModal";
+import { CognitoTestPage } from "./components/CognitoTestPage";
 import { CAT, CONCEPTS_KO, LINKS, NODES } from "./data";
 import { CONCEPTS_EN } from "./CONCEPTS_EN";
 import { CONCEPTS_JA } from "./concepts_ja";
@@ -365,6 +366,13 @@ function GraphSVG({ pos, setPos, posRef: _posRef, dragRef, pan, setPan, zoom, se
 }
 
 function App() {
+  // === Cognito 테스트 페이지 분기 (개발용) ===
+  // URL hash 가 #cognito-test 이면 테스트 페이지만 보여줌
+  // 기존 앱에 영향 없음 (조건부 early return)
+  if (typeof window !== "undefined" && window.location.hash === "#cognito-test") {
+    return <CognitoTestPage />;
+  }
+
   const { locale, setLocale, t } = useLocale();
   const { theme } = useTheme();
   // Fixed node positions for instant page load and immediate footer interactivity

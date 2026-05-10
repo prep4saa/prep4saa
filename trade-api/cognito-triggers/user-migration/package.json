@@ -1,0 +1,7 @@
+{
+  "name": "cognito-user-migration",
+  "version": "1.0.0",
+  "description": "Cognito UserMigration trigger - validates Firebase password and migrates user",
+  "main": "index.js",
+  "private": true
+}
