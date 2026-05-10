@@ -1,0 +1,381 @@
+// Cognito 회원가입 모달
+// -----------------------------------------------------------------
+// 디자인은 기존 renderLoginModal 의 톤 그대로 유지 (#0F1629, FF9900)
+// 3단계 흐름:
+//   1) signup: email + password → Cognito SignUp → 코드 발송
+//   2) confirm: 6자리 코드 입력 → confirmSignUp → 자동 로그인
+//   3) success: onSuccess(email) callback 호출 → 부모가 state 업데이트
+
+import React, { useState } from "react";
+import { signUp, confirmSignUp, signIn, resendConfirmationCode } from "../../auth/cognito";
+
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: (email: string) => void;
+}
+
+type Step = "signup" | "confirm";
+
+export function CognitoSignupModal({ isOpen, onClose, onSuccess }: Props) {
+  const [step, setStep] = useState<Step>("signup");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+
+  if (!isOpen) return null;
+
+  const reset = () => {
+    setStep("signup");
+    setEmail("");
+    setPassword("");
+    setPasswordConfirm("");
+    setCode("");
+    setError(null);
+    setInfo(null);
+    setLoading(false);
+  };
+
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setInfo(null);
+
+    if (!email || !password || !passwordConfirm) {
+      setError("이메일, 비밀번호, 비밀번호 확인을 모두 입력하세요.");
+      return;
+    }
+    if (password !== passwordConfirm) {
+      setError("비밀번호가 일치하지 않습니다. 다시 확인하세요.");
+      return;
+    }
+    if (password.length < 12) {
+      setError("비밀번호는 12자 이상이어야 합니다 (대/소문자, 숫자, 특수문자 포함).");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await signUp(email, password);
+      setInfo(`✅ ${email} 로 6자리 인증 코드가 발송되었습니다.`);
+      setStep("confirm");
+    } catch (err: unknown) {
+      const e = err as Error;
+      setError(`❌ ${e.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setInfo(null);
+
+    if (!code) {
+      setError("인증 코드를 입력하세요.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await confirmSignUp(email, code);
+      // 자동 로그인까지
+      await signIn(email, password);
+      onSuccess(email);
+      reset();
+    } catch (err: unknown) {
+      const e = err as Error;
+      setError(`❌ ${e.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setError(null);
+    try {
+      await resendConfirmationCode(email);
+      setInfo(`📧 코드가 ${email} 로 재발송됐습니다.`);
+    } catch (err: unknown) {
+      const e = err as Error;
+      setError(`❌ ${e.message}`);
+    }
+  };
+
+  return (
+    <div
+      className="cognito-modal-overlay"
+      style={{
+        position: "fixed",
+        top: "5rem",
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: "rgba(0,0,0,0.7)",
+        display: "flex",
+        alignItems: "flex-start",
+        justifyContent: "center",
+        zIndex: 1001,
+        padding: "16px",
+        overflowY: "auto",
+      }}
+    >
+      <style>{`
+        @media(max-width:480px){
+          .cognito-modal-overlay{top:4rem!important;}
+          .cognito-modal-box{padding:24px 20px!important;max-height:calc(100vh - 4rem - 32px);overflow-y:auto;}
+        }
+      `}</style>
+      <div
+        className="cognito-modal-box"
+        style={{
+          background: "#0F1629",
+          border: "1px solid rgba(255,255,255,0.1)",
+          borderRadius: "16px",
+          padding: "48px 40px",
+          maxWidth: "500px",
+          width: "100%",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+        }}
+      >
+        <h2
+          style={{
+            color: "#fff",
+            marginBottom: "12px",
+            fontSize: "24px",
+            fontWeight: "bold",
+            textAlign: "center",
+          }}
+        >
+          {step === "signup" ? "🔐 회원가입" : "✉️ 이메일 인증"}
+        </h2>
+        <p
+          style={{
+            color: "#D1D5DB",
+            fontSize: "13px",
+            textAlign: "center",
+            marginBottom: "24px",
+          }}
+        >
+          {step === "signup"
+            ? "이메일과 비밀번호로 가입하세요 (AWS Cognito)"
+            : `${email} 로 받은 6자리 코드를 입력하세요`}
+        </p>
+
+        {error && (
+          <div
+            style={{
+              background: "rgba(220,38,38,0.15)",
+              border: "1px solid rgba(220,38,38,0.4)",
+              color: "#fca5a5",
+              padding: "12px",
+              borderRadius: "8px",
+              fontSize: "13px",
+              marginBottom: "16px",
+              whiteSpace: "pre-line",
+            }}
+          >
+            {error}
+          </div>
+        )}
+        {info && (
+          <div
+            style={{
+              background: "rgba(34,197,94,0.15)",
+              border: "1px solid rgba(34,197,94,0.4)",
+              color: "#86efac",
+              padding: "12px",
+              borderRadius: "8px",
+              fontSize: "13px",
+              marginBottom: "16px",
+            }}
+          >
+            {info}
+          </div>
+        )}
+
+        {step === "signup" ? (
+          <form onSubmit={handleSignUp}>
+            <input
+              type="email"
+              placeholder="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              style={{
+                width: "100%",
+                padding: "12px",
+                marginBottom: "12px",
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "8px",
+                color: "#fff",
+                fontSize: "14px",
+                boxSizing: "border-box",
+              }}
+            />
+            <input
+              type="password"
+              placeholder="비밀번호 (12자 이상, 대/소/숫자/특수)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              style={{
+                width: "100%",
+                padding: "12px",
+                marginBottom: "8px",
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "8px",
+                color: "#fff",
+                fontSize: "14px",
+                boxSizing: "border-box",
+              }}
+            />
+            <input
+              type="password"
+              placeholder="비밀번호 확인"
+              value={passwordConfirm}
+              onChange={(e) => setPasswordConfirm(e.target.value)}
+              required
+              style={{
+                width: "100%",
+                padding: "12px",
+                marginBottom: "16px",
+                background: "rgba(255,255,255,0.05)",
+                border:
+                  passwordConfirm.length > 0 && passwordConfirm !== password
+                    ? "1px solid rgba(220,38,38,0.5)"
+                    : "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "8px",
+                color: "#fff",
+                fontSize: "14px",
+                boxSizing: "border-box",
+              }}
+            />
+            {passwordConfirm.length > 0 && passwordConfirm !== password && (
+              <div
+                style={{
+                  color: "#fca5a5",
+                  fontSize: "12px",
+                  marginTop: "-12px",
+                  marginBottom: "12px",
+                }}
+              >
+                ⚠️ 비밀번호가 일치하지 않습니다.
+              </div>
+            )}
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: "100%",
+                padding: "12px",
+                background: "#FF9900",
+                color: "#0F1629",
+                border: "none",
+                borderRadius: "8px",
+                cursor: loading ? "not-allowed" : "pointer",
+                fontSize: "14px",
+                fontWeight: "bold",
+                opacity: loading ? 0.6 : 1,
+                marginBottom: "12px",
+              }}
+            >
+              {loading ? "처리 중..." : "회원가입"}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleConfirm}>
+            <input
+              type="text"
+              placeholder="6자리 인증 코드"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              required
+              maxLength={6}
+              style={{
+                width: "100%",
+                padding: "12px",
+                marginBottom: "12px",
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "8px",
+                color: "#fff",
+                fontSize: "20px",
+                textAlign: "center",
+                letterSpacing: "8px",
+                boxSizing: "border-box",
+              }}
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: "100%",
+                padding: "12px",
+                background: "#FF9900",
+                color: "#0F1629",
+                border: "none",
+                borderRadius: "8px",
+                cursor: loading ? "not-allowed" : "pointer",
+                fontSize: "14px",
+                fontWeight: "bold",
+                opacity: loading ? 0.6 : 1,
+                marginBottom: "8px",
+              }}
+            >
+              {loading ? "확인 중..." : "인증 + 로그인"}
+            </button>
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={loading}
+              style={{
+                width: "100%",
+                padding: "10px",
+                background: "transparent",
+                color: "#D1D5DB",
+                border: "1px solid rgba(255,255,255,0.2)",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontSize: "13px",
+                marginBottom: "12px",
+              }}
+            >
+              코드 재발송
+            </button>
+          </form>
+        )}
+
+        <button
+          type="button"
+          onClick={handleClose}
+          style={{
+            width: "100%",
+            padding: "12px",
+            background: "transparent",
+            color: "#D1D5DB",
+            border: "1px solid rgba(255,255,255,0.2)",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontSize: "13px",
+            marginTop: "8px",
+          }}
+        >
+          취소
+        </button>
+      </div>
+    </div>
+  );
+}

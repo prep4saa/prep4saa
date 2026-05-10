@@ -50,8 +50,22 @@ if (serviceAccount) {
   });
   db = admin.firestore();
 } else {
-  console.warn('⚠️ Firebase 자격증명 없음 - Firestore 사용 API 들은 비활성화됨');
+  console.warn('⚠️ Firebase 자격증명 없음 - 결제(LemonSqueezy) endpoint 503 반환');
 }
+
+// Firestore 가 필요한 라우트 가드
+// - Phase 7 에서 결제 endpoint 들도 PostgreSQL 로 변환 예정
+const requireFirestore = (req, res, next) => {
+  if (!db) {
+    return res.status(503).json({
+      error: {
+        message: 'Payment endpoints are being migrated to PostgreSQL. Temporarily unavailable.',
+        migration_status: 'in_progress',
+      },
+    });
+  }
+  next();
+};
 
 const app = express();
 const PORT = 5000;
@@ -597,58 +611,79 @@ app.use('/api/admin/', async (req, res, next) => {
 });
 
 // Admin ?듦퀎 議고쉶 (愿由ъ옄 ?요청슜)
-app.post('/api/admin/stats', (req, res) => {
+// Admin: 전체 통계 (PostgreSQL)
+app.post('/api/admin/stats', async (req, res) => {
   try {
-    const { email } = req.body;
-    // 誘몃뱾?⑥뼱에꽌 이? 寃利앸맖
-
-    // 푸뒪?몄슜 응떟 (설젣濡백뒗 Firebase getAdminStats() ?몄텧)
+    const result = await pgQuery(
+      `SELECT
+         COUNT(*) AS total_users,
+         COUNT(CASE WHEN is_premium THEN 1 END) AS paid_users,
+         COUNT(CASE WHEN NOT is_premium THEN 1 END) AS free_users,
+         COUNT(CASE WHEN role = 'admin' THEN 1 END) AS admin_users
+       FROM users`
+    );
+    const r = result.rows[0] || {};
     res.json({
-      totalUsers: 0,
-      paidUsers: 0,
-      freeUsers: 0,
-      timestamp: new Date().toISOString()
+      totalUsers: parseInt(r.total_users || 0),
+      paidUsers: parseInt(r.paid_users || 0),
+      freeUsers: parseInt(r.free_users || 0),
+      adminUsers: parseInt(r.admin_users || 0),
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
+    console.error('admin/stats error:', error);
     res.status(500).json({ error: { message: error.message } });
   }
 });
 
-// Admin - 紐⑤뱺 사슜//紐⑸줉 議고쉶 (愿由ъ옄 ?요청슜)
-app.post('/api/admin/users', (req, res) => {
+// Admin: 모든 사용자 목록 (PostgreSQL)
+app.post('/api/admin/users', async (req, res) => {
   try {
-    const { email } = req.body;
-    // 誘몃뱾?⑥뼱에꽌 이? 寃利앸맖
-
-    // 푸뒪?몄슜 응떟 (설젣濡백뒗 Firebase getAllUsersForAdmin() ?몄텧)
-    res.json({
-      users: [],
-      timestamp: new Date().toISOString()
-    });
+    const result = await pgQuery(
+      `SELECT id, cognito_sub, email, display_name, role, is_premium,
+              premium_until, exam_start_date, streak,
+              created_at, last_login_at
+       FROM users
+       ORDER BY created_at DESC
+       LIMIT 1000`
+    );
+    res.json({ users: result.rows, timestamp: new Date().toISOString() });
   } catch (error) {
+    console.error('admin/users error:', error);
     res.status(500).json({ error: { message: error.message } });
   }
 });
 
-// Admin - ?뱀젙 사슜에쓽 臾몄젣 ?몄뀡 議고쉶 (愿由ъ옄 ?요청슜)
-app.post('/api/admin/user/sessions', (req, res) => {
+// Admin: 특정 사용자의 문제 풀이 세션 (PostgreSQL)
+app.post('/api/admin/user/sessions', async (req, res) => {
   try {
-    const { email, userId } = req.body;
-    // 誘몃뱾?⑥뼱에꽌 이? 寃利앸맖
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ error: { message: 'userId is required' } });
 
-    if (!userId) {
-      return res.status(400).json({ error: { message: 'userId is required' } });
-    }
+    const userRow = await pgQuery(
+      `SELECT id FROM users WHERE email = $1 OR cognito_sub = $1 LIMIT 1`,
+      [String(userId)]
+    );
+    if (!userRow.rows[0]) return res.json({ sessions: [], timestamp: new Date().toISOString() });
+    const internalUserId = userRow.rows[0].id;
 
-    // 푸뒪?몄슜 응떟 (설젣濡백뒗 Firebase getUserProblemSessions() ?몄텧)
-    res.json({
-      sessions: [],
-      timestamp: new Date().toISOString()
-    });
+    const result = await pgQuery(
+      `SELECT session_id, full_problem, difficulty, is_correct,
+              user_answer, created_at,
+              EXTRACT(EPOCH FROM created_at)*1000 AS timestamp_ms
+       FROM quiz_results
+       WHERE user_id = $1
+       ORDER BY created_at DESC
+       LIMIT 500`,
+      [internalUserId]
+    );
+    res.json({ sessions: result.rows, timestamp: new Date().toISOString() });
   } catch (error) {
+    console.error('admin/user/sessions error:', error);
     res.status(500).json({ error: { message: error.message } });
   }
 });
+
 
 // Admin Console: 백쾭 紐낅졊//실뻾 (admin ?요청슜)
 app.post('/api/admin/console', (req, res) => {
@@ -706,24 +741,40 @@ app.post('/api/recordProblemGeneration', async (req, res) => {
 
     console.log(`✅ Problem recorded: ${countData.count}/${countData.limit} today (userId: ${userId})`);
 
-    // 문제를 quizResults에 저장
+    // 문제를 PostgreSQL quiz_results 에 저장
+    // - userId 는 email 또는 cognito_sub
+    // - users 테이블 lookup 후 internal id 사용
     if (problem) {
-      const timestamp = Date.now();
+      const today = new Date().toISOString().split('T')[0];
       const sessionId = `${today}_session`;
-      const quizResultRef = db.collection('users').doc(userId).collection('quizResults').doc(`${timestamp}_${Math.random().toString(36).substr(2, 9)}`);
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h TTL
 
-      await quizResultRef.set({
-        sessionId: sessionId,
-        timestamp: timestamp,
-        date: today,
-        difficulty: 'medium',
-        fullProblem: problem,
-        userAnswer: null,
-        isCorrect: null,
-        timeSpent: 0,
-        expiresAt: new Date().getTime() + 24 * 60 * 60 * 1000  // 1일(24시간) 뒤 삭제
-      });
-      console.log(`✅ Problem saved to quizResults (userId: ${userId})`);
+      // userId 가 email 인지 cognito_sub 인지 자동 판별
+      const userRow = await pgQuery(
+        `SELECT id FROM users WHERE email = $1 OR cognito_sub = $1 LIMIT 1`,
+        [userId]
+      );
+      if (!userRow.rows[0]) {
+        console.warn(`User not found in DB: ${userId}`);
+        return res.json({ success: true, message: 'Recorded (user not synced yet)' });
+      }
+      const internalUserId = userRow.rows[0].id;
+
+      await pgQuery(
+        `INSERT INTO quiz_results
+           (user_id, session_id, question_id, difficulty, full_problem, time_spent_seconds, expires_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          internalUserId,
+          sessionId,
+          problem?.id || `gen-${Date.now()}`,
+          problem?.difficulty || 'medium',
+          problem,  // JSONB
+          0,
+          expiresAt,
+        ]
+      );
+      console.log(`✅ Problem saved to PostgreSQL quiz_results (userId: ${userId})`);
     }
 
     return res.json({ success: true, message: 'Problem generation recorded' });
@@ -766,103 +817,63 @@ app.post('/api/getProblemCountToday', async (req, res) => {
   }
 });
 
-// 사용자의 문제 세션 조회 (PDF 다운로드용)
+// 사용자의 문제 세션 조회 (PDF 다운로드용) - PostgreSQL
 app.post('/api/getUserProblemSessions', async (req, res) => {
   try {
     const { userId } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
 
-    if (!userId) {
-      return res.status(400).json({ error: 'userId is required' });
+    // user 조회 (email 또는 cognito_sub)
+    const userRow = await pgQuery(
+      `SELECT id FROM users WHERE email = $1 OR cognito_sub = $1 LIMIT 1`,
+      [userId]
+    );
+    if (!userRow.rows[0]) return res.json([]);
+    const internalUserId = userRow.rows[0].id;
+
+    // 만료 안 된 quiz_results 조회 (session_id 별 그룹)
+    const result = await pgQuery(
+      `SELECT session_id, full_problem, difficulty, created_at,
+              EXTRACT(EPOCH FROM created_at)*1000 AS timestamp_ms
+       FROM quiz_results
+       WHERE user_id = $1
+         AND (expires_at IS NULL OR expires_at > NOW())
+       ORDER BY created_at DESC`,
+      [internalUserId]
+    );
+
+    // session_id 별로 그룹화
+    const sessionMap = new Map();
+    for (const row of result.rows) {
+      if (!sessionMap.has(row.session_id)) {
+        sessionMap.set(row.session_id, []);
+      }
+      sessionMap.get(row.session_id).push(row);
     }
 
-    const resultsRef = db.collection('users').doc(userId).collection('quizResults');
-    const snapshot = await resultsRef.get();
-
-    const now = new Date().getTime();
-
-    // sessionId별로 그룹화
-    const sessionMap = new Map();
-
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-
-      // 만료되지 않은 항목만 포함
-      if (data.expiresAt && data.expiresAt < now) {
-        return;
-      }
-
-      const sessionId = data.sessionId;
-      if (!sessionMap.has(sessionId)) {
-        sessionMap.set(sessionId, []);
-      }
-      sessionMap.get(sessionId).push({
-        ...data,
-        docId: doc.id
-      });
-    });
-
-    // 날짜/시간별로 포맷
-    const sessions = Array.from(sessionMap.entries()).map(([sessionId, problems]) => {
-      const timestamp = problems[0].timestamp;
-      const date = new Date(timestamp);
+    // 세션별 포맷
+    const sessions = Array.from(sessionMap.entries()).map(([sessionId, rows]) => {
+      const first = rows[0];
+      const date = new Date(first.created_at);
       const dateStr = date.toLocaleDateString('ko-KR');
       const timeStr = date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-
-      // fullProblem이 없으면 개별 필드들로부터 문제 객체 재구성
-      const reconstructedProblems = problems.map(p => {
-        if (p.fullProblem) {
-          return p.fullProblem;
-        }
-
-        // fullProblem이 없으면 저장된 필드들로부터 재구성
-        return {
-          question: p.question || '',
-          options: {
-            A: p.optionA || '',
-            B: p.optionB || '',
-            C: p.optionC || '',
-            D: p.optionD || ''
-          },
-          answer: p.correctAnswer || '',
-          keywords: p.keywords || [],
-          goal: p.goal || '',
-          explanation: {
-            correct: p.explanationCorrect || '',
-            trap_A: p.explanationTrapA || '',
-            trap_B: p.explanationTrapB || '',
-            trap_C: p.explanationTrapC || '',
-            trap_D: p.explanationTrapD || ''
-          },
-          easyMode: {
-            explanation: p.easyModeExplanation || '',
-            A: p.easyModeA || '',
-            B: p.easyModeB || '',
-            C: p.easyModeC || '',
-            D: p.easyModeD || ''
-          },
-          patterns: p.patterns || []
-        };
-      });
-
       return {
         date: dateStr,
         time: timeStr,
-        problemCount: problems.length,
-        difficulty: problems[0].difficulty,
-        problems: reconstructedProblems,
-        sessionTimestamp: timestamp
+        problemCount: rows.length,
+        difficulty: first.difficulty,
+        problems: rows.map(r => r.full_problem),
+        sessionTimestamp: Number(first.timestamp_ms),
       };
     });
 
-    // 최신순 정렬
-    const sortedSessions = sessions.sort((a, b) => b.sessionTimestamp - a.sessionTimestamp);
+    sessions.sort((a, b) => b.sessionTimestamp - a.sessionTimestamp);
 
-    console.log(`✅ Retrieved ${sortedSessions.length} problem sessions for user ${userId}`);
-
-    return res.json(sortedSessions);
+    console.log(`✅ Retrieved ${sessions.length} problem sessions for user ${userId}`);
+    return res.json(sessions);
   } catch (error) {
     console.error('❌ Error getting problem sessions:', error);
-    return res.status(500).json({ error: error.message || 'Failed to get problem sessions' });
+    return res.status(500).json({ error: error.message || 'Failed' });
   }
 });
 
@@ -870,232 +881,116 @@ app.post('/api/getUserProblemSessions', async (req, res) => {
 app.post('/api/getQuizStats', async (req, res) => {
   try {
     const { userId } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
 
-    if (!userId) {
-      return res.status(400).json({ error: 'userId is required' });
+    const userRow = await pgQuery(
+      `SELECT id FROM users WHERE email = $1 OR cognito_sub = $1 LIMIT 1`,
+      [userId]
+    );
+    if (!userRow.rows[0]) {
+      return res.json({ totalAttempts: 0, correctCount: 0, accuracy: 0, byService: {} });
     }
+    const internalUserId = userRow.rows[0].id;
 
-    const resultsRef = db.collection('users').doc(userId).collection('quizResults');
-    const snapshot = await resultsRef.get();
+    // 만료 안 된 quiz_results
+    const result = await pgQuery(
+      `SELECT is_correct, full_problem
+       FROM quiz_results
+       WHERE user_id = $1
+         AND (expires_at IS NULL OR expires_at > NOW())`,
+      [internalUserId]
+    );
 
     let totalAttempts = 0;
     let correctCount = 0;
     const byService = {};
 
-    const now = new Date().getTime();
-
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-
-      // 만료되지 않은 항목만 포함
-      if (data.expiresAt && data.expiresAt < now) {
-        return;
-      }
-
+    for (const row of result.rows) {
       totalAttempts++;
+      if (row.is_correct === true) correctCount++;
 
-      // 정답인 경우만 카운트
-      const isCorrect = data.isCorrect === true;
-      if (isCorrect) {
-        correctCount++;
-      }
-
-      // 서비스별 통계: problem.keywords[0] 기반 (AI 생성 locale 별 키워드)
-      // 클라이언트가 NODE name 매칭으로 필터링해 한국어 stale 키를 숨김
-      if (data.fullProblem && data.fullProblem.keywords && data.fullProblem.keywords.length > 0) {
-        const service = data.fullProblem.keywords[0];
+      const keywords = row.full_problem?.keywords;
+      if (Array.isArray(keywords) && keywords.length > 0) {
+        const service = keywords[0];
         if (!byService[service]) {
           byService[service] = { total: 0, correct: 0, accuracy: 0 };
         }
         byService[service].total++;
-        if (isCorrect) {
-          byService[service].correct++;
-        }
+        if (row.is_correct === true) byService[service].correct++;
       }
-    });
+    }
 
-    // 정확도 계산
     const accuracy = totalAttempts > 0 ? Math.round((correctCount / totalAttempts) * 100) : 0;
-
-    // 서비스별 정확도 계산
     Object.keys(byService).forEach((service) => {
-      const serviceTotal = byService[service].total;
-      byService[service].accuracy = serviceTotal > 0
-        ? Math.round((byService[service].correct / serviceTotal) * 100)
-        : 0;
+      const t = byService[service].total;
+      byService[service].accuracy = t > 0 ? Math.round((byService[service].correct / t) * 100) : 0;
     });
 
-    return res.json({
-      totalAttempts,
-      correctCount,
-      accuracy,
-      byService
-    });
+    return res.json({ totalAttempts, correctCount, accuracy, byService });
   } catch (error) {
     console.error('❌ Error getting quiz stats:', error);
-    return res.json({
-      totalAttempts: 0,
-      correctCount: 0,
-      accuracy: 0,
-      byService: {}
-    });
+    return res.json({ totalAttempts: 0, correctCount: 0, accuracy: 0, byService: {} });
   }
 });
 
 // 퀴즈 결과 저장 (정답/오답 기록)
 app.post('/api/recordQuizResult', async (req, res) => {
   try {
-    const { userId, problem, selectedAnswer, difficulty, sessionId, selectedServices } = req.body;
-
+    const { userId, problem, selectedAnswer, difficulty, sessionId } = req.body;
     if (!userId || !problem) {
       return res.status(400).json({ error: 'userId and problem are required' });
     }
 
     const isCorrect = selectedAnswer === problem.answer;
-    const resultsRef = db.collection('users').doc(userId).collection('quizResults');
-    const today = new Date().toISOString().split('T')[0];
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    // 24시간 뒤 만료 타임스탬프
-    const expiresAt = new Date().getTime() + 24 * 60 * 60 * 1000;
+    // user 조회
+    const userRow = await pgQuery(
+      `SELECT id FROM users WHERE email = $1 OR cognito_sub = $1 LIMIT 1`,
+      [userId]
+    );
+    if (!userRow.rows[0]) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const internalUserId = userRow.rows[0].id;
 
-    // 1️⃣ quizResults에 저장 (fullProblem은 시도하지만, 실패 시 개별 필드로 저장)
-    const quizResultData = {
-      sessionId: sessionId,
-      question: problem.question || '',
-      correctAnswer: problem.answer || '',
-      selectedAnswer: selectedAnswer || '',
-      userAnswer: selectedAnswer || '',
-      isCorrect: isCorrect,
-      difficulty: difficulty,
-      date: today,
-      createdAt: new Date().toISOString(),
-      timestamp: new Date().getTime(),
-      expiresAt: expiresAt,
-      keywords: problem.keywords || [],
-      goal: problem.goal || '',
-      // 선택지 저장
-      optionA: (problem.options?.A) || '',
-      optionB: (problem.options?.B) || '',
-      optionC: (problem.options?.C) || '',
-      optionD: (problem.options?.D) || '',
-      // 설명 저장
-      explanationCorrect: (problem.explanation?.correct) || '',
-      explanationTrapA: (problem.explanation?.trap_A) || '',
-      explanationTrapB: (problem.explanation?.trap_B) || '',
-      explanationTrapC: (problem.explanation?.trap_C) || '',
-      explanationTrapD: (problem.explanation?.trap_D) || '',
-      // 이지 모드 저장
-      easyModeExplanation: (problem.easyMode?.explanation) || '',
-      easyModeA: (problem.easyMode?.A) || '',
-      easyModeB: (problem.easyMode?.B) || '',
-      easyModeC: (problem.easyMode?.C) || '',
-      easyModeD: (problem.easyMode?.D) || '',
-      patterns: problem.patterns || []
+    // quiz_results INSERT
+    // - full_problem JSONB: 모든 문제 데이터 + 사용자 응답까지 한 번에 저장
+    //   (Firestore 의 개별 컬럼들 → JSONB 통합으로 단순화)
+    const enrichedProblem = {
+      ...problem,
+      userAnswer: selectedAnswer,
+      isCorrect,
     };
 
-    try {
-      // fullProblem도 함께 시도
-      await resultsRef.add({
-        ...quizResultData,
-        fullProblem: problem
-      });
+    await pgQuery(
+      `INSERT INTO quiz_results
+         (user_id, session_id, question_id, difficulty, full_problem,
+          user_answer, is_correct, time_spent_seconds, expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        internalUserId,
+        sessionId || `${new Date().toISOString().split('T')[0]}_session`,
+        problem?.id || `gen-${Date.now()}`,
+        difficulty || 'medium',
+        enrichedProblem,
+        selectedAnswer || null,
+        isCorrect,
+        0,
+        expiresAt,
+      ]
+    );
 
-      console.log(`📝 Quiz result saved: ${isCorrect ? '✅' : '❌'} (user: ${userId})`);
-    } catch (saveError) {
-      console.error(`❌ Error saving with fullProblem:`, saveError?.message);
-      // fullProblem 없이 재시도
-      console.log(`♻️ Retrying without fullProblem...`);
-      try {
-        await resultsRef.add(quizResultData);
-        console.log(`📝 Quiz result saved (without fullProblem)`);
-      } catch (retryError) {
-        console.error(`❌ Error saving quiz result:`, retryError?.message);
-        throw retryError;
-      }
-    }
-
-    // 2️⃣ aggregatedStats에 누적 통계 저장
-    const userRef = db.collection('users').doc(userId);
-    const statsRef = userRef.collection('userData').doc('aggregatedStats');
-
-    console.log(`📝 Saving stats to: users/${userId}/userData/aggregatedStats`);
-
-    let statsDocExists = false;
-    let currentStats = null;
-
-    try {
-      const statsDoc = await statsRef.get();
-      // 제대로 된 DocumentSnapshot 객체인지 확인
-      if (statsDoc && typeof statsDoc.exists === 'function') {
-        statsDocExists = statsDoc.exists();
-        if (statsDocExists) {
-          currentStats = statsDoc.data() || {};
-        }
-      } else {
-        console.warn(`⚠️ Invalid statsDoc response type`);
-        statsDocExists = false;
-      }
-    } catch (getError) {
-      console.error(`⚠️ Error getting stats doc:`, getError?.message);
-      statsDocExists = false;
-    }
-
-    if (statsDocExists && currentStats) {
-      // 서비스별 통계 업데이트
-      const byService = currentStats.byService || {};
-      (selectedServices || []).forEach(service => {
-        if (!byService[service]) {
-          byService[service] = { total: 0, correct: 0 };
-        }
-        byService[service].total++;
-        if (isCorrect) byService[service].correct++;
-      });
-
-      try {
-        await statsRef.update({
-          totalAttempts: (currentStats.totalAttempts || 0) + 1,
-          correctCount: isCorrect ? (currentStats.correctCount || 0) + 1 : currentStats.correctCount || 0,
-          byService: byService,
-          updatedAt: new Date().getTime()
-        });
-        console.log(`✅ Stats updated (existing doc)`);
-      } catch (updateError) {
-        console.error(`❌ Update error:`, updateError?.message);
-        // 에러가 나도 계속 진행 (통계는 선택사항)
-      }
-    } else {
-      // 첫 문제인 경우 또는 조회 실패한 경우
-      const byService = {};
-      (selectedServices || []).forEach(service => {
-        byService[service] = { total: 1, correct: isCorrect ? 1 : 0 };
-      });
-
-      try {
-        await statsRef.set({
-          totalAttempts: 1,
-          correctCount: isCorrect ? 1 : 0,
-          byService: byService,
-          createdAt: new Date().getTime(),
-          updatedAt: new Date().getTime()
-        });
-        console.log(`✅ Stats created (new doc)`);
-      } catch (setError) {
-        console.error(`❌ Set error:`, setError?.message);
-        // 에러가 나도 계속 진행 (통계는 선택사항)
-      }
-    }
-
-    console.log(`📊 Stats updated for user ${userId}`);
-
-    return res.json({ success: true, isCorrect: isCorrect });
+    console.log(`📝 Quiz result saved: ${isCorrect ? '✅' : '❌'} (user: ${userId})`);
+    return res.json({ success: true, isCorrect });
   } catch (error) {
     console.error('❌ Error recording quiz result:', error);
-    return res.status(500).json({ error: error.message || 'Failed to record quiz result' });
+    return res.status(500).json({ error: error.message || 'Failed' });
   }
 });
 
 //Lemon Squeezy Checkout API
-app.post('/api/lemonsqueezy/checkout', async (req, res) => {
+app.post('/api/lemonsqueezy/checkout', requireFirestore, async (req, res) => {
   try {
     const { email, returnUrl } = req.body;
 
@@ -1223,7 +1118,7 @@ app.post('/api/send-verification-email', async (req, res) => {
   }
 });
 
-app.post('/api/lemonsqueezy/cancel-subscription', async (req, res) => {
+app.post('/api/lemonsqueezy/cancel-subscription', requireFirestore, async (req, res) => {
   try {
     const { userId, email } = req.body || {};
     const apiKey = process.env.LEMON_SQUEEZY_API_KEY || process.env.VITE_LEMON_SQUEEZY_API_KEY || '';
@@ -1338,7 +1233,7 @@ app.post('/api/lemonsqueezy/cancel-subscription', async (req, res) => {
   }
 });
 
-app.post('/api/webhooks/lemon-squeezy', async (req, res) => {
+app.post('/api/webhooks/lemon-squeezy', requireFirestore, async (req, res) => {
   try {
     const signature = req.headers['x-signature'] || req.headers['x-lemon-squeezy-signature'] || req.headers['X-Signature'] || req.headers['X-Lemon-Squeezy-Signature'];
     const body = req.rawBody || JSON.stringify(req.body);

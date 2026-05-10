@@ -15,6 +15,8 @@ import EmailVerificationModal from "./components/Modals/EmailVerificationModal";
 import QuotaModal from "./components/Modals/QuotaModal";
 import PostFormModal from "./components/Modals/PostFormModal";
 import { CognitoTestPage } from "./components/CognitoTestPage";
+import { CognitoSignupModal } from "./components/Modals/CognitoSignupModal";
+import { CognitoLoginModal } from "./components/Modals/CognitoLoginModal";
 import { CAT, CONCEPTS_KO, LINKS, NODES } from "./data";
 import { CONCEPTS_EN } from "./CONCEPTS_EN";
 import { CONCEPTS_JA } from "./concepts_ja";
@@ -476,6 +478,8 @@ function App() {
   const [showLanding, setShowLanding] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showCognitoSignup, setShowCognitoSignup] = useState(false);
+  const [showCognitoLogin, setShowCognitoLogin] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   // Scenario Console State
@@ -637,7 +641,7 @@ function App() {
  setEmailVerificationUserEmail(pendingEmail);
  setEmailVerificationMessage(t("emailVerificationMessage").replace("{email}", pendingEmail));
  setShowEmailVerificationModal(true);
- setShowLoginModal(true);
+ setShowCognitoLogin(true);
  setIsWaitingEmailVerification(true);
  }
   }, [isAuthChecked]);
@@ -982,7 +986,7 @@ function App() {
   const handleGenerateProblem = async () => {
  // 로그인 확인
  if (!userEmail) {
- setShowLoginModal(true);
+ setShowCognitoLogin(true);
  return;
  }
 
@@ -2012,7 +2016,18 @@ function App() {
  <div style={{ textAlign: "center", marginBottom: "24px" }}>
  <span style={{ color: "#D1D5DB", fontSize: "13px" }}>
  {isSignUp ? t("alreadyHaveAccount") + " " : t("dontHaveAccount") + " "}
- <button onClick={() => { setIsSignUp(!isSignUp); setLoginError(null); }}
+ <button onClick={() => {
+   if (isSignUp) {
+     // 가입 → 로그인 토글
+     setIsSignUp(false);
+     setLoginError(null);
+   } else {
+     // 회원가입 클릭 → Cognito 모달로 전환 (Firebase 모달 닫기)
+     setShowLoginModal(false);
+     setLoginError(null);
+     setShowCognitoSignup(true);
+   }
+ }}
  style={{
  background: "none", border: "none", color: "#FF9900",
  cursor: "pointer", textDecoration: "underline", fontSize: "13px"
@@ -2054,7 +2069,7 @@ function App() {
           setTab(newTab);
           setShowLanding(false);
         }}
-        onLoginClick={() => setShowLoginModal(true)}
+        onLoginClick={() => setShowCognitoLogin(true)}
         onProClick={() => setShowPaymentModal(true)}
         currentLocale={locale}
         onLocaleChange={setLocale}
@@ -2087,6 +2102,38 @@ function App() {
       {/* 이메일 검증 모달 - 랜딩 페이지에서도 표시 */}
       {renderEmailVerificationModal()}
 
+      {/* Cognito 회원가입 모달 (디자인은 기존 톤) */}
+      <CognitoSignupModal
+        isOpen={showCognitoSignup}
+        onClose={() => setShowCognitoSignup(false)}
+        onSuccess={(email) => {
+          setShowCognitoSignup(false);
+          setUserEmail(email);
+          setEmailVerified(true);
+          setUserStatusLocal("loggedIn");
+          localStorage.setItem("userEmail", email);
+          localStorage.setItem("userStatus", "loggedIn");
+        }}
+      />
+
+      {/* Cognito 로그인 모달 */}
+      <CognitoLoginModal
+        isOpen={showCognitoLogin}
+        onClose={() => setShowCognitoLogin(false)}
+        onSuccess={(email) => {
+          setShowCognitoLogin(false);
+          setUserEmail(email);
+          setEmailVerified(true);
+          setUserStatusLocal("loggedIn");
+          localStorage.setItem("userEmail", email);
+          localStorage.setItem("userStatus", "loggedIn");
+        }}
+        onSwitchToSignup={() => {
+          setShowCognitoLogin(false);
+          setShowCognitoSignup(true);
+        }}
+      />
+
       <CookieConsent />
     </>;
   }
@@ -2097,7 +2144,7 @@ function App() {
    onTabChange={(newTab) => { setTab(newTab); setShowLanding(false); }}
    currentLocale={locale}
    onLocaleChange={setLocale}
-   onLoginClick={() => setShowLoginModal(true)}
+   onLoginClick={() => setShowCognitoLogin(true)}
    showLoginButton={!userEmail}
    onLogoClick={() => setShowLanding(true)}
    userEmail={userEmail}
@@ -2462,7 +2509,7 @@ function App() {
  <PremiumBanner
  userStatus={userStatus}
  userEmail={userEmail}
- onLoginClick={() => setShowLoginModal(true)}
+ onLoginClick={() => setShowCognitoLogin(true)}
  onUpgradeClick={() => setShowPaymentModal(true)}
  />
  </>
@@ -2526,7 +2573,7 @@ function App() {
              <h2 style={{ fontSize: "20px", color: "#F9FAFB", marginBottom: "12px", fontWeight: 700 }}>{t("pastExamTitle")}</h2>
              <p style={{ fontSize: "14px", color: "#D1D5DB", marginBottom: "20px" }}>{t("pastExamLoginRequired")}</p>
              <button
-               onClick={() => setShowLoginModal(true)}
+               onClick={() => setShowCognitoLogin(true)}
                style={{
                  padding: "10px 20px",
                  background: "#FF9900",
@@ -3748,7 +3795,7 @@ function App() {
 
  {userStatus === "guest" && (
  <button
- onClick={() => setShowLoginModal(true)}
+ onClick={() => setShowCognitoLogin(true)}
  style={{
  width: "100%",
  padding: "12px 16px",
@@ -3849,7 +3896,7 @@ function App() {
  <p style={{ fontSize: "13px", color: "#D1D5DB", marginBottom: "12px" }}>
  {t("loginPrompt")}
  </p>
- <button onClick={() => setShowLoginModal(true)} style={{
+ <button onClick={() => setShowCognitoLogin(true)} style={{
  padding: "8px 16px",
  background: "rgba(59, 130, 246, 0.2)",
  border: "1px solid rgba(59, 130, 246, 0.5)",
@@ -5847,6 +5894,38 @@ function App() {
 
  {/* Firebase 로그인/회원가입 모달 */}
  {renderLoginModal()}
+
+ {/* Cognito 회원가입 모달 (디자인은 기존 톤) */}
+ <CognitoSignupModal
+   isOpen={showCognitoSignup}
+   onClose={() => setShowCognitoSignup(false)}
+   onSuccess={(email) => {
+     setShowCognitoSignup(false);
+     setUserEmail(email);
+     setEmailVerified(true);
+     setUserStatusLocal("loggedIn");
+     localStorage.setItem("userEmail", email);
+     localStorage.setItem("userStatus", "loggedIn");
+   }}
+ />
+
+ {/* Cognito 로그인 모달 */}
+ <CognitoLoginModal
+   isOpen={showCognitoLogin}
+   onClose={() => setShowCognitoLogin(false)}
+   onSuccess={(email) => {
+     setShowCognitoLogin(false);
+     setUserEmail(email);
+     setEmailVerified(true);
+     setUserStatusLocal("loggedIn");
+     localStorage.setItem("userEmail", email);
+     localStorage.setItem("userStatus", "loggedIn");
+   }}
+   onSwitchToSignup={() => {
+     setShowCognitoLogin(false);
+     setShowCognitoSignup(true);
+   }}
+ />
 
  {/* 이메일 검증 모달 */}
  {renderEmailVerificationModal()}
