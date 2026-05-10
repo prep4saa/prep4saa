@@ -11,6 +11,10 @@ const admin = require('firebase-admin');
 const { generatePrompt } = require('./prompts-server');
 require('dotenv').config();
 
+// PostgreSQL 풀 + Cognito JWT 미들웨어
+const { query: pgQuery } = require('./lib/db');
+const { requireAuth, requireAdmin, USE_COGNITO_AUTH } = require('./middleware/auth');
+
 function loadFirebaseServiceAccount() {
   // Try environment variable first
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {
@@ -18,7 +22,7 @@ function loadFirebaseServiceAccount() {
       return JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
     } catch (error) {
       console.error('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT:', error?.message || error);
-      throw error;
+      return null;
     }
   }
 
@@ -26,21 +30,28 @@ function loadFirebaseServiceAccount() {
   try {
     return require('./firebase-key.json');
   } catch (error) {
-    throw new Error('❌ FIREBASE_SERVICE_ACCOUNT not found. Set environment variable or include firebase-key.json file.');
+    return null;
   }
 }
 
+// Firebase 자격증명이 없어도 server 는 시작되도록 (Cognito 마이그레이션 기간)
+// - db 가 null 이면 Firebase 사용 API 들은 503 반환
 const serviceAccount = loadFirebaseServiceAccount();
-console.log('🔐 Firebase service account loaded:', {
-  projectId: serviceAccount.project_id,
-  clientEmail: serviceAccount.client_email,
-});
+let db = null;
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL: process.env.FIREBASE_DATABASE_URL
-});
-const db = admin.firestore();
+if (serviceAccount) {
+  console.log('🔐 Firebase service account loaded:', {
+    projectId: serviceAccount.project_id,
+    clientEmail: serviceAccount.client_email,
+  });
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    databaseURL: process.env.FIREBASE_DATABASE_URL,
+  });
+  db = admin.firestore();
+} else {
+  console.warn('⚠️ Firebase 자격증명 없음 - Firestore 사용 API 들은 비활성화됨');
+}
 
 const app = express();
 const PORT = 5000;
@@ -538,45 +549,47 @@ app.post('/api/contact', async (req, res) => {
 // ===== Admin 寃利?=====
 
 // Admin check (보안: 백쾭에꽌留?泥섎━)
-app.post('/api/checkAdmin', (req, res) => {
+app.post('/api/checkAdmin', async (req, res) => {
   try {
     const { email } = req.body;
-    const adminEmail = process.env.VITE_ADMIN_EMAIL;
+    if (!email) {
+      return res.json({ isAdmin: false, timestamp: new Date().toISOString() });
+    }
 
-    // 백쾭에꽌留?admin 이찓//鍮꾧탳
-    const isAdmin = email && adminEmail && email === adminEmail;
+    const result = await pgQuery(
+      `SELECT role FROM users WHERE email = $1 LIMIT 1`,
+      [email]
+    );
 
-    // 메쾭洹?濡쒓렇
-    console.log('?뵇 Admin check:', {
-      receivedEmail: email,
-      adminEmail: adminEmail,
-      isAdmin: isAdmin,
-      match: email === adminEmail
-    });
+    const isAdmin = result.rows[0]?.role === 'admin';
+    console.log('Admin check:', { email, isAdmin });
 
-    res.json({
-      isAdmin: isAdmin,
-      timestamp: new Date().toISOString()
-    });
+    res.json({ isAdmin, timestamp: new Date().toISOString() });
   } catch (error) {
-    console.error('⚠️ Admin check error:', error);
+    console.error('Admin check error:', error);
     res.status(500).json({ error: { message: error.message } });
   }
 });
 
-app.use('/api/admin/', (req, res, next) => {
+// Admin route guard
+// - USE_COGNITO_AUTH=true: requireAuth (JWT) + requireAdmin (role check)
+// - USE_COGNITO_AUTH=false: legacy fallback by email body
+app.use('/api/admin/', async (req, res, next) => {
+  if (USE_COGNITO_AUTH) {
+    return requireAuth(req, res, () => requireAdmin(req, res, next));
+  }
   try {
     const { email } = req.body;
-    const adminEmail = process.env.VITE_ADMIN_EMAIL;
-
-    if (!email || !adminEmail || email !== adminEmail) {
-      return res.status(403).json({
-        error: { message: 'Unauthorized: Admin access required' },
-        isAdmin: false
-      });
+    if (!email) {
+      return res.status(403).json({ error: { message: 'Email required' }, isAdmin: false });
     }
-
-    // Admin ?뺤씤 ?꾨즺, 설쓬 ?몃뱾?щ줈
+    const result = await pgQuery(
+      `SELECT role FROM users WHERE email = $1 LIMIT 1`,
+      [email]
+    );
+    if (result.rows[0]?.role !== 'admin') {
+      return res.status(403).json({ error: { message: 'Admin access required' }, isAdmin: false });
+    }
     next();
   } catch (error) {
     res.status(500).json({ error: { message: error.message } });
@@ -679,7 +692,7 @@ app.post('/api/recordProblemGeneration', async (req, res) => {
 
     // DynamoDB에 카운트 증가
     const userType = req.body.userStatus === 'paid' ? 'premium' : 'loggedIn';
-    const apiUrl = `https://to0up7hmjh.execute-api.us-east-1.amazonaws.com/prod/count/${encodeURIComponent(userId)}`;
+    const apiUrl = `https://1k4zw2bkhk.execute-api.us-east-1.amazonaws.com/prod/count/${encodeURIComponent(userId)}`;
     const countResponse = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -734,7 +747,7 @@ app.post('/api/getProblemCountToday', async (req, res) => {
     if (userStatus === 'paid') limit = 20;
 
     // DynamoDB에서 오늘 카운트 조회
-    const apiUrl = `https://to0up7hmjh.execute-api.us-east-1.amazonaws.com/prod/count/${encodeURIComponent(userId)}`;
+    const apiUrl = `https://1k4zw2bkhk.execute-api.us-east-1.amazonaws.com/prod/count/${encodeURIComponent(userId)}`;
     const response = await fetch(apiUrl);
     const data = await response.json();
 

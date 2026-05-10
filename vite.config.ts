@@ -3,6 +3,10 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
+  // amazon-cognito-identity-js 가 Node 의 `global` 을 참조하므로 브라우저용 alias
+  define: {
+    global: "globalThis",
+  },
   // 프로덕션 빌드 시 console.log / .info / .debug / .warn 제거 (console.error 는 유지)
   esbuild: {
     pure: ["console.log", "console.info", "console.debug", "console.warn"],
