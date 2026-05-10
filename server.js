@@ -102,6 +102,8 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json({
+  // 마이그레이션/대량 업로드 위해 50MB 까지 허용
+  limit: '50mb',
   verify: (req, _res, buf) => {
     req.rawBody = buf.toString('utf8');
   }
@@ -988,6 +990,252 @@ app.post('/api/recordQuizResult', async (req, res) => {
     return res.status(500).json({ error: error.message || 'Failed' });
   }
 });
+
+// ===== 기출문제 (Past Exams) - PostgreSQL =====
+
+// 기출문제 페이지 조회 (locale 별 페이지네이션)
+app.post('/api/getPastExamPage', async (req, res) => {
+  try {
+    const { locale = 'ko', page = 1, pageSize = 10 } = req.body;
+    const offset = Math.max(0, (page - 1) * pageSize);
+
+    const result = await pgQuery(
+      `SELECT id, order_num, problem_data
+       FROM past_exams
+       WHERE locale = $1
+       ORDER BY order_num ASC
+       LIMIT $2 OFFSET $3`,
+      [locale, pageSize, offset]
+    );
+
+    const problems = result.rows.map(r => ({
+      id: String(r.id),
+      order: r.order_num,
+      ...r.problem_data,
+    }));
+    return res.json({ problems });
+  } catch (error) {
+    console.error('getPastExamPage error:', error);
+    return res.status(500).json({ error: error.message, problems: [] });
+  }
+});
+
+// 기출문제 총 개수
+app.post('/api/getPastExamTotalCount', async (req, res) => {
+  try {
+    const { locale = 'ko' } = req.body;
+    const result = await pgQuery(
+      `SELECT COUNT(*) AS total FROM past_exams WHERE locale = $1`,
+      [locale]
+    );
+    return res.json({ total: parseInt(result.rows[0]?.total || 0) });
+  } catch (error) {
+    console.error('getPastExamTotalCount error:', error);
+    return res.json({ total: 0 });
+  }
+});
+
+// ===== 모의시험 (Mock Exams) - PostgreSQL =====
+
+// 오늘의 모의시험 조회
+app.post('/api/getTodayMockExam', async (req, res) => {
+  try {
+    const { userId, locale = 'ko' } = req.body;
+    if (!userId) return res.json({ problems: null });
+
+    const userRow = await pgQuery(
+      `SELECT id FROM users WHERE email = $1 OR cognito_sub = $1 LIMIT 1`,
+      [userId]
+    );
+    if (!userRow.rows[0]) return res.json({ problems: null });
+    const internalUserId = userRow.rows[0].id;
+
+    const result = await pgQuery(
+      `SELECT problems, answers, results, started_at, completed_at
+       FROM mock_exams
+       WHERE user_id = $1 AND locale = $2 AND exam_date = CURRENT_DATE`,
+      [internalUserId, locale]
+    );
+
+    if (!result.rows[0]) return res.json({ problems: null });
+    return res.json({
+      problems: result.rows[0].problems || null,
+      answers: result.rows[0].answers || [],
+      results: result.rows[0].results,
+      startedAt: result.rows[0].started_at,
+      completedAt: result.rows[0].completed_at,
+    });
+  } catch (error) {
+    console.error('getTodayMockExam error:', error);
+    return res.json({ problems: null });
+  }
+});
+
+// 모의시험 점진적 저장 (배치마다 호출)
+app.post('/api/saveMockExamProblems', async (req, res) => {
+  try {
+    const { userId, locale = 'ko', problems = [], answers = [] } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId required' });
+
+    const userRow = await pgQuery(
+      `SELECT id FROM users WHERE email = $1 OR cognito_sub = $1 LIMIT 1`,
+      [userId]
+    );
+    if (!userRow.rows[0]) return res.status(404).json({ error: 'User not found' });
+    const internalUserId = userRow.rows[0].id;
+
+    await pgQuery(
+      `INSERT INTO mock_exams (user_id, locale, exam_date, problems, answers)
+       VALUES ($1, $2, CURRENT_DATE, $3, $4)
+       ON CONFLICT (user_id, locale, exam_date) DO UPDATE
+       SET problems = EXCLUDED.problems,
+           answers  = COALESCE($4, mock_exams.answers)`,
+      [internalUserId, locale, JSON.stringify(problems), JSON.stringify(answers)]
+    );
+
+    return res.json({ saved: problems.length });
+  } catch (error) {
+    console.error('saveMockExamProblems error:', error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// 모의시험 종료 + 결과 저장
+app.post('/api/completeMockExam', async (req, res) => {
+  try {
+    const { userId, locale = 'ko', answers, results } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId required' });
+
+    const userRow = await pgQuery(
+      `SELECT id FROM users WHERE email = $1 OR cognito_sub = $1 LIMIT 1`,
+      [userId]
+    );
+    if (!userRow.rows[0]) return res.status(404).json({ error: 'User not found' });
+
+    await pgQuery(
+      `UPDATE mock_exams
+       SET answers = $1, results = $2, completed_at = NOW()
+       WHERE user_id = $3 AND locale = $4 AND exam_date = CURRENT_DATE`,
+      [JSON.stringify(answers || []), JSON.stringify(results || {}), userRow.rows[0].id, locale]
+    );
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('completeMockExam error:', error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== Firebase → PostgreSQL 마이그레이션 트리거 (일회성) =====
+// 실행: POST /api/migrate-firebase-to-pg { type: 'pastExams' | 'all' }
+// - server.js 에 firebase-admin 이 없으면 사용자가 보낸 데이터 받아서 INSERT
+app.post('/api/migrate-firebase-to-pg', async (req, res) => {
+  try {
+    const { type, locale = 'ko', items = [] } = req.body;
+    if (!type) return res.status(400).json({ error: 'type required' });
+
+    if (type === 'pastExams') {
+      console.log(`[migrate] starting pastExams ${locale}: ${items.length} items`);
+
+      const pool = require('./lib/db').getPool();
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query(`DELETE FROM past_exams WHERE locale = $1`, [locale]);
+
+        // batch INSERT (한 번의 query 로 모든 row)
+        // - 큰 batch 는 parameter 한도 (~32K) 초과 가능 → 50개씩 chunk
+        const CHUNK = 50;
+        let inserted = 0;
+        for (let i = 0; i < items.length; i += CHUNK) {
+          const chunk = items.slice(i, i + CHUNK);
+          const values = [];
+          const params = [];
+          chunk.forEach((item, idx) => {
+            const order = item.order || (inserted + idx + 1);
+            const { id: _id, order: _order, ...problemData } = item;
+            const base = idx * 3;
+            values.push(`($${base + 1}, $${base + 2}, $${base + 3})`);
+            params.push(locale, order, problemData);
+          });
+          await client.query(
+            `INSERT INTO past_exams (locale, order_num, problem_data) VALUES ${values.join(',')}`,
+            params
+          );
+          inserted += chunk.length;
+          console.log(`[migrate] inserted ${inserted}/${items.length}`);
+        }
+
+        await client.query('COMMIT');
+        console.log(`[migrate] DONE pastExams ${locale}: ${inserted}`);
+        return res.json({ migrated: inserted, locale });
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
+    }
+
+    return res.status(400).json({ error: `Unknown type: ${type}` });
+  } catch (error) {
+    console.error('migration error:', error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// 기출문제 일괄 업로드 (admin 전용)
+// - 모의시험 → 기출문제 이전 시 호출
+app.post('/api/uploadPastExams', async (req, res) => {
+  // admin 인증 확인 (legacy or Cognito)
+  if (USE_COGNITO_AUTH) {
+    return requireAuth(req, res, () => requireAdmin(req, res, () => uploadPastExamsHandler(req, res)));
+  }
+  return uploadPastExamsHandler(req, res);
+});
+
+async function uploadPastExamsHandler(req, res) {
+  try {
+    const { locale = 'ko', problems = [] } = req.body;
+    if (!Array.isArray(problems) || problems.length === 0) {
+      return res.status(400).json({ error: 'problems[] required' });
+    }
+
+    // 다음 order_num 시작값 = 현재 max + 1
+    const maxResult = await pgQuery(
+      `SELECT COALESCE(MAX(order_num), 0) AS max_order FROM past_exams WHERE locale = $1`,
+      [locale]
+    );
+    let nextOrder = parseInt(maxResult.rows[0].max_order) + 1;
+
+    // 트랜잭션으로 일괄 INSERT
+    const client = await require('./lib/db').getPool().connect();
+    let uploaded = 0;
+    try {
+      await client.query('BEGIN');
+      for (const p of problems) {
+        await client.query(
+          `INSERT INTO past_exams (locale, order_num, problem_data)
+           VALUES ($1, $2, $3)`,
+          [locale, nextOrder, p]
+        );
+        nextOrder++;
+        uploaded++;
+      }
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+
+    return res.json({ uploaded, totalAfter: nextOrder - 1 });
+  } catch (error) {
+    console.error('uploadPastExams error:', error);
+    return res.status(500).json({ error: error.message });
+  }
+}
 
 //Lemon Squeezy Checkout API
 app.post('/api/lemonsqueezy/checkout', requireFirestore, async (req, res) => {

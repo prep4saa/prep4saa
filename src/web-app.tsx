@@ -15,6 +15,7 @@ import EmailVerificationModal from "./components/Modals/EmailVerificationModal";
 import QuotaModal from "./components/Modals/QuotaModal";
 import PostFormModal from "./components/Modals/PostFormModal";
 import { CognitoTestPage } from "./components/CognitoTestPage";
+import { MigrateDataPage } from "./components/MigrateDataPage";
 import { CognitoSignupModal } from "./components/Modals/CognitoSignupModal";
 import { CognitoLoginModal } from "./components/Modals/CognitoLoginModal";
 import { CAT, CONCEPTS_KO, LINKS, NODES } from "./data";
@@ -374,6 +375,9 @@ function App() {
   if (typeof window !== "undefined" && window.location.hash === "#cognito-test") {
     return <CognitoTestPage />;
   }
+  if (typeof window !== "undefined" && window.location.hash === "#migrate-data") {
+    return <MigrateDataPage />;
+  }
 
   const { locale, setLocale, t } = useLocale();
   const { theme } = useTheme();
@@ -706,6 +710,27 @@ function App() {
  setUserStatusLocal(status);
  }
  } else {
+ // Firebase 사용자가 없을 때 → Cognito 세션 확인 (마이그레이션 기간)
+ try {
+   const { getCurrentSession, getCurrentUserEmail } = await import("./auth/cognito");
+   const session = await getCurrentSession();
+   if (session && session.isValid()) {
+     const cognitoEmail = await getCurrentUserEmail();
+     if (cognitoEmail) {
+       setUserEmail(cognitoEmail);
+       setEmailVerified(true);
+       setUserStatusLocal("loggedIn");
+       setIsPasswordLoginLinked(true);
+       setShowLanding(false);
+       localStorage.setItem("userEmail", cognitoEmail);
+       localStorage.setItem("userStatus", "loggedIn");
+       setIsAuthChecked(true);
+       return;
+     }
+   }
+ } catch (err) {
+   // Cognito 미설정 환경 → Firebase 흐름 그대로
+ }
  setUserEmail(null);
  setUserStatusLocal("guest");
  setIsPasswordLoginLinked(false);
@@ -1229,15 +1254,21 @@ function App() {
           return next;
         });
       } catch (err: any) {
-        // 🔒 Firestore 권한 거부 = 유료/관리자 아님 → 결제 모달 자동 오픈
+        // Firestore 권한 거부 → 결제 모달 트리거 (admin/paid 는 제외)
         const msg = String(err?.message || "");
         const code = String(err?.code || "");
-        if (code === "permission-denied" || msg.toLowerCase().includes("permission") || msg.toLowerCase().includes("insufficient")) {
+        const isPermissionError =
+          code === "permission-denied" ||
+          msg.toLowerCase().includes("permission") ||
+          msg.toLowerCase().includes("insufficient");
+
+        if (isPermissionError && !isPaidOrAdmin) {
           setShowPaymentModal(true);
           setPastExamPage(1);
           setPastExamPageInput("1");
           setPastExamError(null);
         } else {
+          // admin/paid 또는 다른 에러 → 단순 메시지만 표시 (결제 팝업 X)
           setPastExamError(msg || "Failed to load");
         }
       } finally {

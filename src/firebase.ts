@@ -333,8 +333,9 @@ async function getSignInMethodsSafely(email: string): Promise<string[]> {
   }
 }
 
-export function isPasswordLinked(user: User | null | undefined = auth.currentUser): boolean {
-  return getLinkedProviders(user).includes("password");
+export function isPasswordLinked(_user: User | null | undefined = auth.currentUser): boolean {
+  // Cognito 사용자는 항상 password 인증 가능
+  return true;
 }
 
 export async function linkEmailPasswordToCurrentUser(password: string): Promise<void> {
@@ -448,18 +449,9 @@ function getErrorMessage(errorCode: string): string {
 /**
  * 사용자의 결제 상태 조회
  */
-export async function getUserPaidStatus(userId: string): Promise<boolean> {
-  try {
-    const userRef = doc(db, "users", userId);
-    const userDoc = await getDoc(userRef);
-
-    if (userDoc.exists()) {
-      return userDoc.data()?.isPaid || false;
-    }
-    return false;
-  } catch (error) {
-    return false;
-  }
+export async function getUserPaidStatus(_userId: string): Promise<boolean> {
+  // TODO Phase 7: PostgreSQL users.is_premium 조회
+  return false;
 }
 
 /**
@@ -467,157 +459,39 @@ export async function getUserPaidStatus(userId: string): Promise<boolean> {
  * Lemon Squeezy 의 subscription.status 가 'cancelled' / 'expired' / 'unpaid'
  * 중 하나거나, subscriptionCancelledAt 필드가 존재하면 취소된 것으로 간주.
  */
-export async function isSubscriptionCancelled(userId: string): Promise<boolean> {
-  try {
-    const userRef = doc(db, "users", userId);
-    const userDoc = await getDoc(userRef);
-    if (!userDoc.exists()) return false;
-    const data = userDoc.data() as {
-      subscriptionStatus?: string;
-      subscriptionCancelledAt?: string;
-    };
-    const status = (data.subscriptionStatus || '').toLowerCase();
-    if (status === 'cancelled' || status === 'expired' || status === 'unpaid') return true;
-    if (data.subscriptionCancelledAt) return true;
-    return false;
-  } catch {
-    return false;
-  }
+export async function isSubscriptionCancelled(_userId: string): Promise<boolean> {
+  // TODO Phase 7: LemonSqueezy webhook + PostgreSQL 변환 후 구현
+  return false;
 }
 
 /**
  * 사용자의 결제 상태 업데이트
  */
-export async function updateUserPaidStatus(userId: string, isPaid: boolean): Promise<void> {
-  try {
-    const userRef = doc(db, "users", userId);
-    await updateDoc(userRef, {
-      isPaid,
-      updatedAt: new Date().toISOString()
-    });
-  } catch (error: any) {
-    if (error.code === 'not-found') {
-      // 문서가 없으면 생성
-      const userRef = doc(db, "users", userId);
-      await setDoc(userRef, {
-        isPaid,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
-    } else {
-      throw error;
-    }
-  }
+export async function updateUserPaidStatus(_userId: string, _isPaid: boolean): Promise<void> {
+  // TODO Phase 7: LemonSqueezy webhook 으로 자동 처리됨
 }
 
 /**
  * 사용자 정보를 Firestore에 저장 (로그인/회원가입 시)
  */
-export async function saveUserInfoToFirebase(userId: string, email: string): Promise<void> {
-  try {
-    const userRef = doc(db, "users", userId);
-    const userDoc = await getDoc(userRef);
-
-    if (!userDoc.exists()) {
-      // 새 사용자 - 문서 생성
-      await setDoc(userRef, {
-        email,
-        isPaid: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
-    }
-  } catch (error) {
-    // 에러 무시 (선택사항)
-  }
+export async function saveUserInfoToFirebase(_userId: string, _email: string): Promise<void> {
+  // Cognito PostConfirmation Lambda 가 PostgreSQL users 테이블에 자동 INSERT
 }
 
 /**
  * 사용자의 연속 방문 일수를 Firestore에서 가져오기 및 업데이트
  */
-export async function updateStreakInFirebase(userStatus: string = "guest"): Promise<number> {
-  try {
-    // 최대 3초까지 auth.currentUser가 설정될 때까지 기다리기
-    let user = auth.currentUser;
-    let retries = 0;
-    while (!user && retries < 30) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      user = auth.currentUser;
-      retries++;
-    }
-
-    if (!user) throw new Error("사용자가 로그인하지 않았습니다");
-
-    const userId = user.uid;
-    const userRef = doc(db, "users", userId);
-    const userDoc = await getDoc(userRef);
-
-    const today = new Date().toISOString().split("T")[0];
-    const lastVisitDate = userDoc.exists() ? userDoc.data()?.lastVisitDate : null;
-    let streak = userDoc.exists() ? (userDoc.data()?.streak || 0) : 0;
-
-    if (lastVisitDate === today) {
-      // 오늘 이미 방문함 - streak 유지
-      return streak;
-    }
-
-    if (lastVisitDate) {
-      const lastDate = new Date(lastVisitDate);
-      const todayDate = new Date(today);
-      const diffTime = todayDate.getTime() - lastDate.getTime();
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays === 1) {
-        // 어제 방문했으므로 카운트 증가
-        streak += 1;
-      } else if (diffDays > 1) {
-        // 2일 이상 지났으므로 리셋
-        streak = 1;
-      }
-    } else {
-      // 첫 방문
-      streak = 1;
-    }
-
-    // Firestore에 업데이트
-    if (userDoc.exists()) {
-      await updateDoc(userRef, {
-        streak,
-        lastVisitDate: today,
-        userStatus,
-        email: user.email,
-        updatedAt: new Date().toISOString()
-      });
-    } else {
-      await setDoc(userRef, {
-        streak,
-        lastVisitDate: today,
-        userStatus,
-        email: user.email,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
-    }
-
-    return streak;
-  } catch (error) {
-    // 에러 처리만 수행 (로깅 제거)
-    return 0;
-  }
+export async function updateStreakInFirebase(_userStatus: string = "guest"): Promise<number> {
+  // TODO: PostgreSQL users.streak 컬럼 업데이트 (Phase 7)
+  return 0;
 }
 
 /**
  * 사용자의 연속 방문 일수를 Firestore에서 가져오기
  */
-export async function getStreakFromFirebase(userId: string): Promise<number> {
-  try {
-    const userRef = doc(db, "users", userId);
-    const userDoc = await getDoc(userRef);
-    return userDoc.exists() ? (userDoc.data()?.streak || 0) : 0;
-  } catch (error) {
-    // 에러 처리만 수행 (로깅 제거)
-    return 0;
-  }
+export async function getStreakFromFirebase(_userId: string): Promise<number> {
+  // TODO: PostgreSQL users.streak 조회 (Phase 7)
+  return 0;
 }
 
 /**
@@ -629,34 +503,17 @@ export async function getAdminStats(): Promise<{
   freeUsers: number;
 }> {
   try {
-    const usersRef = collection(db, "users");
-    const snapshot = await getDocs(usersRef);
-
-    let paidCount = 0;
-    let freeCount = 0;
-
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-      const status = data.userStatus || "guest";
-      if (status === "paid") {
-        paidCount++;
-      } else if (status === "loggedIn") {
-        freeCount++;
-      }
-    });
-
+    const { api } = await import("./auth/apiClient");
+    const res = await api.post("/api/admin/stats", {});
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
     return {
-      totalUsers: snapshot.size,
-      paidUsers: paidCount,
-      freeUsers: freeCount
+      totalUsers: data.totalUsers || 0,
+      paidUsers: data.paidUsers || 0,
+      freeUsers: data.freeUsers || 0,
     };
-  } catch (error) {
-    // 에러 처리만 수행 (로깅 제거)
-    return {
-      totalUsers: 0,
-      paidUsers: 0,
-      freeUsers: 0
-    };
+  } catch {
+    return { totalUsers: 0, paidUsers: 0, freeUsers: 0 };
   }
 }
 
@@ -670,34 +527,28 @@ export async function getAllUsersForAdmin(): Promise<Array<{
   createdAt: string;
 }>> {
   try {
-    const usersRef = collection(db, "users");
-    const snapshot = await getDocs(usersRef);
+    const { api } = await import("./auth/apiClient");
+    const res = await api.post("/api/admin/users", {});
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
 
-    const users: Array<{
-      userId: string;
+    // PostgreSQL row → frontend 기대 형식으로 매핑
+    type Row = {
+      id: number;
+      cognito_sub: string;
       email: string;
-      userStatus: string;
-      createdAt: string;
-    }> = [];
-
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-      users.push({
-        userId: doc.id,
-        email: data.email || doc.id,
-        userStatus: data.userStatus || "guest",
-        createdAt: data.createdAt || ""
-      });
-    });
-
-    // 최신순 정렬
-    return users.sort((a, b) => {
-      const dateA = new Date(a.createdAt).getTime();
-      const dateB = new Date(b.createdAt).getTime();
-      return dateB - dateA;
-    });
-  } catch (error) {
-    // 에러 처리만 수행 (로깅 제거)
+      is_premium: boolean;
+      role: string;
+      created_at: string;
+    };
+    const rows: Row[] = Array.isArray(data?.users) ? data.users : [];
+    return rows.map((r) => ({
+      userId: r.cognito_sub || String(r.id),
+      email: r.email,
+      userStatus: r.role === "admin" ? "admin" : r.is_premium ? "paid" : "loggedIn",
+      createdAt: r.created_at,
+    }));
+  } catch {
     return [];
   }
 }
@@ -711,76 +562,20 @@ export async function recordQuizResult(
   userId: string,
   problem: any,
   selectedAnswer: string,
-  difficulty: "medium" | "hard" | "challenge",
+  difficulty: string,
   sessionId: string,
-  selectedServices: string[] = [] // 선택된 서비스 목록
-): Promise<void> {
+  selectedServices: string[]
+): Promise<{ success: boolean; isCorrect: boolean }> {
   try {
-    const isCorrect = selectedAnswer === problem.answer;
-    const resultsRef = collection(db, "users", userId, "quizResults");
-
-    // 24시간 뒤 만료 타임스탬프 계산
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 1일 뒤 (24시간)
-
-    // quizResults에 임시 저장 (24시간 후 삭제)
-    const today = new Date().toISOString().split("T")[0];
-    await addDoc(resultsRef, {
-      sessionId, // 같은 세션의 문제들을 그룹화
-      fullProblem: problem, // 전체 문제 객체 저장
-      question: problem.question,
-      correctAnswer: problem.answer,
-      selectedAnswer,
-      userAnswer: selectedAnswer, // 서버에서 읽기 용도
-      isCorrect,
-      difficulty,
-      date: today, // 서버에서 필터링 용도
-      createdAt: new Date().toISOString(),
-      timestamp: new Date().getTime(),
-      expiresAt: expiresAt.getTime() // 24시간 뒤 삭제 타임스탬프
+    const { api } = await import("./auth/apiClient");
+    const res = await api.post("/api/recordQuizResult", {
+      userId, problem, selectedAnswer, difficulty, sessionId, selectedServices,
     });
-
-    // aggregatedStats에 누적 통계 업데이트 (영구 유지)
-    const statsRef = doc(db, "users", userId, "userData", "aggregatedStats");
-    const statsDoc = await getDoc(statsRef);
-
-    if (statsDoc.exists()) {
-      const currentStats = statsDoc.data();
-
-      // 서비스별 통계 업데이트
-      const byService = currentStats.byService || {};
-      selectedServices.forEach(service => {
-        if (!byService[service]) {
-          byService[service] = { total: 0, correct: 0 };
-        }
-        byService[service].total++;
-        if (isCorrect) byService[service].correct++;
-      });
-
-      await updateDoc(statsRef, {
-        totalAttempts: (currentStats.totalAttempts || 0) + 1,
-        correctCount: isCorrect ? (currentStats.correctCount || 0) + 1 : currentStats.correctCount || 0,
-        byService,
-        updatedAt: new Date().getTime()
-      });
-    } else {
-      // 첫 문제인 경우
-      const byService: any = {};
-      selectedServices.forEach(service => {
-        byService[service] = { total: 1, correct: isCorrect ? 1 : 0 };
-      });
-
-      await setDoc(statsRef, {
-        totalAttempts: 1,
-        correctCount: isCorrect ? 1 : 0,
-        byService,
-        createdAt: new Date().getTime(),
-        updatedAt: new Date().getTime()
-      });
-    }
-  } catch (error) {
-    // 에러 처리만 수행 (로깅 제거)
-    throw error;
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (error: any) {
+    console.error("recordQuizResult error:", error?.message);
+    return { success: false, isCorrect: selectedAnswer === problem?.answer };
   }
 }
 
@@ -794,35 +589,14 @@ export async function getUserQuizStats(userId: string): Promise<{
   byService: { [service: string]: { total: number; correct: number; accuracy: number } };
 }> {
   try {
-    // 서버 API로 통계 조회 (보안: 서버에서 처리)
-    const backendUrl = typeof window !== "undefined" && window.location?.hostname === "localhost"
-      ? "http://localhost:5000"
-      : import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
-
-
-    const response = await fetch(`${backendUrl}/api/getQuizStats`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ userId })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Server returned ${response.status}`);
-    }
-
-    const stats = await response.json();
-
-    return stats;
+    // apiClient: USE_COGNITO_AUTH=true 면 자동으로 Bearer JWT 첨부
+    const { api } = await import("./auth/apiClient");
+    const response = await api.post("/api/getQuizStats", { userId });
+    if (!response.ok) throw new Error(`Server returned ${response.status}`);
+    return await response.json();
   } catch (error: any) {
-    console.error('❌ Error fetching quiz stats:', error?.message);
-    return {
-      totalAttempts: 0,
-      correctCount: 0,
-      accuracy: 0,
-      byService: {}
-    };
+    console.error("❌ Error fetching quiz stats:", error?.message);
+    return { totalAttempts: 0, correctCount: 0, accuracy: 0, byService: {} };
   }
 }
 
@@ -838,29 +612,12 @@ export async function getUserProblemSessions(userId: string): Promise<Array<{
   sessionTimestamp: number;
 }>> {
   try {
-    // 서버 API로 세션 조회 (보안: 서버에서 처리)
-    const backendUrl = typeof window !== "undefined" && window.location?.hostname === "localhost"
-      ? "http://localhost:5000"
-      : import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
-
-
-    const response = await fetch(`${backendUrl}/api/getUserProblemSessions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ userId })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Server returned ${response.status}`);
-    }
-
-    const sessions = await response.json();
-
-    return sessions;
+    const { api } = await import("./auth/apiClient");
+    const response = await api.post("/api/getUserProblemSessions", { userId });
+    if (!response.ok) throw new Error(`Server returned ${response.status}`);
+    return await response.json();
   } catch (error: any) {
-    console.error('❌ Error fetching problem sessions:', error?.message);
+    console.error("❌ Error fetching problem sessions:", error?.message);
     return [];
   }
 }
@@ -868,47 +625,9 @@ export async function getUserProblemSessions(userId: string): Promise<Array<{
 /**
  * 만료된 퀴즈 결과 자동 삭제 (3일 경과) + Cloud Storage PDF도 삭제
  */
-export async function deleteExpiredResults(userId: string): Promise<number> {
-  try {
-    const resultsRef = collection(db, "users", userId, "quizResults");
-    const snapshot = await getDocs(resultsRef);
-
-    const now = new Date().getTime();
-    const deletePromises: Promise<void>[] = [];
-    const deletePdfPromises: Promise<void>[] = [];
-    let deletedCount = 0;
-    const deletedSessions = new Set<string>();
-
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-
-      // 만료된 항목 삭제
-      if (data.expiresAt && data.expiresAt < now) {
-        // Firestore 문서 삭제
-        deletePromises.push(deleteDoc(doc.ref));
-
-        // Cloud Storage PDF 삭제 (sessionId별로 한 번만)
-        const sessionId = data.sessionId;
-        if (sessionId && !deletedSessions.has(sessionId)) {
-          deletedSessions.add(sessionId);
-          // PDF 삭제 로직 추가 예정
-        }
-        deletedCount++;
-      }
-    });
-
-    await Promise.all(deletePromises);
-    await Promise.all(deletePdfPromises);
-
-    if (deletedCount > 0) {
-      // 만료된 세션 자동 삭제 완료
-    }
-
-    return deletedCount;
-  } catch (error) {
-    // 에러 처리만 수행 (로깅 제거)
-    return 0;
-  }
+export async function deleteExpiredResults(_userId: string): Promise<number> {
+  // PostgreSQL 의 expires_at 인덱스 + cron job 으로 자동 처리 예정
+  return 0;
 }
 
 /**
@@ -936,43 +655,21 @@ export async function uploadPDFToStorage(
 /**
  * 시험 시작일을 Firebase에 저장
  */
-export async function saveExamStartDate(userId: string, examDate: string): Promise<void> {
-  try {
-    // 백엔드 검증
-    const dateObj = new Date(examDate);
-    if (isNaN(dateObj.getTime())) {
-      throw new Error("유효한 날짜를 입력하세요");
-    }
-    if (dateObj <= new Date()) {
-      throw new Error("미래 날짜를 선택해주세요");
-    }
-    if (examDate.length > 10) {
-      throw new Error("유효한 날짜 형식을 사용하세요");
-    }
-
-    const userRef = doc(db, "users", userId);
-    await updateDoc(userRef, {
-      examStartDate: examDate,
-      updatedAt: new Date().toISOString()
-    });
-  } catch (error) {
-    // 에러 처리만 수행 (로깅 제거)
-    throw error;
+export async function saveExamStartDate(_userId: string, examDate: string): Promise<void> {
+  // 임시: localStorage 만 사용 (Phase 7 에서 PostgreSQL users.exam_start_date 로 이전)
+  if (typeof window !== "undefined") {
+    localStorage.setItem("examStartDate", examDate);
   }
 }
 
 /**
  * Firebase에서 시험 시작일 불러오기
  */
-export async function getExamStartDate(userId: string): Promise<string | null> {
-  try {
-    const userRef = doc(db, "users", userId);
-    const userDoc = await getDoc(userRef);
-    return userDoc.exists() ? (userDoc.data()?.examStartDate || null) : null;
-  } catch (error) {
-    // 에러 처리만 수행 (로깅 제거)
-    return null;
+export async function getExamStartDate(_userId: string): Promise<string | null> {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("examStartDate");
   }
+  return null;
 }
 
 // ===== 게시글 함수 =====
@@ -1229,46 +926,19 @@ function sanitizeRetention<T>(obj: T): T {
  */
 export async function getTodayMockExamProblems(locale: string = "ko"): Promise<Problem[] | null> {
   try {
-    // UTC 기준 오늘 날짜 (ISO 형식에서 날짜 부분만 추출)
-    // toISOString()은 항상 UTC 시간을 반환하므로 안전함
-    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD (UTC)
-    const docKey = `${today}_${locale}`; // 언어별로 구분
-    const cacheKey = `mockExamProblems_${docKey}`;
-
-    // 1️⃣ localStorage에서 먼저 확인
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) {
-      try {
-        const problems = JSON.parse(cached);
-        return sanitizeRetention(problems);
-      } catch (e) {
-      }
-    }
-
-    // 2️⃣ Firebase에서 조회
-    const mockExamRef = doc(db, "mockExamProblems", docKey);
-    const mockExamDoc = await getDoc(mockExamRef);
-
-    if (!mockExamDoc.exists()) {
-      return null; // 아직 생성되지 않음
-    }
-
-    const data = mockExamDoc.data();
-    const problems = data.problems || null;
-
-    // 3️⃣ localStorage에 저장
-    if (problems && problems.length > 0) {
-      try {
-        localStorage.setItem(cacheKey, JSON.stringify(problems));
-      } catch (e) {
-      }
-    }
-
-    return problems ? sanitizeRetention(problems) : null;
+    const userEmail = auth.currentUser?.email;
+    if (!userEmail) return null;
+    const { api } = await import("./auth/apiClient");
+    const res = await api.post("/api/getTodayMockExam", { userId: userEmail, locale });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.problems || null;
   } catch (error: any) {
-    throw new Error(error.message || "모의시험 문제를 불러올 수 없습니다");
+    console.error("getTodayMockExamProblems error:", error?.message);
+    return null;
   }
 }
+
 
 /**
  * 오늘의 모의시험 문제 저장 (첫 번째 사용자만 호출)
@@ -1276,130 +946,42 @@ export async function getTodayMockExamProblems(locale: string = "ko"): Promise<P
  */
 export async function saveTodayMockExamProblems(problems: Problem[], locale: string = "ko"): Promise<void> {
   try {
-    // UTC 기준 오늘 날짜에 문제 저장
-    // 같은 언어를 선택한 사용자들이 같은 UTC 날짜의 문제를 공유하게 됨
-    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD (UTC)
-    const docKey = `${today}_${locale}`; // 언어별로 구분
-
-    const mockExamRef = doc(db, "mockExamProblems", docKey);
-
-    // 이미 저장된 문제가 있으면 덮어쓰지 않음 (첫 사용자만 생성)
-    const existingDoc = await getDoc(mockExamRef);
-    if (existingDoc.exists()) {
-      return; // 이미 저장되어 있음
-    }
-
-    // 새로운 문제 저장
-    await setDoc(mockExamRef, {
-      problems: problems,
-      createdAt: Timestamp.now(),
-      date: today,
-      locale: locale
-    });
+    const userEmail = auth.currentUser?.email;
+    if (!userEmail) return;
+    const { api } = await import("./auth/apiClient");
+    await api.post("/api/saveMockExamProblems", { userId: userEmail, locale, problems });
   } catch (error: any) {
-    throw new Error(error.message || "모의시험 문제 저장에 실패했습니다");
+    console.error("saveTodayMockExamProblems error:", error?.message);
   }
 }
+
 
 /**
  * 모의시험 문제 점진적 저장 (가져오는 대로 저장)
  * 기존 문제 + 새 문제를 합쳐서 저장
  */
 export async function updateMockExamProblemsProgressively(
-  newProblems: Problem[],
+  problems: Problem[],
   locale: string = "ko"
 ): Promise<void> {
   try {
-    const today = new Date().toISOString().split("T")[0];
-    const docKey = `${today}_${locale}`;
-
-    const mockExamRef = doc(db, "mockExamProblems", docKey);
-    const existingDoc = await getDoc(mockExamRef);
-
-    // 호출자가 누적 배열을 전달하므로 그대로 덮어쓰기
-    // 단, Firebase에 더 많이 저장되어 있으면 (다른 사용자가 먼저 생성) 그 쪽을 우선
-    const existingCount = existingDoc.exists() ? (existingDoc.data().problems || []).length : 0;
-    let allProblems: Problem[];
-    if (existingCount >= newProblems.length) {
-      // 다른 사용자가 이미 더 많이 저장함 - 저장 스킵
-      return;
-    } else {
-      allProblems = newProblems.slice(0, 50);
-    }
-
-    // 1️⃣ Firebase에 저장
-    await setDoc(
-      mockExamRef,
-      {
-        problems: allProblems,
-        createdAt: Timestamp.now(),
-        date: today,
-        locale: locale,
-        lastUpdated: Timestamp.now()
-      },
-      { merge: true }
-    );
-
-    // 2️⃣ localStorage에도 저장 (캐싱)
-    const cacheKey = `mockExamProblems_${docKey}`;
-    try {
-      localStorage.setItem(cacheKey, JSON.stringify(allProblems));
-    } catch (e) {
-      // localStorage 저장 실패
-    }
+    const userEmail = auth.currentUser?.email;
+    if (!userEmail) return;
+    const { api } = await import("./auth/apiClient");
+    await api.post("/api/saveMockExamProblems", { userId: userEmail, locale, problems });
   } catch (error: any) {
-    // Error saving problem data
+    console.error("updateMockExamProblemsProgressively error:", error?.message);
   }
 }
+
 
 /**
  * 오래된 모의시험 문제 삭제 (3일 이상 경과)
  * 한국어(ko), 영어(en), 일본어(ja) 모두 3일만 유지 후 자동 삭제
  */
 export async function deleteOldMockExamProblems(): Promise<number> {
-  try {
-    const mockExamRef = collection(db, "mockExamProblems");
-    const snapshot = await getDocs(mockExamRef);
-
-    const now = new Date();
-    const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
-
-    let deletedCount = 0;
-    const deletePromises: Promise<void>[] = [];
-
-    snapshot.forEach((doc) => {
-      const docId = doc.id;
-
-      // 문서 ID에서 날짜 추출 (format: YYYY-MM-DD 또는 YYYY-MM-DD_locale: ko/en/ja)
-      const dateMatch = docId.match(/^(\d{4})-(\d{2})-(\d{2})/);
-      if (dateMatch) {
-        const docDate = new Date(
-          parseInt(dateMatch[1]),
-          parseInt(dateMatch[2]) - 1,
-          parseInt(dateMatch[3])
-        );
-
-        // 3일 이상 경과한 문서 삭제 (모든 언어 포함)
-        if (docDate < threeDaysAgo) {
-          deletePromises.push(deleteDoc(doc.ref));
-          deletedCount++;
-        }
-      }
-    });
-
-    if (deletePromises.length > 0) {
-      await Promise.all(deletePromises);
-    }
-
-    return deletedCount;
-  } catch (error: any) {
-    // Firestore 권한 부족 - 무시 (클라이언트에서 삭제 불가는 정상)
-    if (error.code === "permission-denied") {
-      // 권한 부족은 정상 - Cloud Function이 없으면 발생
-      return 0;
-    }
-    return 0;
-  }
+  // PostgreSQL: 모의시험은 user_id + exam_date 로 자동 관리
+  return 0;
 }
 
 /**
@@ -1576,138 +1158,20 @@ const PAST_EXAM_MAX = 800;
  *    → order는 항상 1~800 범위 내 유지, 페이지네이션 일관성 보장
  */
 export async function uploadCurrentMockExamToPastExams(
-  locale: PastExamLocale
-): Promise<{ added: number; skipped: number; deleted: number; totalCount: number }> {
-  const collectionName = `pastExams_${locale}`;
-
-  // 1. 오늘의 모의시험 가져오기
-  const problems = await getTodayMockExamProblems(locale);
-  if (!problems || problems.length === 0) {
-    throw new Error("No mock exam problems found for today");
+  locale: string,
+  problems: any[]
+): Promise<{ uploaded: number }> {
+  try {
+    const { api } = await import("./auth/apiClient");
+    const res = await api.post("/api/uploadPastExams", { locale, problems });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (error: any) {
+    console.error("uploadCurrentMockExamToPastExams error:", error?.message);
+    return { uploaded: 0 };
   }
-
-  // 2. 기존 전체 문서 로드 (id, order, questionHash)
-  const existingSnapshot = await getDocs(collection(db, collectionName));
-  const existing: Array<{ id: string; order: number; questionHash: string }> = [];
-  const existingHashes = new Set<string>();
-  existingSnapshot.forEach(d => {
-    const data = d.data();
-    if (typeof data.order === "number" && typeof data.questionHash === "string") {
-      existing.push({ id: d.id, order: data.order, questionHash: data.questionHash });
-      existingHashes.add(data.questionHash);
-    }
-  });
-
-  // 3. 신규 문제 dedup + 필수 필드 검증 (Firestore가 undefined 거부)
-  const today = new Date().toISOString().split("T")[0];
-  const newProblems: Array<{ hash: string; p: Problem }> = [];
-  let skipped = 0;
-  for (const p of problems) {
-    if (!p?.question || !p?.answer || !p?.options) {
-      skipped++;
-      continue;
-    }
-    const hash = await sha256(p.question);
-    if (existingHashes.has(hash)) {
-      skipped++;
-      continue;
-    }
-    existingHashes.add(hash);
-    newProblems.push({ hash, p });
-  }
-
-  const currentCount = existing.length;
-  const newCount = newProblems.length;
-  const overflow = Math.max(0, (currentCount + newCount) - PAST_EXAM_MAX);
-
-  // 4. 삭제 대상 랜덤 선정 (Fisher-Yates shuffle)
-  const toDelete: typeof existing = [];
-  if (overflow > 0) {
-    const shuffled = [...existing];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    toDelete.push(...shuffled.slice(0, overflow));
-  }
-
-  // 5. 사용 중인 order 집합 계산 (삭제 대상 제외)
-  const deletedIds = new Set(toDelete.map(d => d.id));
-  const usedOrders = new Set<number>();
-  existing.forEach(d => {
-    if (!deletedIds.has(d.id)) usedOrders.add(d.order);
-  });
-
-  // 6. 신규 문제를 넣을 슬롯 계산 (1..MAX 중 미사용 order, 오름차순)
-  const availableOrders: number[] = [];
-  for (let o = 1; o <= PAST_EXAM_MAX; o++) {
-    if (!usedOrders.has(o)) availableOrders.push(o);
-  }
-
-  // 7. Batch 실행: 삭제 + 추가 + meta 업데이트
-  const BATCH_SIZE = 400;
-  let batch = writeBatch(db);
-  let opsInBatch = 0;
-  let added = 0;
-  let deleted = 0;
-
-  const commitIfNeeded = async () => {
-    if (opsInBatch >= BATCH_SIZE) {
-      await batch.commit();
-      batch = writeBatch(db);
-      opsInBatch = 0;
-    }
-  };
-
-  // 7-1. 삭제
-  for (const d of toDelete) {
-    batch.delete(doc(db, collectionName, d.id));
-    deleted++;
-    opsInBatch++;
-    await commitIfNeeded();
-  }
-
-  // 7-2. 추가 (availableOrders 개수만큼만 — MAX 넘지 않도록 자동 제한)
-  const addLimit = Math.min(newProblems.length, availableOrders.length);
-  for (let i = 0; i < addLimit; i++) {
-    const order = availableOrders[i];
-    const { hash, p } = newProblems[i];
-    const docId = `q${String(order).padStart(4, "0")}`;
-    batch.set(doc(db, collectionName, docId), {
-      order,
-      questionHash: hash,
-      question: p.question,
-      options: p.options,
-      answer: p.answer,
-      keywords: p.keywords || [],
-      goal: p.goal || "",
-      easyMode: p.easyMode || null,
-      explanation: p.explanation || null,
-      patterns: p.patterns || [],
-      sourceMockDate: today,
-      locale,
-      createdAt: serverTimestamp(),
-    });
-    added++;
-    opsInBatch++;
-    await commitIfNeeded();
-  }
-
-  // 7-3. meta 업데이트 (항상 최종 개수)
-  const finalCount = currentCount - deleted + added;
-  batch.set(doc(db, "meta", collectionName), {
-    totalCount: finalCount,
-    maxSlots: PAST_EXAM_MAX,
-    updatedAt: serverTimestamp(),
-  });
-  opsInBatch++;
-
-  if (opsInBatch > 0) {
-    await batch.commit();
-  }
-
-  return { added, skipped, deleted, totalCount: finalCount };
 }
+
 
 /**
  * 기출문제 페이지 단위 조회 (order BETWEEN start AND end)
@@ -1718,36 +1182,30 @@ export async function fetchPastExamPage(
   page: number,
   pageSize: number = 10
 ): Promise<{ problems: PastExamDoc[] }> {
-  const collectionName = `pastExams_${locale}`;
-  const startOrder = (page - 1) * pageSize + 1;
-  const endOrder = page * pageSize;
-
-  const q = query(
-    collection(db, collectionName),
-    where("order", ">=", startOrder),
-    where("order", "<=", endOrder),
-    orderBy("order")
-  );
-  const snap = await getDocs(q);
-  const problems = snap.docs.map(d => {
-    const data = d.data() as any;
-    return { id: d.id, ...data } as PastExamDoc;
-  });
-  return { problems };
+  try {
+    const { api } = await import("./auth/apiClient");
+    const res = await api.post("/api/getPastExamPage", { locale, page, pageSize });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (error: any) {
+    console.error("fetchPastExamPage error:", error?.message);
+    return { problems: [] };
+  }
 }
+
 
 /**
  * 기출문제 총 개수 (meta 문서에서 1번의 read로 조회)
  */
 export async function getPastExamTotalCount(locale: PastExamLocale): Promise<number> {
-  const collectionName = `pastExams_${locale}`;
   try {
-    const metaRef = doc(db, "meta", collectionName);
-    const snap = await getDoc(metaRef);
-    if (!snap.exists()) return 0;
-    const data = snap.data();
-    return typeof data.totalCount === "number" ? data.totalCount : 0;
-  } catch {
+    const { api } = await import("./auth/apiClient");
+    const res = await api.post("/api/getPastExamTotalCount", { locale });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return data.total || 0;
+  } catch (error: any) {
+    console.error("getPastExamTotalCount error:", error?.message);
     return 0;
   }
 }
