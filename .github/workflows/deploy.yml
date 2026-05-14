@@ -88,7 +88,7 @@ jobs:
 
       # 빌드 결과물을 다음 deploy job으로 전달
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dist-${{ github.ref_name }}-${{ github.sha }}
           path: dist/
