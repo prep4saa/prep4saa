@@ -42,6 +42,10 @@ yarn-error.*
 !*.tfvars.example
 *.tfplan
 
+# Lambda 빌드 산출물
+*.zip
+trade-api/response.json
+
 # typescript
 *.tsbuildinfo
 
@@ -68,3 +72,4 @@ firebase-adminsdk-*.json
 *.key
 gcp-key.json
 aws-credentials.json
+*.log

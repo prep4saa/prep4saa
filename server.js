@@ -2,41 +2,19 @@
 const cors = require('cors');
 const helmet = require('helmet');
 const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
+const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
 const crypto = require('crypto');
-const admin = require('firebase-admin');
+
+const sqsClient = new SQSClient({ region: 'us-east-1' });
+const SQS_QUEUE_URL = 'https://sqs.us-east-1.amazonaws.com/973294444983/problem-generation-queue';
 const { generatePrompt } = require('./prompts-server');
 require('dotenv').config();
 
-function loadFirebaseServiceAccount() {
-  // Try environment variable first
-  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-    try {
-      return JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    } catch (error) {
-      console.error('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT:', error?.message || error);
-      throw error;
-    }
-  }
+// PostgreSQL 풀 + Cognito JWT 미들웨어
+const { query: pgQuery } = require('./lib/db');
+const { requireAuth, requireAdmin, USE_COGNITO_AUTH } = require('./middleware/auth');
 
-  // Fallback to firebase-key.json file
-  try {
-    return require('./firebase-key.json');
-  } catch (error) {
-    throw new Error('❌ FIREBASE_SERVICE_ACCOUNT not found. Set environment variable or include firebase-key.json file.');
-  }
-}
-
-const serviceAccount = loadFirebaseServiceAccount();
-console.log('🔐 Firebase service account loaded:', {
-  projectId: serviceAccount.project_id,
-  clientEmail: serviceAccount.client_email,
-});
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL: process.env.FIREBASE_DATABASE_URL
-});
-const db = admin.firestore();
+console.log('✅ Server starting (Cognito + PostgreSQL only, Firebase removed)');
 
 const app = express();
 const PORT = 5000;
@@ -73,6 +51,8 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json({
+  // 마이그레이션/대량 업로드 위해 50MB 까지 허용
+  limit: '50mb',
   verify: (req, _res, buf) => {
     req.rawBody = buf.toString('utf8');
   }
@@ -206,6 +186,18 @@ app.post('/api/generateSAAProblem', async (req, res) => {
         source = 'claude';
       } catch (claudeError) {
         console.error('❌ Both Gemini and Claude failed');
+
+        // AI 두 곳 모두 실패 시 SQS로 오류 알림 전송
+        await sqsClient.send(new SendMessageCommand({
+          QueueUrl: SQS_QUEUE_URL,
+          MessageBody: JSON.stringify({
+            type: 'ERROR',
+            userId: req.body?.userId || 'unknown',
+            errorMessage: `Gemini: ${geminiError?.message} | Claude: ${claudeError?.message}`,
+            occurredAt: new Date().toISOString(),
+          }),
+        })).catch(sqsErr => console.error('❌ SQS 전송 실패:', sqsErr?.message));
+
         return res.status(500).json({
           error: { message: `Gemini: ${geminiError?.message} | Claude: ${claudeError?.message}` }
         });
@@ -522,45 +514,47 @@ app.post('/api/contact', async (req, res) => {
 // ===== Admin 寃利?=====
 
 // Admin check (보안: 백쾭에꽌留?泥섎━)
-app.post('/api/checkAdmin', (req, res) => {
+app.post('/api/checkAdmin', async (req, res) => {
   try {
     const { email } = req.body;
-    const adminEmail = process.env.VITE_ADMIN_EMAIL;
+    if (!email) {
+      return res.json({ isAdmin: false, timestamp: new Date().toISOString() });
+    }
 
-    // 백쾭에꽌留?admin 이찓//鍮꾧탳
-    const isAdmin = email && adminEmail && email === adminEmail;
+    const result = await pgQuery(
+      `SELECT role FROM users WHERE email = $1 LIMIT 1`,
+      [email]
+    );
 
-    // 메쾭洹?濡쒓렇
-    console.log('?뵇 Admin check:', {
-      receivedEmail: email,
-      adminEmail: adminEmail,
-      isAdmin: isAdmin,
-      match: email === adminEmail
-    });
+    const isAdmin = result.rows[0]?.role === 'admin';
+    console.log('Admin check:', { email, isAdmin });
 
-    res.json({
-      isAdmin: isAdmin,
-      timestamp: new Date().toISOString()
-    });
+    res.json({ isAdmin, timestamp: new Date().toISOString() });
   } catch (error) {
-    console.error('⚠️ Admin check error:', error);
+    console.error('Admin check error:', error);
     res.status(500).json({ error: { message: error.message } });
   }
 });
 
-app.use('/api/admin/', (req, res, next) => {
+// Admin route guard
+// - USE_COGNITO_AUTH=true: requireAuth (JWT) + requireAdmin (role check)
+// - USE_COGNITO_AUTH=false: legacy fallback by email body
+app.use('/api/admin/', async (req, res, next) => {
+  if (USE_COGNITO_AUTH) {
+    return requireAuth(req, res, () => requireAdmin(req, res, next));
+  }
   try {
     const { email } = req.body;
-    const adminEmail = process.env.VITE_ADMIN_EMAIL;
-
-    if (!email || !adminEmail || email !== adminEmail) {
-      return res.status(403).json({
-        error: { message: 'Unauthorized: Admin access required' },
-        isAdmin: false
-      });
+    if (!email) {
+      return res.status(403).json({ error: { message: 'Email required' }, isAdmin: false });
     }
-
-    // Admin ?뺤씤 ?꾨즺, 설쓬 ?몃뱾?щ줈
+    const result = await pgQuery(
+      `SELECT role FROM users WHERE email = $1 LIMIT 1`,
+      [email]
+    );
+    if (result.rows[0]?.role !== 'admin') {
+      return res.status(403).json({ error: { message: 'Admin access required' }, isAdmin: false });
+    }
     next();
   } catch (error) {
     res.status(500).json({ error: { message: error.message } });
@@ -568,58 +562,79 @@ app.use('/api/admin/', (req, res, next) => {
 });
 
 // Admin ?듦퀎 議고쉶 (愿由ъ옄 ?요청슜)
-app.post('/api/admin/stats', (req, res) => {
+// Admin: 전체 통계 (PostgreSQL)
+app.post('/api/admin/stats', async (req, res) => {
   try {
-    const { email } = req.body;
-    // 誘몃뱾?⑥뼱에꽌 이? 寃利앸맖
-
-    // 푸뒪?몄슜 응떟 (설젣濡백뒗 Firebase getAdminStats() ?몄텧)
+    const result = await pgQuery(
+      `SELECT
+         COUNT(*) AS total_users,
+         COUNT(CASE WHEN is_premium THEN 1 END) AS paid_users,
+         COUNT(CASE WHEN NOT is_premium THEN 1 END) AS free_users,
+         COUNT(CASE WHEN role = 'admin' THEN 1 END) AS admin_users
+       FROM users`
+    );
+    const r = result.rows[0] || {};
     res.json({
-      totalUsers: 0,
-      paidUsers: 0,
-      freeUsers: 0,
-      timestamp: new Date().toISOString()
+      totalUsers: parseInt(r.total_users || 0),
+      paidUsers: parseInt(r.paid_users || 0),
+      freeUsers: parseInt(r.free_users || 0),
+      adminUsers: parseInt(r.admin_users || 0),
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
+    console.error('admin/stats error:', error);
     res.status(500).json({ error: { message: error.message } });
   }
 });
 
-// Admin - 紐⑤뱺 사슜//紐⑸줉 議고쉶 (愿由ъ옄 ?요청슜)
-app.post('/api/admin/users', (req, res) => {
+// Admin: 모든 사용자 목록 (PostgreSQL)
+app.post('/api/admin/users', async (req, res) => {
   try {
-    const { email } = req.body;
-    // 誘몃뱾?⑥뼱에꽌 이? 寃利앸맖
-
-    // 푸뒪?몄슜 응떟 (설젣濡백뒗 Firebase getAllUsersForAdmin() ?몄텧)
-    res.json({
-      users: [],
-      timestamp: new Date().toISOString()
-    });
+    const result = await pgQuery(
+      `SELECT id, cognito_sub, email, display_name, role, is_premium,
+              premium_until, exam_start_date, streak,
+              created_at, last_login_at
+       FROM users
+       ORDER BY created_at DESC
+       LIMIT 1000`
+    );
+    res.json({ users: result.rows, timestamp: new Date().toISOString() });
   } catch (error) {
+    console.error('admin/users error:', error);
     res.status(500).json({ error: { message: error.message } });
   }
 });
 
-// Admin - ?뱀젙 사슜에쓽 臾몄젣 ?몄뀡 議고쉶 (愿由ъ옄 ?요청슜)
-app.post('/api/admin/user/sessions', (req, res) => {
+// Admin: 특정 사용자의 문제 풀이 세션 (PostgreSQL)
+app.post('/api/admin/user/sessions', async (req, res) => {
   try {
-    const { email, userId } = req.body;
-    // 誘몃뱾?⑥뼱에꽌 이? 寃利앸맖
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ error: { message: 'userId is required' } });
 
-    if (!userId) {
-      return res.status(400).json({ error: { message: 'userId is required' } });
-    }
+    const userRow = await pgQuery(
+      `SELECT id FROM users WHERE email = $1 OR cognito_sub = $1 LIMIT 1`,
+      [String(userId)]
+    );
+    if (!userRow.rows[0]) return res.json({ sessions: [], timestamp: new Date().toISOString() });
+    const internalUserId = userRow.rows[0].id;
 
-    // 푸뒪?몄슜 응떟 (설젣濡백뒗 Firebase getUserProblemSessions() ?몄텧)
-    res.json({
-      sessions: [],
-      timestamp: new Date().toISOString()
-    });
+    const result = await pgQuery(
+      `SELECT session_id, full_problem, difficulty, is_correct,
+              user_answer, created_at,
+              EXTRACT(EPOCH FROM created_at)*1000 AS timestamp_ms
+       FROM quiz_results
+       WHERE user_id = $1
+       ORDER BY created_at DESC
+       LIMIT 500`,
+      [internalUserId]
+    );
+    res.json({ sessions: result.rows, timestamp: new Date().toISOString() });
   } catch (error) {
+    console.error('admin/user/sessions error:', error);
     res.status(500).json({ error: { message: error.message } });
   }
 });
+
 
 // Admin Console: 백쾭 紐낅졊//실뻾 (admin ?요청슜)
 app.post('/api/admin/console', (req, res) => {
@@ -661,47 +676,56 @@ app.post('/api/recordProblemGeneration', async (req, res) => {
       return res.status(400).json({ error: 'userId is required' });
     }
 
-    const today = new Date().toISOString().split('T')[0];
-    const dailyStatsRef = db.collection('users').doc(userId).collection('dailyStats').doc(today);
-    const dailyStats = await dailyStatsRef.get();
+    // DynamoDB에 카운트 증가
+    const userType = req.body.userStatus === 'paid' ? 'premium' : 'loggedIn';
+    const apiUrl = `https://1k4zw2bkhk.execute-api.us-east-1.amazonaws.com/prod/count/${encodeURIComponent(userId)}`;
+    const countResponse = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userType })
+    });
+    const countData = await countResponse.json();
 
-    if (dailyStats.exists) {
-      // 기존 기록 업데이트
-      const newCount = (dailyStats.data().problemCount || 0) + 1;
-      await dailyStatsRef.update({
-        problemCount: newCount,
-        lastGeneratedAt: new Date().toISOString()
-      });
-      console.log(`✅ Problem recorded: ${newCount} problems generated today (userId: ${userId})`);
-    } else {
-      // 새 기록 생성
-      await dailyStatsRef.set({
-        date: today,
-        problemCount: 1,
-        createdAt: new Date().toISOString(),
-        lastGeneratedAt: new Date().toISOString()
-      });
-      console.log(`✅ First problem recorded today (userId: ${userId})`);
+    if (countResponse.status === 429) {
+      return res.status(429).json({ error: 'Daily limit reached', ...countData });
     }
 
-    // 문제를 quizResults에 저장
-    if (problem) {
-      const timestamp = Date.now();
-      const sessionId = `${today}_session`;
-      const quizResultRef = db.collection('users').doc(userId).collection('quizResults').doc(`${timestamp}_${Math.random().toString(36).substr(2, 9)}`);
+    console.log(`✅ Problem recorded: ${countData.count}/${countData.limit} today (userId: ${userId})`);
 
-      await quizResultRef.set({
-        sessionId: sessionId,
-        timestamp: timestamp,
-        date: today,
-        difficulty: 'medium',
-        fullProblem: problem,
-        userAnswer: null,
-        isCorrect: null,
-        timeSpent: 0,
-        expiresAt: new Date().getTime() + 24 * 60 * 60 * 1000  // 1일(24시간) 뒤 삭제
-      });
-      console.log(`✅ Problem saved to quizResults (userId: ${userId})`);
+    // 문제를 PostgreSQL quiz_results 에 저장
+    // - userId 는 email 또는 cognito_sub
+    // - users 테이블 lookup 후 internal id 사용
+    if (problem) {
+      const today = new Date().toISOString().split('T')[0];
+      const sessionId = `${today}_session`;
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h TTL
+
+      // userId 가 email 인지 cognito_sub 인지 자동 판별
+      const userRow = await pgQuery(
+        `SELECT id FROM users WHERE email = $1 OR cognito_sub = $1 LIMIT 1`,
+        [userId]
+      );
+      if (!userRow.rows[0]) {
+        console.warn(`User not found in DB: ${userId}`);
+        return res.json({ success: true, message: 'Recorded (user not synced yet)' });
+      }
+      const internalUserId = userRow.rows[0].id;
+
+      await pgQuery(
+        `INSERT INTO quiz_results
+           (user_id, session_id, question_id, difficulty, full_problem, time_spent_seconds, expires_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          internalUserId,
+          sessionId,
+          problem?.id || `gen-${Date.now()}`,
+          problem?.difficulty || 'medium',
+          problem,  // JSONB
+          0,
+          expiresAt,
+        ]
+      );
+      console.log(`✅ Problem saved to PostgreSQL quiz_results (userId: ${userId})`);
     }
 
     return res.json({ success: true, message: 'Problem generation recorded' });
@@ -711,7 +735,7 @@ app.post('/api/recordProblemGeneration', async (req, res) => {
   }
 });
 
-// 오늘 생성한 문제 개수 조회 (보안: 서버에서 검증)
+// 오늘 생성한 문제 개수 조회 (DynamoDB via API Gateway)
 app.post('/api/getProblemCountToday', async (req, res) => {
   try {
     const { userId, userStatus } = req.body;
@@ -720,29 +744,16 @@ app.post('/api/getProblemCountToday', async (req, res) => {
       return res.status(400).json({ error: 'userId is required' });
     }
 
-    const today = new Date().toISOString().split('T')[0];
-
     // 상태별 제한
     let limit = 2;
-    if (userStatus === 'paid') {
-      limit = 20;
-    } else if (userStatus === 'loggedIn') {
-      limit = 2;
-    } else {
-      limit = 2;
-    }
+    if (userStatus === 'paid') limit = 20;
 
-    // quizResults 컬렉션에서 오늘 생성된 문제 개수 세기
-    const resultsRef = db.collection('users').doc(userId).collection('quizResults');
-    const snapshot = await resultsRef.where('date', '==', today).get();
+    // DynamoDB에서 오늘 카운트 조회
+    const apiUrl = `https://1k4zw2bkhk.execute-api.us-east-1.amazonaws.com/prod/count/${encodeURIComponent(userId)}`;
+    const response = await fetch(apiUrl);
+    const data = await response.json();
 
-    const now = new Date().getTime();
-    const validDocs = snapshot.docs.filter(doc => {
-      const expiresAt = doc.data().expiresAt;
-      return !expiresAt || expiresAt >= now;
-    });
-
-    const count = validDocs.length;
+    const count = data.count || 0;
 
     console.log(`📊 Today's problem count for ${userId}: ${count}/${limit}`);
 
@@ -753,112 +764,67 @@ app.post('/api/getProblemCountToday', async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Error getting problem count:', error);
-    // Fallback: 허용하지만 로그에 에러 기록
-    return res.json({
-      count: 0,
-      limit: 20,
-      canGenerate: true
-    });
+    return res.json({ count: 0, limit: 20, canGenerate: true });
   }
 });
 
-// 사용자의 문제 세션 조회 (PDF 다운로드용)
+// 사용자의 문제 세션 조회 (PDF 다운로드용) - PostgreSQL
 app.post('/api/getUserProblemSessions', async (req, res) => {
   try {
     const { userId } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
 
-    if (!userId) {
-      return res.status(400).json({ error: 'userId is required' });
+    // user 조회 (email 또는 cognito_sub)
+    const userRow = await pgQuery(
+      `SELECT id FROM users WHERE email = $1 OR cognito_sub = $1 LIMIT 1`,
+      [userId]
+    );
+    if (!userRow.rows[0]) return res.json([]);
+    const internalUserId = userRow.rows[0].id;
+
+    // 만료 안 된 quiz_results 조회 (session_id 별 그룹)
+    const result = await pgQuery(
+      `SELECT session_id, full_problem, difficulty, created_at,
+              EXTRACT(EPOCH FROM created_at)*1000 AS timestamp_ms
+       FROM quiz_results
+       WHERE user_id = $1
+         AND (expires_at IS NULL OR expires_at > NOW())
+       ORDER BY created_at DESC`,
+      [internalUserId]
+    );
+
+    // session_id 별로 그룹화
+    const sessionMap = new Map();
+    for (const row of result.rows) {
+      if (!sessionMap.has(row.session_id)) {
+        sessionMap.set(row.session_id, []);
+      }
+      sessionMap.get(row.session_id).push(row);
     }
 
-    const resultsRef = db.collection('users').doc(userId).collection('quizResults');
-    const snapshot = await resultsRef.get();
-
-    const now = new Date().getTime();
-
-    // sessionId별로 그룹화
-    const sessionMap = new Map();
-
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-
-      // 만료되지 않은 항목만 포함
-      if (data.expiresAt && data.expiresAt < now) {
-        return;
-      }
-
-      const sessionId = data.sessionId;
-      if (!sessionMap.has(sessionId)) {
-        sessionMap.set(sessionId, []);
-      }
-      sessionMap.get(sessionId).push({
-        ...data,
-        docId: doc.id
-      });
-    });
-
-    // 날짜/시간별로 포맷
-    const sessions = Array.from(sessionMap.entries()).map(([sessionId, problems]) => {
-      const timestamp = problems[0].timestamp;
-      const date = new Date(timestamp);
+    // 세션별 포맷
+    const sessions = Array.from(sessionMap.entries()).map(([sessionId, rows]) => {
+      const first = rows[0];
+      const date = new Date(first.created_at);
       const dateStr = date.toLocaleDateString('ko-KR');
       const timeStr = date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-
-      // fullProblem이 없으면 개별 필드들로부터 문제 객체 재구성
-      const reconstructedProblems = problems.map(p => {
-        if (p.fullProblem) {
-          return p.fullProblem;
-        }
-
-        // fullProblem이 없으면 저장된 필드들로부터 재구성
-        return {
-          question: p.question || '',
-          options: {
-            A: p.optionA || '',
-            B: p.optionB || '',
-            C: p.optionC || '',
-            D: p.optionD || ''
-          },
-          answer: p.correctAnswer || '',
-          keywords: p.keywords || [],
-          goal: p.goal || '',
-          explanation: {
-            correct: p.explanationCorrect || '',
-            trap_A: p.explanationTrapA || '',
-            trap_B: p.explanationTrapB || '',
-            trap_C: p.explanationTrapC || '',
-            trap_D: p.explanationTrapD || ''
-          },
-          easyMode: {
-            explanation: p.easyModeExplanation || '',
-            A: p.easyModeA || '',
-            B: p.easyModeB || '',
-            C: p.easyModeC || '',
-            D: p.easyModeD || ''
-          },
-          patterns: p.patterns || []
-        };
-      });
-
       return {
         date: dateStr,
         time: timeStr,
-        problemCount: problems.length,
-        difficulty: problems[0].difficulty,
-        problems: reconstructedProblems,
-        sessionTimestamp: timestamp
+        problemCount: rows.length,
+        difficulty: first.difficulty,
+        problems: rows.map(r => r.full_problem),
+        sessionTimestamp: Number(first.timestamp_ms),
       };
     });
 
-    // 최신순 정렬
-    const sortedSessions = sessions.sort((a, b) => b.sessionTimestamp - a.sessionTimestamp);
+    sessions.sort((a, b) => b.sessionTimestamp - a.sessionTimestamp);
 
-    console.log(`✅ Retrieved ${sortedSessions.length} problem sessions for user ${userId}`);
-
-    return res.json(sortedSessions);
+    console.log(`✅ Retrieved ${sessions.length} problem sessions for user ${userId}`);
+    return res.json(sessions);
   } catch (error) {
     console.error('❌ Error getting problem sessions:', error);
-    return res.status(500).json({ error: error.message || 'Failed to get problem sessions' });
+    return res.status(500).json({ error: error.message || 'Failed' });
   }
 });
 
@@ -866,633 +832,489 @@ app.post('/api/getUserProblemSessions', async (req, res) => {
 app.post('/api/getQuizStats', async (req, res) => {
   try {
     const { userId } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
 
-    if (!userId) {
-      return res.status(400).json({ error: 'userId is required' });
+    const userRow = await pgQuery(
+      `SELECT id FROM users WHERE email = $1 OR cognito_sub = $1 LIMIT 1`,
+      [userId]
+    );
+    if (!userRow.rows[0]) {
+      return res.json({ totalAttempts: 0, correctCount: 0, accuracy: 0, byService: {} });
     }
+    const internalUserId = userRow.rows[0].id;
 
-    const resultsRef = db.collection('users').doc(userId).collection('quizResults');
-    const snapshot = await resultsRef.get();
+    // 만료 안 된 quiz_results
+    const result = await pgQuery(
+      `SELECT is_correct, full_problem
+       FROM quiz_results
+       WHERE user_id = $1
+         AND (expires_at IS NULL OR expires_at > NOW())`,
+      [internalUserId]
+    );
 
     let totalAttempts = 0;
     let correctCount = 0;
     const byService = {};
 
-    const now = new Date().getTime();
-
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-
-      // 만료되지 않은 항목만 포함
-      if (data.expiresAt && data.expiresAt < now) {
-        return;
-      }
-
+    for (const row of result.rows) {
       totalAttempts++;
+      if (row.is_correct === true) correctCount++;
 
-      // 정답인 경우만 카운트
-      const isCorrect = data.isCorrect === true;
-      if (isCorrect) {
-        correctCount++;
-      }
-
-      // 서비스별 통계: problem.keywords[0] 기반 (AI 생성 locale 별 키워드)
-      // 클라이언트가 NODE name 매칭으로 필터링해 한국어 stale 키를 숨김
-      if (data.fullProblem && data.fullProblem.keywords && data.fullProblem.keywords.length > 0) {
-        const service = data.fullProblem.keywords[0];
+      const keywords = row.full_problem?.keywords;
+      if (Array.isArray(keywords) && keywords.length > 0) {
+        const service = keywords[0];
         if (!byService[service]) {
           byService[service] = { total: 0, correct: 0, accuracy: 0 };
         }
         byService[service].total++;
-        if (isCorrect) {
-          byService[service].correct++;
-        }
+        if (row.is_correct === true) byService[service].correct++;
       }
-    });
+    }
 
-    // 정확도 계산
     const accuracy = totalAttempts > 0 ? Math.round((correctCount / totalAttempts) * 100) : 0;
-
-    // 서비스별 정확도 계산
     Object.keys(byService).forEach((service) => {
-      const serviceTotal = byService[service].total;
-      byService[service].accuracy = serviceTotal > 0
-        ? Math.round((byService[service].correct / serviceTotal) * 100)
-        : 0;
+      const t = byService[service].total;
+      byService[service].accuracy = t > 0 ? Math.round((byService[service].correct / t) * 100) : 0;
     });
 
-    return res.json({
-      totalAttempts,
-      correctCount,
-      accuracy,
-      byService
-    });
+    return res.json({ totalAttempts, correctCount, accuracy, byService });
   } catch (error) {
     console.error('❌ Error getting quiz stats:', error);
-    return res.json({
-      totalAttempts: 0,
-      correctCount: 0,
-      accuracy: 0,
-      byService: {}
-    });
+    return res.json({ totalAttempts: 0, correctCount: 0, accuracy: 0, byService: {} });
   }
 });
 
 // 퀴즈 결과 저장 (정답/오답 기록)
 app.post('/api/recordQuizResult', async (req, res) => {
   try {
-    const { userId, problem, selectedAnswer, difficulty, sessionId, selectedServices } = req.body;
-
+    const { userId, problem, selectedAnswer, difficulty, sessionId } = req.body;
     if (!userId || !problem) {
       return res.status(400).json({ error: 'userId and problem are required' });
     }
 
     const isCorrect = selectedAnswer === problem.answer;
-    const resultsRef = db.collection('users').doc(userId).collection('quizResults');
-    const today = new Date().toISOString().split('T')[0];
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    // 24시간 뒤 만료 타임스탬프
-    const expiresAt = new Date().getTime() + 24 * 60 * 60 * 1000;
+    // user 조회
+    const userRow = await pgQuery(
+      `SELECT id FROM users WHERE email = $1 OR cognito_sub = $1 LIMIT 1`,
+      [userId]
+    );
+    if (!userRow.rows[0]) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const internalUserId = userRow.rows[0].id;
 
-    // 1️⃣ quizResults에 저장 (fullProblem은 시도하지만, 실패 시 개별 필드로 저장)
-    const quizResultData = {
-      sessionId: sessionId,
-      question: problem.question || '',
-      correctAnswer: problem.answer || '',
-      selectedAnswer: selectedAnswer || '',
-      userAnswer: selectedAnswer || '',
-      isCorrect: isCorrect,
-      difficulty: difficulty,
-      date: today,
-      createdAt: new Date().toISOString(),
-      timestamp: new Date().getTime(),
-      expiresAt: expiresAt,
-      keywords: problem.keywords || [],
-      goal: problem.goal || '',
-      // 선택지 저장
-      optionA: (problem.options?.A) || '',
-      optionB: (problem.options?.B) || '',
-      optionC: (problem.options?.C) || '',
-      optionD: (problem.options?.D) || '',
-      // 설명 저장
-      explanationCorrect: (problem.explanation?.correct) || '',
-      explanationTrapA: (problem.explanation?.trap_A) || '',
-      explanationTrapB: (problem.explanation?.trap_B) || '',
-      explanationTrapC: (problem.explanation?.trap_C) || '',
-      explanationTrapD: (problem.explanation?.trap_D) || '',
-      // 이지 모드 저장
-      easyModeExplanation: (problem.easyMode?.explanation) || '',
-      easyModeA: (problem.easyMode?.A) || '',
-      easyModeB: (problem.easyMode?.B) || '',
-      easyModeC: (problem.easyMode?.C) || '',
-      easyModeD: (problem.easyMode?.D) || '',
-      patterns: problem.patterns || []
+    // quiz_results INSERT
+    // - full_problem JSONB: 모든 문제 데이터 + 사용자 응답까지 한 번에 저장
+    //   (Firestore 의 개별 컬럼들 → JSONB 통합으로 단순화)
+    const enrichedProblem = {
+      ...problem,
+      userAnswer: selectedAnswer,
+      isCorrect,
     };
 
-    try {
-      // fullProblem도 함께 시도
-      await resultsRef.add({
-        ...quizResultData,
-        fullProblem: problem
-      });
+    await pgQuery(
+      `INSERT INTO quiz_results
+         (user_id, session_id, question_id, difficulty, full_problem,
+          user_answer, is_correct, time_spent_seconds, expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        internalUserId,
+        sessionId || `${new Date().toISOString().split('T')[0]}_session`,
+        problem?.id || `gen-${Date.now()}`,
+        difficulty || 'medium',
+        enrichedProblem,
+        selectedAnswer || null,
+        isCorrect,
+        0,
+        expiresAt,
+      ]
+    );
 
-      console.log(`📝 Quiz result saved: ${isCorrect ? '✅' : '❌'} (user: ${userId})`);
-    } catch (saveError) {
-      console.error(`❌ Error saving with fullProblem:`, saveError?.message);
-      // fullProblem 없이 재시도
-      console.log(`♻️ Retrying without fullProblem...`);
-      try {
-        await resultsRef.add(quizResultData);
-        console.log(`📝 Quiz result saved (without fullProblem)`);
-      } catch (retryError) {
-        console.error(`❌ Error saving quiz result:`, retryError?.message);
-        throw retryError;
-      }
-    }
-
-    // 2️⃣ aggregatedStats에 누적 통계 저장
-    const userRef = db.collection('users').doc(userId);
-    const statsRef = userRef.collection('userData').doc('aggregatedStats');
-
-    console.log(`📝 Saving stats to: users/${userId}/userData/aggregatedStats`);
-
-    let statsDocExists = false;
-    let currentStats = null;
-
-    try {
-      const statsDoc = await statsRef.get();
-      // 제대로 된 DocumentSnapshot 객체인지 확인
-      if (statsDoc && typeof statsDoc.exists === 'function') {
-        statsDocExists = statsDoc.exists();
-        if (statsDocExists) {
-          currentStats = statsDoc.data() || {};
-        }
-      } else {
-        console.warn(`⚠️ Invalid statsDoc response type`);
-        statsDocExists = false;
-      }
-    } catch (getError) {
-      console.error(`⚠️ Error getting stats doc:`, getError?.message);
-      statsDocExists = false;
-    }
-
-    if (statsDocExists && currentStats) {
-      // 서비스별 통계 업데이트
-      const byService = currentStats.byService || {};
-      (selectedServices || []).forEach(service => {
-        if (!byService[service]) {
-          byService[service] = { total: 0, correct: 0 };
-        }
-        byService[service].total++;
-        if (isCorrect) byService[service].correct++;
-      });
-
-      try {
-        await statsRef.update({
-          totalAttempts: (currentStats.totalAttempts || 0) + 1,
-          correctCount: isCorrect ? (currentStats.correctCount || 0) + 1 : currentStats.correctCount || 0,
-          byService: byService,
-          updatedAt: new Date().getTime()
-        });
-        console.log(`✅ Stats updated (existing doc)`);
-      } catch (updateError) {
-        console.error(`❌ Update error:`, updateError?.message);
-        // 에러가 나도 계속 진행 (통계는 선택사항)
-      }
-    } else {
-      // 첫 문제인 경우 또는 조회 실패한 경우
-      const byService = {};
-      (selectedServices || []).forEach(service => {
-        byService[service] = { total: 1, correct: isCorrect ? 1 : 0 };
-      });
-
-      try {
-        await statsRef.set({
-          totalAttempts: 1,
-          correctCount: isCorrect ? 1 : 0,
-          byService: byService,
-          createdAt: new Date().getTime(),
-          updatedAt: new Date().getTime()
-        });
-        console.log(`✅ Stats created (new doc)`);
-      } catch (setError) {
-        console.error(`❌ Set error:`, setError?.message);
-        // 에러가 나도 계속 진행 (통계는 선택사항)
-      }
-    }
-
-    console.log(`📊 Stats updated for user ${userId}`);
-
-    return res.json({ success: true, isCorrect: isCorrect });
+    console.log(`📝 Quiz result saved: ${isCorrect ? '✅' : '❌'} (user: ${userId})`);
+    return res.json({ success: true, isCorrect });
   } catch (error) {
     console.error('❌ Error recording quiz result:', error);
-    return res.status(500).json({ error: error.message || 'Failed to record quiz result' });
+    return res.status(500).json({ error: error.message || 'Failed' });
   }
 });
 
-//Lemon Squeezy Checkout API
-app.post('/api/lemonsqueezy/checkout', async (req, res) => {
+// ===== 기출문제 (Past Exams) - PostgreSQL =====
+
+// 기출문제 페이지 조회 (locale 별 페이지네이션)
+app.post('/api/getPastExamPage', async (req, res) => {
   try {
-    const { email, returnUrl } = req.body;
+    const { locale = 'ko', page = 1, pageSize = 10 } = req.body;
+    const offset = Math.max(0, (page - 1) * pageSize);
 
-    if (!email) {
-      return res.status(400).json({ error: 'Email is required' });
-    }
+    const result = await pgQuery(
+      `SELECT id, order_num, problem_data
+       FROM past_exams
+       WHERE locale = $1
+       ORDER BY order_num ASC
+       LIMIT $2 OFFSET $3`,
+      [locale, pageSize, offset]
+    );
 
-    const storeId = process.env.VITE_LEMON_SQUEEZY_STORE_ID;
-    const productId = process.env.VITE_LEMON_SQUEEZY_PRODUCT_ID;
+    const problems = result.rows.map(r => ({
+      id: String(r.id),
+      order: r.order_num,
+      ...r.problem_data,
+    }));
+    return res.json({ problems });
+  } catch (error) {
+    console.error('getPastExamPage error:', error);
+    return res.status(500).json({ error: error.message, problems: [] });
+  }
+});
 
-    if (!storeId || !productId) {
-      return res.status(400).json({
-        error: 'Lemon Squeezy store/product environment variables are missing',
-      });
-    }
+// 기출문제 총 개수
+app.post('/api/getPastExamTotalCount', async (req, res) => {
+  try {
+    const { locale = 'ko' } = req.body;
+    const result = await pgQuery(
+      `SELECT COUNT(*) AS total FROM past_exams WHERE locale = $1`,
+      [locale]
+    );
+    return res.json({ total: parseInt(result.rows[0]?.total || 0) });
+  } catch (error) {
+    console.error('getPastExamTotalCount error:', error);
+    return res.json({ total: 0 });
+  }
+});
 
-    const checkoutParams = new URLSearchParams({
-      'checkout[email]': email,
-      'checkout[custom][email]': email,
-    });
+// ===== 모의시험 (Mock Exams) - PostgreSQL =====
 
-    if (returnUrl) {
-      checkoutParams.set('checkout[custom][return_url]', returnUrl);
-    }
+// 오늘의 모의시험 조회
+app.post('/api/getTodayMockExam', async (req, res) => {
+  try {
+    const { userId, locale = 'ko' } = req.body;
+    if (!userId) return res.json({ problems: null });
 
-    const checkoutUrl = `https://${storeId}.lemonsqueezy.com/checkout/buy/${productId}?${checkoutParams.toString()}`;
+    const userRow = await pgQuery(
+      `SELECT id FROM users WHERE email = $1 OR cognito_sub = $1 LIMIT 1`,
+      [userId]
+    );
+    if (!userRow.rows[0]) return res.json({ problems: null });
+    const internalUserId = userRow.rows[0].id;
 
-    console.log('✅ Checkout URL generated:', checkoutUrl);
+    const result = await pgQuery(
+      `SELECT problems, answers, results, started_at, completed_at
+       FROM mock_exams
+       WHERE user_id = $1 AND locale = $2 AND exam_date = CURRENT_DATE`,
+      [internalUserId, locale]
+    );
 
+    if (!result.rows[0]) return res.json({ problems: null });
     return res.json({
-      checkoutUrl,
-      email,
+      problems: result.rows[0].problems || null,
+      answers: result.rows[0].answers || [],
+      results: result.rows[0].results,
+      startedAt: result.rows[0].started_at,
+      completedAt: result.rows[0].completed_at,
     });
   } catch (error) {
-    console.error('⚠️ Checkout error:', error);
-    res.status(500).json({ error: { message: error.message } });
+    console.error('getTodayMockExam error:', error);
+    return res.json({ problems: null });
   }
+});
+
+// 모의시험 점진적 저장 (배치마다 호출)
+app.post('/api/saveMockExamProblems', async (req, res) => {
+  try {
+    const { userId, locale = 'ko', problems = [], answers = [] } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId required' });
+
+    const userRow = await pgQuery(
+      `SELECT id FROM users WHERE email = $1 OR cognito_sub = $1 LIMIT 1`,
+      [userId]
+    );
+    if (!userRow.rows[0]) return res.status(404).json({ error: 'User not found' });
+    const internalUserId = userRow.rows[0].id;
+
+    await pgQuery(
+      `INSERT INTO mock_exams (user_id, locale, exam_date, problems, answers)
+       VALUES ($1, $2, CURRENT_DATE, $3, $4)
+       ON CONFLICT (user_id, locale, exam_date) DO UPDATE
+       SET problems = EXCLUDED.problems,
+           answers  = COALESCE($4, mock_exams.answers)`,
+      [internalUserId, locale, JSON.stringify(problems), JSON.stringify(answers)]
+    );
+
+    return res.json({ saved: problems.length });
+  } catch (error) {
+    console.error('saveMockExamProblems error:', error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// 모의시험 종료 + 결과 저장
+app.post('/api/completeMockExam', async (req, res) => {
+  try {
+    const { userId, locale = 'ko', answers, results } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId required' });
+
+    const userRow = await pgQuery(
+      `SELECT id FROM users WHERE email = $1 OR cognito_sub = $1 LIMIT 1`,
+      [userId]
+    );
+    if (!userRow.rows[0]) return res.status(404).json({ error: 'User not found' });
+
+    await pgQuery(
+      `UPDATE mock_exams
+       SET answers = $1, results = $2, completed_at = NOW()
+       WHERE user_id = $3 AND locale = $4 AND exam_date = CURRENT_DATE`,
+      [JSON.stringify(answers || []), JSON.stringify(results || {}), userRow.rows[0].id, locale]
+    );
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('completeMockExam error:', error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== Firebase → PostgreSQL 마이그레이션 트리거 (일회성) =====
+// 실행: POST /api/migrate-firebase-to-pg { type: 'pastExams' | 'all' }
+// - server.js 에 firebase-admin 이 없으면 사용자가 보낸 데이터 받아서 INSERT
+app.post('/api/migrate-firebase-to-pg', async (req, res) => {
+  try {
+    const { type, locale = 'ko', items = [] } = req.body;
+    if (!type) return res.status(400).json({ error: 'type required' });
+
+    if (type === 'pastExams') {
+      console.log(`[migrate] starting pastExams ${locale}: ${items.length} items`);
+
+      const pool = require('./lib/db').getPool();
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query(`DELETE FROM past_exams WHERE locale = $1`, [locale]);
+
+        // batch INSERT (한 번의 query 로 모든 row)
+        // - 큰 batch 는 parameter 한도 (~32K) 초과 가능 → 50개씩 chunk
+        const CHUNK = 50;
+        let inserted = 0;
+        for (let i = 0; i < items.length; i += CHUNK) {
+          const chunk = items.slice(i, i + CHUNK);
+          const values = [];
+          const params = [];
+          chunk.forEach((item, idx) => {
+            const order = item.order || (inserted + idx + 1);
+            const { id: _id, order: _order, ...problemData } = item;
+            const base = idx * 3;
+            values.push(`($${base + 1}, $${base + 2}, $${base + 3})`);
+            params.push(locale, order, problemData);
+          });
+          await client.query(
+            `INSERT INTO past_exams (locale, order_num, problem_data) VALUES ${values.join(',')}`,
+            params
+          );
+          inserted += chunk.length;
+          console.log(`[migrate] inserted ${inserted}/${items.length}`);
+        }
+
+        await client.query('COMMIT');
+        console.log(`[migrate] DONE pastExams ${locale}: ${inserted}`);
+        return res.json({ migrated: inserted, locale });
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
+    }
+
+    return res.status(400).json({ error: `Unknown type: ${type}` });
+  } catch (error) {
+    console.error('migration error:', error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// 오늘의 모의시험 → 기출문제로 일괄 업로드 (admin 전용)
+// - PostgreSQL mock_exams 에서 오늘 problems 읽음
+// - past_exams 와 question 텍스트로 중복 비교
+// - 새 문제만 INSERT
+// - 응답: { added, skipped, deleted, totalCount }
+app.post('/api/uploadMockToPastExams', async (req, res) => {
+  if (USE_COGNITO_AUTH) {
+    return requireAuth(req, res, () => requireAdmin(req, res, () => uploadMockToPastHandler(req, res)));
+  }
+  return uploadMockToPastHandler(req, res);
+});
+
+async function uploadMockToPastHandler(req, res) {
+  try {
+    const { userId, locale = 'ko' } = req.body;
+    if (!userId) return res.status(400).json({ error: { message: 'userId required' } });
+
+    // 1. user 조회
+    const userRow = await pgQuery(
+      `SELECT id FROM users WHERE email = $1 OR cognito_sub = $1 LIMIT 1`,
+      [userId]
+    );
+    if (!userRow.rows[0]) return res.status(404).json({ error: { message: 'User not found' } });
+    const internalUserId = userRow.rows[0].id;
+
+    // 2. 오늘의 모의시험 problems 읽기
+    const mockResult = await pgQuery(
+      `SELECT problems FROM mock_exams
+       WHERE user_id = $1 AND locale = $2 AND exam_date = CURRENT_DATE`,
+      [internalUserId, locale]
+    );
+    if (!mockResult.rows[0]) {
+      return res.status(404).json({ error: { message: 'No mock exam for today' } });
+    }
+    const problems = mockResult.rows[0].problems || [];
+    if (problems.length === 0) {
+      return res.json({ added: 0, skipped: 0, deleted: 0, totalCount: 0 });
+    }
+
+    // 3. 기존 past_exams 의 question 추출 (중복 체크)
+    const existingResult = await pgQuery(
+      `SELECT problem_data->>'question' AS question FROM past_exams WHERE locale = $1`,
+      [locale]
+    );
+    const existingQuestions = new Set(existingResult.rows.map(r => r.question));
+
+    // 4. 다음 order_num
+    const maxResult = await pgQuery(
+      `SELECT COALESCE(MAX(order_num), 0) AS max_order FROM past_exams WHERE locale = $1`,
+      [locale]
+    );
+    let nextOrder = parseInt(maxResult.rows[0].max_order) + 1;
+
+    // 5. 트랜잭션으로 새 문제만 INSERT
+    const pool = require('./lib/db').getPool();
+    const client = await pool.connect();
+    let added = 0;
+    let skipped = 0;
+    try {
+      await client.query('BEGIN');
+      for (const problem of problems) {
+        const q = problem?.question || '';
+        if (existingQuestions.has(q)) {
+          skipped++;
+          continue;
+        }
+        await client.query(
+          `INSERT INTO past_exams (locale, order_num, problem_data) VALUES ($1, $2, $3)`,
+          [locale, nextOrder++, problem]
+        );
+        added++;
+      }
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+
+    // 6. 총 개수
+    const totalResult = await pgQuery(
+      `SELECT COUNT(*) AS total FROM past_exams WHERE locale = $1`,
+      [locale]
+    );
+    const totalCount = parseInt(totalResult.rows[0].total);
+
+    console.log(`[uploadMockToPastExams] ${locale}: added=${added}, skipped=${skipped}, total=${totalCount}`);
+    return res.json({ added, skipped, deleted: 0, totalCount });
+  } catch (error) {
+    console.error('uploadMockToPastExams error:', error);
+    return res.status(500).json({ error: { message: error.message } });
+  }
+}
+
+// 기출문제 일괄 업로드 (admin 전용 - 임의 problems 배열)
+app.post('/api/uploadPastExams', async (req, res) => {
+  // admin 인증 확인 (legacy or Cognito)
+  if (USE_COGNITO_AUTH) {
+    return requireAuth(req, res, () => requireAdmin(req, res, () => uploadPastExamsHandler(req, res)));
+  }
+  return uploadPastExamsHandler(req, res);
+});
+
+async function uploadPastExamsHandler(req, res) {
+  try {
+    const { locale = 'ko', problems = [] } = req.body;
+    if (!Array.isArray(problems) || problems.length === 0) {
+      return res.status(400).json({ error: 'problems[] required' });
+    }
+
+    // 다음 order_num 시작값 = 현재 max + 1
+    const maxResult = await pgQuery(
+      `SELECT COALESCE(MAX(order_num), 0) AS max_order FROM past_exams WHERE locale = $1`,
+      [locale]
+    );
+    let nextOrder = parseInt(maxResult.rows[0].max_order) + 1;
+
+    // 트랜잭션으로 일괄 INSERT
+    const client = await require('./lib/db').getPool().connect();
+    let uploaded = 0;
+    try {
+      await client.query('BEGIN');
+      for (const p of problems) {
+        await client.query(
+          `INSERT INTO past_exams (locale, order_num, problem_data)
+           VALUES ($1, $2, $3)`,
+          [locale, nextOrder, p]
+        );
+        nextOrder++;
+        uploaded++;
+      }
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+
+    return res.json({ uploaded, totalAfter: nextOrder - 1 });
+  } catch (error) {
+    console.error('uploadPastExams error:', error);
+    return res.status(500).json({ error: error.message });
+  }
+}
+
+//Lemon Squeezy Checkout API
+app.post('/api/lemonsqueezy/checkout', (req, res) => {
+  // TODO Phase 7: PostgreSQL users.is_premium 변환 + LemonSqueezy webhook
+  res.status(503).json({
+    error: {
+      message: 'Payment is being migrated to PostgreSQL. Coming soon.',
+    },
+  });
 });
 
 /**
  * //이찓//寃利?留곹겕 諛쒖넚
  * 푸썝媛////사슜에뿉寃//뺤씤 硫붿씪 諛쒖넚
  */
-app.post('/api/send-verification-email', async (req, res) => {
-  try {
-    const { email, userName } = req.body;
-
-    if (!email) {
-      return res.status(400).json({ error: 'Email is required' });
-    }
-
-    // Firebase Admin SDK를 통해 이메일 확인 링크 생성
-    let verificationLink = '';
-    try {
-      verificationLink = await admin.auth().generateEmailVerificationLink(email);
-      console.log(`✅ Generated verification link for ${email}`);
-    } catch (linkError) {
-      console.error('Failed to generate verification link:', linkError?.message);
-      return res.status(500).json({ error: 'Failed to generate verification link' });
-    }
-
-    // HTML 이메일 템플릿 (버튼 포함)
-    let greeting = userName ? `안녕하세요, ${userName}!` : '안녕하세요!';
-    let htmlContent = `
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    body { font-family: Arial, sans-serif; color: #333; line-height: 1.6; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .button { background: #FF9900; color: white; padding: 14px 32px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold; font-size: 16px; }
-    .footer { color: #999; font-size: 12px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <p>${greeting}</p>
-    <p>AWS SAA-C03 준비 플랫폼 계정을 생성해주셔서 감사합니다!</p>
-    <p>아래 버튼을 클릭하여 이메일을 확인해주세요:</p>
-    <p style="text-align: center; margin: 30px 0;">
-      <a href="${verificationLink}" class="button">✅ 이메일 확인하기</a>
-    </p>
-    <p style="color: #666; font-size: 14px;">
-      위 버튼이 작동하지 않으면 아래 링크를 복사하여 브라우저에 붙여넣으세요:
-    </p>
-    <p style="word-break: break-all; background: #f5f5f5; padding: 10px; border-radius: 4px; font-size: 12px;">
-      <a href="${verificationLink}" style="color: #0066cc;">${verificationLink}</a>
-    </p>
-    <div class="footer">
-      <p>이 이메일을 요청하지 않았다면 무시해도 됩니다.</p>
-      <p>AWS SAA-C03 Preparation Platform</p>
-    </div>
-  </div>
-</body>
-</html>
-    `;
-
-    // AWS SES로 이메일 전송
-    const senderEmail = process.env.SES_FROM_EMAIL || 'noreply@prep4saa.com';
-    const command = new SendEmailCommand({
-      Source: senderEmail,
-      Destination: {
-        ToAddresses: [email],
-      },
-      Message: {
-        Subject: {
-          Data: '🔒 이메일 확인 - AWS SAA-C03',
-          Charset: 'UTF-8',
-        },
-        Body: {
-          Html: {
-            Data: htmlContent,
-            Charset: 'UTF-8',
-          },
-        },
-      },
-    });
-
-    const response = await sesClient.send(command);
-    console.log(`✅ Verification email sent to ${email} (MessageId: ${response.MessageId})`);
-    return res.json({ success: true, message: 'Verification email sent.' });
-  } catch (error) {
-    console.error('❌ Verification email send failed:', error?.message);
-    return res.status(500).json({ error: error?.message || 'Verification email send failed.' });
-  }
+app.post('/api/send-verification-email', (req, res) => {
+  // Cognito 가 가입 시 자동으로 verification 이메일 발송
+  // 이 endpoint 는 Phase 6 에서 deprecated
+  res.status(410).json({
+    error: {
+      message: 'Deprecated. Cognito sends verification email automatically on signup.',
+    },
+  });
 });
 
-app.post('/api/lemonsqueezy/cancel-subscription', async (req, res) => {
-  try {
-    const { userId, email } = req.body || {};
-    const apiKey = process.env.LEMON_SQUEEZY_API_KEY || process.env.VITE_LEMON_SQUEEZY_API_KEY || '';
-
-    console.log('🧾 Cancel subscription request received', {
-      hasUserId: !!userId,
-      hasEmail: !!email,
-      hasApiKey: !!apiKey,
-      userId,
-      email,
-    });
-
-    if (!apiKey) {
-      console.error('❌ LEMON_SQUEEZY_API_KEY not configured');
-      return res.status(500).json({ error: 'LEMON_SQUEEZY_API_KEY not configured' });
-    }
-
-    let userRef = null;
-    let userData = null;
-
-    if (userId) {
-      userRef = db.collection('users').doc(userId);
-      const snap = await userRef.get();
-      if (snap.exists) {
-        userData = snap.data();
-      }
-    } else if (email) {
-      const snap = await db.collection('users').where('email', '==', email).limit(1).get();
-      if (!snap.empty) {
-        const docSnap = snap.docs[0];
-        userRef = docSnap.ref;
-        userData = docSnap.data();
-      }
-    }
-
-    if (!userRef || !userData) {
-      console.warn('⚠️ Cancel subscription user not found', { userId, email });
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const subscriptionId = userData.lemonSqueezySubscriptionId;
-    if (!subscriptionId) {
-      console.warn('⚠️ No Lemon Squeezy subscription found for user', {
-        userId,
-        email,
-        docId: userRef.id,
-      });
-      return res.status(404).json({ error: 'No Lemon Squeezy subscription found for this user' });
-    }
-
-    console.log('🧾 Cancelling Lemon Squeezy subscription', {
-      subscriptionId,
-      userId,
-      email,
-      docId: userRef.id,
-    });
-
-    const response = await fetch(`https://api.lemonsqueezy.com/v1/subscriptions/${subscriptionId}`, {
-      method: 'DELETE',
-      headers: {
-        'Accept': 'application/vnd.api+json',
-        'Content-Type': 'application/vnd.api+json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-    });
-
-    const responseText = await response.text();
-
-    if (!response.ok) {
-      console.error('❌ Lemon Squeezy cancel API error', {
-        status: response.status,
-        errorText: responseText,
-        subscriptionId,
-      });
-      return res.status(response.status).json({ error: responseText || 'Failed to cancel subscription' });
-    }
-
-    let result = {};
-    if (responseText) {
-      try {
-        result = JSON.parse(responseText);
-      } catch (parseError) {
-        console.warn('⚠️ Lemon Squeezy cancel response was not JSON', {
-          subscriptionId,
-          responseTextPreview: responseText.slice(0, 300),
-        });
-      }
-    }
-
-    const attributes = result?.data?.attributes || {};
-    const isPaid = attributes.status === 'active' || attributes.status === 'on_trial' || attributes.status === 'cancelled';
-
-    await userRef.set({
-      isPaid,
-      userStatus: isPaid ? 'paid' : 'loggedIn',
-      subscriptionStatus: attributes.status || 'cancelled',
-      subscriptionCancelledAt: new Date().toISOString(),
-      subscriptionEndsAt: attributes.ends_at || null,
-      subscriptionRenewsAt: attributes.renews_at || null,
-      lemonSqueezySubscriptionId: subscriptionId,
-      updatedAt: new Date().toISOString(),
-    }, { merge: true });
-
-    return res.json({
-      success: true,
-      subscriptionStatus: attributes.status || 'cancelled',
-      subscriptionEndsAt: attributes.ends_at || null,
-    });
-  } catch (error) {
-    console.error('Cancel subscription failed:', error?.stack || error);
-    return res.status(500).json({ error: error.message || 'Cancel subscription failed' });
-  }
+app.post('/api/lemonsqueezy/cancel-subscription', (req, res) => {
+  // TODO Phase 7
+  res.status(503).json({
+    error: { message: 'Payment is being migrated to PostgreSQL. Coming soon.' },
+  });
 });
 
-app.post('/api/webhooks/lemon-squeezy', async (req, res) => {
-  try {
-    const signature = req.headers['x-signature'] || req.headers['x-lemon-squeezy-signature'] || req.headers['X-Signature'] || req.headers['X-Lemon-Squeezy-Signature'];
-    const body = req.rawBody || JSON.stringify(req.body);
-    const webhookSecret = process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
-
-    if (!webhookSecret) {
-      console.warn('⚠️  LEMON_SQUEEZY_WEBHOOK_SECRET not configured');
-    } else {
-      const expectedSignature = crypto
-        .createHmac('sha256', webhookSecret)
-        .update(body)
-        .digest('hex');
-
-      if (signature !== expectedSignature) {
-        console.error('❌ Invalid webhook signature');
-        return res.status(401).json({ error: 'Invalid signature' });
-      }
-    }
-
-    const event = req.body.meta?.event_name;
-    const data = req.body.data;
-    const customData = req.body.meta?.custom_data || data?.attributes?.custom_data || {};
-
-    console.log(`🧭 Lemon Squeezy Webhook: ${event}`);
-
-    const paidEvents = ['order_created', 'subscription_created', 'subscription_payment_success'];
-    const cancelEvents = ['subscription_cancelled'];
-    const expiredEvents = ['subscription_expired'];
-
-    if (paidEvents.includes(event)) {
-      const subscription = data.attributes;
-      const userId = customData.user_id;
-      const email = customData.email || subscription.user_email || subscription.customer_email;
-
-      if (!userId && !email) {
-        console.warn('⚠️  No user_id or email in webhook data');
-        return res.json({ received: true });
-      }
-
-      try {
-        let userRef;
-        if (userId) {
-          userRef = db.collection('users').doc(userId);
-        } else {
-          const userRecord = await admin.auth().getUserByEmail(email);
-          userRef = db.collection('users').doc(userRecord.uid);
-        }
-
-        const updateData = {
-          isPaid: subscription.status === 'active' || subscription.status === 'on_trial',
-          lemonSqueezySubscriptionId: data.id,
-          lemonSqueezyCustomerId: subscription.customer_id,
-          subscriptionStatus: subscription.status,
-          subscriptionCreatedAt: subscription.created_at,
-          subscriptionUpdatedAt: subscription.updated_at,
-          subscriptionRenewsAt: subscription.renews_at,
-          updatedAt: new Date().toISOString()
-        };
-
-        await userRef.set(updateData, { merge: true });
-
-        console.log(`✅ Firebase updated for user ${userId || email}:`, {
-          isPaid: updateData.isPaid,
-          status: subscription.status,
-          subscriptionId: data.id
-        });
-
-        return res.json({ received: true });
-      } catch (error) {
-        console.error('❌ Firebase update error:', error);
-        return res.status(500).json({ error: 'Firebase update failed' });
-      }
-    }
-
-    if (cancelEvents.includes(event)) {
-      const subscription = data.attributes;
-      const userId = customData.user_id;
-      const email = customData.email || subscription.user_email || subscription.customer_email;
-
-      if (!userId && !email) {
-        console.warn('⚠️  No user_id or email in webhook data');
-        return res.json({ received: true });
-      }
-
-      try {
-        let userRef;
-        if (userId) {
-          userRef = db.collection('users').doc(userId);
-        } else {
-          const userRecord = await admin.auth().getUserByEmail(email);
-          userRef = db.collection('users').doc(userRecord.uid);
-        }
-
-        const isPaid = subscription.status === 'active' || subscription.status === 'on_trial' || subscription.status === 'cancelled';
-
-        await userRef.set({
-          isPaid,
-          userStatus: isPaid ? 'paid' : 'loggedIn',
-          subscriptionStatus: subscription.status || 'cancelled',
-          subscriptionCancelledAt: new Date().toISOString(),
-          subscriptionEndsAt: subscription.ends_at || null,
-          subscriptionRenewsAt: subscription.renews_at || null,
-          lemonSqueezySubscriptionId: data.id,
-          updatedAt: new Date().toISOString()
-        }, { merge: true });
-
-        console.log(`✅ Subscription cancelled for user ${userId || email}`);
-        return res.json({ received: true });
-      } catch (error) {
-        console.error('❌ Firebase update error:', error);
-        return res.status(500).json({ error: 'Firebase update failed' });
-      }
-    }
-
-    if (expiredEvents.includes(event)) {
-      const subscription = data.attributes;
-      const userId = customData.user_id;
-      const email = customData.email || subscription.user_email || subscription.customer_email;
-
-      if (!userId && !email) {
-        console.warn('⚠️  No user_id or email in webhook data');
-        return res.json({ received: true });
-      }
-
-      try {
-        let userRef;
-        if (userId) {
-          userRef = db.collection('users').doc(userId);
-        } else {
-          const userRecord = await admin.auth().getUserByEmail(email);
-          userRef = db.collection('users').doc(userRecord.uid);
-        }
-
-        await userRef.set({
-          isPaid: false,
-          userStatus: 'loggedIn',
-          subscriptionStatus: subscription.status || 'expired',
-          subscriptionExpiredAt: new Date().toISOString(),
-          subscriptionEndsAt: subscription.ends_at || null,
-          subscriptionRenewsAt: subscription.renews_at || null,
-          lemonSqueezySubscriptionId: data.id,
-          updatedAt: new Date().toISOString()
-        }, { merge: true });
-
-        console.log(`✅ Subscription expired for user ${userId || email}`);
-        return res.json({ received: true });
-      } catch (error) {
-        console.error('❌ Firebase update error:', error);
-        return res.status(500).json({ error: 'Firebase update failed' });
-      }
-    }
-
-    console.log(`ℹ️ Unhandled event: ${event}`);
-    return res.json({ received: true });
-  } catch (error) {
-    console.error('❌ Webhook error:', error);
-    return res.status(500).json({ error: error.message });
-  }
+app.post('/api/webhooks/lemon-squeezy', (req, res) => {
+  // TODO Phase 7: webhook -> PostgreSQL users.is_premium update
+  console.log('LemonSqueezy webhook received (no-op during migration)');
+  res.status(200).json({ received: true });
 });
 
 // Start server on port 5000
