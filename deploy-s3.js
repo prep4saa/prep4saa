@@ -14,20 +14,21 @@ envContent.split('\n').forEach(line => {
   if (key && value) envVars[key.trim()] = value.trim();
 });
 
+// Prefer explicit credentials from .env (used by GitHub Actions), otherwise
+// let the AWS SDK fall back to the default credential provider chain
+// (~/.aws/credentials, env vars, EC2/Lambda IAM role).
+const explicitCreds = envVars.AWS_ACCESS_KEY_ID && envVars.AWS_SECRET_ACCESS_KEY
+  ? { accessKeyId: envVars.AWS_ACCESS_KEY_ID, secretAccessKey: envVars.AWS_SECRET_ACCESS_KEY }
+  : undefined;
+
 const s3Client = new S3Client({
   region: envVars.AWS_REGION || 'ap-northeast-1',
-  credentials: {
-    accessKeyId: envVars.AWS_ACCESS_KEY_ID,
-    secretAccessKey: envVars.AWS_SECRET_ACCESS_KEY
-  }
+  ...(explicitCreds ? { credentials: explicitCreds } : {})
 });
 
 const cloudFrontClient = new CloudFrontClient({
   region: 'us-east-1',
-  credentials: {
-    accessKeyId: envVars.AWS_ACCESS_KEY_ID,
-    secretAccessKey: envVars.AWS_SECRET_ACCESS_KEY
-  }
+  ...(explicitCreds ? { credentials: explicitCreds } : {})
 });
 
 const BUCKET = envVars.AWS_S3_BUCKET;
