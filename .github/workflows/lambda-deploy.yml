@@ -15,11 +15,9 @@
 name: Deploy Lambda
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'lambda-webhook/**'   # lambda-webhook/ 안의 어떤 파일이든 변경되면 트리거
+  # Disabled: lambda-webhook/ removed during Firebase->Cognito migration.
+  # Re-enable when a replacement Lambda is wired up via OIDC.
+  workflow_dispatch:
 
 jobs:
   deploy:

@@ -11,16 +11,9 @@
 name: Deploy API Gateway
 
 on:
-  # 수동 실행 (GitHub UI "Run workflow" 버튼)
+  # Disabled: lambda-webhook removed during Firebase->Cognito migration.
+  # Manual-only until OIDC migration is done.
   workflow_dispatch:
-
-  # API Gateway 설정 파일이 main에 push될 때만 자동 실행
-  # (lambda-webhook/api-gateway-config.yaml만 감시)
-  push:
-    branches:
-      - main
-    paths:
-      - 'lambda-webhook/api-gateway-config.yaml'
 
 jobs:
   deploy-api-gateway:
