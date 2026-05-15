@@ -117,6 +117,7 @@ export const ko = {
   // 로그인 관련
   btnLogin: "로그인",
   msgLoginTip: "로그인하면 2회 무료 이용 가능",
+  msgSessionTimeout: "30분 동안 활동이 없어 자동 로그아웃되었습니다.",
   googleLoginBtn: "Google로 로그인",
   logoutBtn: "로그아웃",
   cancelSubscriptionBtn: "구독 취소",

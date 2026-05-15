@@ -1233,6 +1233,37 @@ function App() {
     })();
   }, [tab, userEmail, locale]);
 
+  // 유휴 자동 로그아웃 — 30분간 사용자 활동이 없으면 로그아웃
+  useEffect(() => {
+    if (!userEmail) return;
+
+    const IDLE_LIMIT_MS = 30 * 60 * 1000;
+    let timer: ReturnType<typeof setTimeout>;
+
+    const doIdleLogout = async () => {
+      await signOut();
+      setUserEmail(null);
+      setUserStatusLocal("guest");
+      localStorage.removeItem("userStatus");
+      setShowLanding(true);
+      alert(t("msgSessionTimeout"));
+    };
+
+    const resetTimer = () => {
+      clearTimeout(timer);
+      timer = setTimeout(doIdleLogout, IDLE_LIMIT_MS);
+    };
+
+    const activityEvents = ["mousemove", "keydown", "click", "scroll", "touchstart"];
+    activityEvents.forEach(e => window.addEventListener(e, resetTimer, { passive: true }));
+    resetTimer();
+
+    return () => {
+      clearTimeout(timer);
+      activityEvents.forEach(e => window.removeEventListener(e, resetTimer));
+    };
+  }, [userEmail]);
+
   // 기출문제 페이지 변경 시 로드 (캐시 우선)
   useEffect(() => {
     if (tab !== "pastExam" || !userEmail) return;

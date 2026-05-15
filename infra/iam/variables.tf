@@ -1,7 +1,7 @@
 variable "github_owner" {
   description = "GitHub user or organization name."
   type        = string
-  default     = "choijai"
+  default     = "prep4saa"
 }
 
 variable "github_repo" {

@@ -119,6 +119,7 @@ export const en: Strings = {
   // Login related
   btnLogin: "Login",
   msgLoginTip: "Get 2 free attempts per day when logged in",
+  msgSessionTimeout: "You were logged out automatically after 30 minutes of inactivity.",
   googleLoginBtn: "Login with Google",
   logoutBtn: "Logout",
   cancelSubscriptionBtn: "Cancel Subscription",

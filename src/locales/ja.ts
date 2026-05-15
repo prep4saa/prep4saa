@@ -119,6 +119,7 @@ export const ja: Strings = {
   // Login related
   btnLogin: "ログイン",
   msgLoginTip: "ログイン後、1日2回の無料試行が利用できます",
+  msgSessionTimeout: "30分間操作がなかったため、自動的にログアウトされました。",
   googleLoginBtn: "Googleでログイン",
   logoutBtn: "ログアウト",
   cancelSubscriptionBtn: "サブスクリプションをキャンセル",
