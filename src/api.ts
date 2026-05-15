@@ -119,7 +119,8 @@ async function callGeminiAPI(
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
       // ✅ 서버 프록시로 호출 (API 키는 서버에만 있음)
-      const backendUrl = resolveBackendUrl();
+      // Strangler Fig: /api/gemini 는 자바 백엔드(ai 슬라이스)로 이전됨
+      const backendUrl = resolveJavaBackendUrl();
       const response = await fetch(`${backendUrl}/api/gemini`, {
         method: "POST",
         headers: {
@@ -362,7 +363,8 @@ Output (JSON only):`;
     // 폴백: 실패 시 Claude API 시도
     try {
       // 1단계: Claude API 시도 (폴백)
-      const backendUrl = resolveBackendUrl();
+      // Strangler Fig: /api/claudeProxy 는 자바 백엔드(ai 슬라이스)로 이전됨
+      const backendUrl = resolveJavaBackendUrl();
       const response = await fetch(`${backendUrl}/api/claudeProxy`, {
         method: "POST",
         headers: {
