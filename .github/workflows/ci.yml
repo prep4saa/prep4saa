@@ -141,7 +141,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Compressed size diff
-        uses: preactjs/compressed-size-action@v2
+        uses: preactjs/compressed-size-action@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           pattern: 'dist/**/*.{js,css,html}'   # 측정 대상
