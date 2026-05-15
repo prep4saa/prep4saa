@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # ⚠️ 영구 AWS 키 인증 — OIDC로 마이그레이션 예정
       - name: Configure AWS credentials
