@@ -309,6 +309,13 @@ resource "aws_elastic_beanstalk_environment" "env" {
     value     = var.cognito_user_pool_id
   }
 
+  # 배포 버전(version_label)은 GitHub Actions(CI)가 관리한다.
+  # Terraform 은 인프라(인스턴스/VPC/환경변수/보안)만 소유하고,
+  # "지금 어떤 이미지 버전이 떠 있나"는 건드리지 않는다.
+  lifecycle {
+    ignore_changes = [version_label]
+  }
+
   tags = {
     Name = "${var.app_name}-env"
   }
