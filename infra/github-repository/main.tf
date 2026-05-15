@@ -95,9 +95,11 @@ resource "github_branch_protection" "protected" {
 resource "github_repository_environment" "deploy" {
   for_each = local.environment_reviewers
 
-  repository          = var.github_repository
-  environment         = each.key
-  prevent_self_review = true  # 자기 자신이 배포 승인 불가
+  repository = var.github_repository
+  environment = each.key
+  # 솔로 운영 중: 배포 트리거한 본인이 승인 가능해야 함 (false).
+  # 팀 인원이 2명 이상이 되면 true 로 바꿔 4-eyes 원칙 강제.
+  prevent_self_review = false
   wait_timer          = local.environment_wait_timers[each.key]
 
   # 보호 브랜치(main, staging)에서만 이 환경으로 배포 가능

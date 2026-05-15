@@ -2,7 +2,7 @@
 variable "github_owner" {
   description = "GitHub repository owner or organization."
   type        = string
-  default     = "choijai"
+  default     = "prep4saa"
 }
 
 # 관리 대상 GitHub 리포지터리 이름
@@ -54,10 +54,11 @@ variable "repository_collaborators" {
 }
 
 # production 환경 배포를 승인할 수 있는 GitHub 사용자명 목록
+# 역할(팀) 기반 승인을 쓰므로 개인 지정은 비움 — production_environment_reviewer_teams 참고
 variable "production_environment_reviewers" {
   description = "GitHub usernames allowed to approve production deployments."
   type        = set(string)
-  default     = ["choijai"]
+  default     = []
 }
 
 # staging 환경 배포를 승인할 수 있는 GitHub 사용자명 목록
@@ -69,9 +70,9 @@ variable "staging_environment_reviewers" {
 
 # production 환경 배포를 승인할 수 있는 GitHub 팀 슬러그 목록
 variable "production_environment_reviewer_teams" {
-  description = "GitHub platform-team allowed to approve production deployments."
+  description = "GitHub teams allowed to approve production deployments."
   type        = set(string)
-  default     = []
+  default     = ["release-managers"]
 }
 
 # staging 환경 배포를 승인할 수 있는 GitHub 팀 슬러그 목록
