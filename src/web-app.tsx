@@ -1,7 +1,7 @@
 import html2pdf from "html2pdf.js/dist/html2pdf.js";
 import { useEffect, useRef, useState } from "react";
 import { getDailyVisitorsForMonth, getMonthlyVisitors, getTodayPurchaseCount, getTotalVisitorCount, getWeeklyVisitorsForMonth, trackVisitor } from "./analytics";
-import { Concept, generateSAAProblem, Problem, resolveBackendUrl, selectServicesFromAnalysis } from "./api";
+import { Concept, generateSAAProblem, Problem, resolveBackendUrl, resolveJavaBackendUrl, selectServicesFromAnalysis } from "./api";
 import CookieConsent from "./components/organisms/CookieConsent";
 import Footer from "./components/organisms/Footer";
 import LandingPage from "./components/pages/LandingPage";
@@ -5112,7 +5112,7 @@ function App() {
  setLoading(true);
  try {
  // 서버에서 admin 재검증 (동적 backend URL)
- const adminCheck = await fetch(`${resolveBackendUrl()}/api/checkAdmin`, {
+ const adminCheck = await fetch(`${resolveJavaBackendUrl()}/api/checkAdmin`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
  body: JSON.stringify({ email: userEmail })

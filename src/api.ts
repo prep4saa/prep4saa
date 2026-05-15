@@ -15,6 +15,27 @@ export function resolveBackendUrl(): string {
 }
 
 /**
+ * 자바(Spring Boot) 백엔드 URL.
+ *
+ * Strangler Fig 이전 전략: server.js 에서 자바로 이전이 끝난 엔드포인트만
+ * 이 URL 로 호출한다. 아직 이전 안 된 엔드포인트는 resolveBackendUrl() 유지.
+ *
+ * 1차 이전(user 슬라이스): /api/checkAdmin, /api/user/me
+ */
+export function resolveJavaBackendUrl(): string {
+  const hostname =
+    typeof window !== "undefined" && window.location?.hostname
+      ? window.location.hostname
+      : "";
+
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return "http://localhost:8080";
+  }
+
+  return import.meta.env.VITE_JAVA_BACKEND_URL || "http://localhost:8080";
+}
+
+/**
  * 분석 데이터를 기반으로 AWS 서비스를 선택
  *
  * - 빈 배열 감지 시 medium 난이도로 고정 (단일 서비스 1개 기본)

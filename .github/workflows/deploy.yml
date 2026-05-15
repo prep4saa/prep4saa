@@ -80,6 +80,9 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_ADMIN_UID: ${{ secrets.VITE_ADMIN_UID }}
           VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
+          # Strangler Fig: 자바로 이전된 엔드포인트(/api/checkAdmin 등)가 호출할 백엔드.
+          # CloudFront HTTPS 종단점 (infra/backend-beanstalk 의 https_api_url 출력값).
+          VITE_JAVA_BACKEND_URL: ${{ secrets.VITE_JAVA_BACKEND_URL }}
           VITE_LEMON_SQUEEZY_STORE_ID: ${{ secrets.VITE_LEMON_SQUEEZY_STORE_ID }}
           VITE_LEMON_SQUEEZY_PRODUCT_ID: ${{ secrets.VITE_LEMON_SQUEEZY_PRODUCT_ID }}
           # Cognito (Firebase Auth replaced by Cognito User Pool)

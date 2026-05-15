@@ -1,5 +1,7 @@
 // 보안 유틸리티: rate limiting, 관리자 확인, 이메일 마스킹
 
+import { resolveJavaBackendUrl } from "../api";
+
 // ===== Rate Limiting =====
 const requestTimestamps: { [key: string]: number[] } = {};
 const RATE_LIMIT_REQUESTS = 10; // 10초당 최대 10요청
@@ -43,10 +45,8 @@ export async function isAdminUser(email: string | null): Promise<boolean> {
   }
 
   // 서버 API 호출 (admin 이메일은 서버에만 존재)
-  const hostname = typeof window !== 'undefined' ? window.location?.hostname : '';
-  const backendUrl = (hostname === 'localhost' || hostname === '127.0.0.1')
-    ? 'http://localhost:5000'
-    : (import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000');
+  // Strangler Fig: /api/checkAdmin 은 자바 백엔드로 이전 완료 (user 슬라이스)
+  const backendUrl = resolveJavaBackendUrl();
 
   try {
     const res = await fetch(`${backendUrl}/api/checkAdmin`, {
