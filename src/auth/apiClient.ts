@@ -8,8 +8,18 @@
 //   const res = await api.post('/api/getProblemCountToday', { userId });
 
 import { getAccessToken } from "./cognito";
+import { resolveJavaBackendUrl } from "../api";
 
 const USE_COGNITO_AUTH = import.meta.env.VITE_USE_COGNITO_AUTH === "true";
+
+// Strangler Fig: 자바 백엔드로 이전 완료된 엔드포인트 목록.
+// 여기 등록된 경로는 자바(VITE_JAVA_BACKEND_URL)로, 나머지는 server.js 로 라우팅된다.
+// 도메인을 옮길 때마다 이 집합에 경로를 추가한다.
+const MIGRATED_TO_JAVA = new Set<string>([
+  "/api/recordQuizResult",
+  "/api/getQuizStats",
+  "/api/getUserProblemSessions",
+]);
 
 function getBackendUrl(): string {
   if (typeof window === "undefined") return "http://localhost:5000";
@@ -25,7 +35,9 @@ async function apiFetch(
   path: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  const url = `${getBackendUrl()}${path}`;
+  // Strangler Fig: 이전된 엔드포인트는 자바 백엔드로, 나머지는 server.js 로
+  const base = MIGRATED_TO_JAVA.has(path) ? resolveJavaBackendUrl() : getBackendUrl();
+  const url = `${base}${path}`;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...((options.headers as Record<string, string>) || {}),

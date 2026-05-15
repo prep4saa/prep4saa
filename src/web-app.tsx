@@ -2414,7 +2414,8 @@ function App() {
 
  if (user && problem) {
  try {
- const backendUrl = resolveBackendUrl();
+ // Strangler Fig: /api/recordQuizResult 은 자바 백엔드(quiz 슬라이스)로 이전됨
+ const backendUrl = resolveJavaBackendUrl();
  const response = await fetch(`${backendUrl}/api/recordQuizResult`, {
  method: "POST",
  headers: {
