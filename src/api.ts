@@ -227,7 +227,8 @@ export async function generateSAAProblem(
 
   // 🔒 프롬프트는 서버에서 생성 (클라이언트 노출 방지)
   // 서버가 Gemini/Claude 폴백까지 담당
-  const backendUrl = resolveBackendUrl();
+  // ai 슬라이스 3단계 (2026-05): server.js → 자바(Beanstalk) 로 이전됨
+  const backendUrl = resolveJavaBackendUrl();
   let content: string;
 
   try {
