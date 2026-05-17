@@ -35,6 +35,9 @@ const MIGRATED_TO_JAVA = new Set<string>([
   // daily-count 슬라이스 (server.js → 자바 daily_stats PostgreSQL)
   "/api/recordProblemGeneration",
   "/api/getProblemCountToday",
+  // pdf-export (서버 사이드 PDF + S3 presigned URL)
+  "/api/exportQuizSessionPdf",
+  "/api/exportMockExamPdf",
 ]);
 
 function getBackendUrl(): string {
