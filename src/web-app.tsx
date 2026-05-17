@@ -1474,9 +1474,9 @@ function App() {
  setMockExamAnswers(new Array(50).fill(null));
  localStorage.setItem("mockExamProblemsCount", newProblems.length.toString());
 
- // ✅ 점진적 저장 (배치마다, 고정된 언어 사용)
- // firebase.ts 우회 — Cognito 인증 시 auth.currentUser 가 null 인 케이스 피하려고
- // userEmail state 를 직접 사용해 자바 백엔드 호출.
+ // ✅ 점진적 저장 — DB 캐시 사용 시(allProblems 가 이미 50개) 중복 저장 방지.
+ // 새로 generate 한 게 있을 때만 호출. (firebase.ts 우회 + userEmail 직접 사용)
+ if (allProblems.length < 50) {
  try {
  const uid = auth.currentUser?.email || userEmail;
  if (uid) {
@@ -1489,6 +1489,7 @@ function App() {
  }
  } catch (e) {
  console.error("❌ saveMockExamProblems(progressive) failed:", e);
+ }
  }
  }
  }
