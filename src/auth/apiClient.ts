@@ -38,6 +38,14 @@ const MIGRATED_TO_JAVA = new Set<string>([
   // pdf-export (서버 사이드 PDF + S3 presigned URL)
   "/api/exportQuizSessionPdf",
   "/api/exportMockExamPdf",
+  // shared mock exam (공유 + attempt)
+  "/api/getSharedMockExam",
+  "/api/saveMockExamAnswers",
+  "/api/completeSharedMockExam",
+  // payment — LemonSqueezy
+  "/api/lemonsqueezy/checkout",
+  "/api/lemonsqueezy/cancel-subscription",
+  "/api/webhooks/lemon-squeezy",
 ]);
 
 function getBackendUrl(): string {

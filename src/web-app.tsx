@@ -2311,19 +2311,15 @@ function App() {
      const currentUser = getCurrentUser();
      if (currentUser) {
        try {
-         const backendBaseUrl = resolveBackendUrl();
-         const response = await fetch(`${backendBaseUrl}/api/lemonsqueezy/cancel-subscription`, {
-           method: 'POST',
-           headers: { 'Content-Type': 'application/json' },
-           body: JSON.stringify({
-             userId: currentUser.uid,
-             email: currentUser.email || userEmail || ''
-           })
+         // payment 슬라이스 — server.js → 자바(2026-05). apiClient 가 MIGRATED_TO_JAVA 로 자동 라우팅.
+         const { api } = await import("./auth/apiClient");
+         const response = await api.post("/api/lemonsqueezy/cancel-subscription", {
+           subscriptionId: localStorage.getItem("lemonSubscriptionId") || "",
          });
 
          if (!response.ok) {
            const errorData = await response.json().catch(() => ({}));
-           throw new Error(errorData.error || 'Failed to cancel subscription');
+           throw new Error(errorData.error?.message || errorData.error || 'Failed to cancel subscription');
          }
 
          setUserStatusLocal("paid");
@@ -6140,18 +6136,20 @@ function App() {
  }}
  onCheckout={async () => {
  try {
- const backendBaseUrl = resolveBackendUrl();
- const response = await fetch(`${backendBaseUrl}/api/lemonsqueezy/checkout`, {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({
- email: userEmail,
- returnUrl: window.location.href
- })
+ // payment 슬라이스 — server.js → 자바(2026-05). 자바 응답: { url }
+ const { api } = await import("./auth/apiClient");
+ const response = await api.post("/api/lemonsqueezy/checkout", {
+ userEmail: userEmail,
  });
+ if (!response.ok) {
+ const err = await response.json().catch(() => ({}));
+ throw new Error(err.error?.message || `Server returned ${response.status}`);
+ }
  const data = await response.json();
- if (data.checkoutUrl) {
- window.location.href = data.checkoutUrl;
+ if (data.url) {
+ window.location.href = data.url;
+ } else {
+ throw new Error("No checkout url in response");
  }
  } catch (error) {
  console.error('Checkout error:', error);
