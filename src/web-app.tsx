@@ -1157,16 +1157,18 @@ function App() {
   useEffect(() => {
  if (tab === "status" || tab === "quiz") {
  (async () => {
+ // Cognito 마이그레이션 후엔 Firebase getCurrentUser() 가 null 이라 userEmail fallback 사용.
  const user = getCurrentUser();
- if (user) {
+ const uid = user?.uid || userEmail;
+ if (uid) {
  // 만료된 결과 자동 삭제 (백그라운드, 실패해도 무관)
  if (tab === "status") {
- deleteExpiredResults(user.uid).catch(() => {});
+ deleteExpiredResults(uid).catch(() => {});
  }
 
  // 통계 로드
  try {
- const stats = await getUserQuizStats(user.uid);
+ const stats = await getUserQuizStats(uid);
  setQuizStats(stats);
  } catch (error) {
  // 통계 로드 실패 무시
@@ -1175,7 +1177,7 @@ function App() {
  // Quiz 탭: 일일 횟수
  if (tab === "quiz") {
  try {
- const { count: todayCount } = await canGenerateProblemToday(user.uid, userStatus);
+ const { count: todayCount } = await canGenerateProblemToday(uid, userStatus);
  setDailyCount(todayCount);
  } catch (error) {}
  }
@@ -1183,7 +1185,7 @@ function App() {
  // 현황 탭: 세션 로드 (독립적으로 실행)
  if (tab === "status") {
  try {
- const sessions = await getUserProblemSessions(user.uid);
+ const sessions = await getUserProblemSessions(uid);
  setProblemSessions(sessions);
  } catch (error) {
  setProblemSessions([]);
