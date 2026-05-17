@@ -26,6 +26,15 @@ const MIGRATED_TO_JAVA = new Set<string>([
   "/api/getTodayMockExam",
   "/api/saveMockExamProblems",
   "/api/completeMockExam",
+  // admin 슬라이스 (JWT + admin role 필요 — apiClient 가 Bearer 토큰 자동 첨부)
+  "/api/admin/stats",
+  "/api/admin/users",
+  "/api/admin/user/sessions",
+  "/api/uploadMockToPastExams",
+  "/api/uploadPastExams",
+  // daily-count 슬라이스 (server.js → 자바 daily_stats PostgreSQL)
+  "/api/recordProblemGeneration",
+  "/api/getProblemCountToday",
 ]);
 
 function getBackendUrl(): string {

@@ -43,6 +43,12 @@ variable "db_secret_name" {
   default     = "saa-quiz-db-credentials"
 }
 
+variable "ai_api_keys_secret_name" {
+  description = "AI 제공자 API 키 시크릿 이름 (app-secrets 모듈이 생성). JSON: {anthropic_api_key, gemini_api_key}"
+  type        = string
+  default     = "saa-ai-api-keys"
+}
+
 # --- 그 외 애플리케이션 환경변수 ---
 variable "cors_allowed_origins" {
   description = "자바 백엔드가 허용할 프런트엔드 오리진(쉼표 구분)"

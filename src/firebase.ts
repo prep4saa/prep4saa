@@ -796,21 +796,9 @@ export async function canGenerateProblemToday(
     }
 
     // 서버 API로 개수 조회 (보안: 서버에서 처리)
-    const backendUrl = typeof window !== "undefined" && window.location?.hostname === "localhost"
-      ? "http://localhost:5000"
-      : import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
-
-
-    const response = await fetch(`${backendUrl}/api/getProblemCountToday`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        userId,
-        userStatus
-      })
-    });
+    // daily-count 슬라이스: server.js → 자바(2026-05). apiFetch 가 MIGRATED_TO_JAVA 로 자동 라우팅.
+    const { api } = await import("./auth/apiClient");
+    const response = await api.post("/api/getProblemCountToday", { userId, userStatus });
 
     if (!response.ok) {
       throw new Error(`Server returned ${response.status}`);

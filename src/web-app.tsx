@@ -1079,17 +1079,12 @@ function App() {
  const generatedProblem = await generateSAAProblem(serviceNames, difficulty, locale);
 
  // 서버 API로 문제 생성 기록 저장 (보안: 서버에서 검증)
+ // daily-count 슬라이스: server.js → 자바(2026-05). apiFetch 가 MIGRATED_TO_JAVA 로 자동 라우팅.
  try {
- const backendUrl = resolveBackendUrl();
- await fetch(`${backendUrl}/api/recordProblemGeneration`, {
- method: "POST",
- headers: {
- "Content-Type": "application/json",
- },
- body: JSON.stringify({
+ const { api } = await import("./auth/apiClient");
+ await api.post("/api/recordProblemGeneration", {
  userId: auth.currentUser.uid,
  problem: generatedProblem
- })
  });
  } catch (error) {
  console.error("❌ Failed to record problem generation:", error);

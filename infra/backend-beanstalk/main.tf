@@ -20,8 +20,19 @@ data "aws_secretsmanager_secret_version" "db" {
   secret_id = data.aws_secretsmanager_secret.db.id
 }
 
+# AI 제공자 API 키 — app-secrets 모듈이 만든 시크릿에서 읽어온다.
+# 시크릿 JSON: { anthropic_api_key, gemini_api_key }
+data "aws_secretsmanager_secret" "ai_api_keys" {
+  name = var.ai_api_keys_secret_name
+}
+
+data "aws_secretsmanager_secret_version" "ai_api_keys" {
+  secret_id = data.aws_secretsmanager_secret.ai_api_keys.id
+}
+
 locals {
-  db = jsondecode(data.aws_secretsmanager_secret_version.db.secret_string)
+  db      = jsondecode(data.aws_secretsmanager_secret_version.db.secret_string)
+  ai_keys = jsondecode(data.aws_secretsmanager_secret_version.ai_api_keys.secret_string)
 }
 
 # -------------------------------------------------------------------
@@ -307,6 +318,18 @@ resource "aws_elastic_beanstalk_environment" "env" {
     namespace = "aws:elasticbeanstalk:application:environment"
     name      = "COGNITO_USER_POOL_ID"
     value     = var.cognito_user_pool_id
+  }
+
+  # --- AI 제공자 API 키 (Secrets Manager 에서 읽어 주입) ---
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ANTHROPIC_API_KEY"
+    value     = local.ai_keys.anthropic_api_key
+  }
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "GEMINI_API_KEY"
+    value     = local.ai_keys.gemini_api_key
   }
 
   # 배포 버전(version_label)은 GitHub Actions(CI)가 관리한다.
