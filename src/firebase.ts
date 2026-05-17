@@ -738,6 +738,58 @@ export async function getTodayMockExamProblems(locale: string = "ko"): Promise<P
 }
 
 
+/**
+ * 공유 모의시험 (shared_mock_exams) 조회 — 모든 사용자가 같은 50문제.
+ * 응답: { problems, attempt } — attempt.completed 로 본인 진행 상태 판단.
+ */
+export async function getSharedMockExam(locale: string = "ko"): Promise<{
+  problems: Problem[] | null;
+  attempt: {
+    completed: boolean;
+    answers: any[] | null;
+    results: any | null;
+    startedAt: string | null;
+    completedAt: string | null;
+  } | null;
+}> {
+  try {
+    const userEmail = await resolveCurrentEmail();
+    const { api } = await import("./auth/apiClient");
+    const res = await api.post("/api/getSharedMockExam", { userId: userEmail || "", locale });
+    if (!res.ok) return { problems: null, attempt: null };
+    return await res.json();
+  } catch (error: any) {
+    console.error("getSharedMockExam error:", error?.message);
+    return { problems: null, attempt: null };
+  }
+}
+
+/** 진행 중 답안 점진 저장 (user_mock_exam_attempts). */
+export async function saveMockExamAnswers(locale: string, answers: any[]): Promise<void> {
+  try {
+    const userEmail = await resolveCurrentEmail();
+    if (!userEmail) return;
+    const { api } = await import("./auth/apiClient");
+    await api.post("/api/saveMockExamAnswers", { userId: userEmail, locale, answers });
+  } catch (error: any) {
+    console.error("saveMockExamAnswers error:", error?.message);
+  }
+}
+
+/** 모의시험 완료 — answers + results 저장. */
+export async function completeSharedMockExam(
+  locale: string, answers: any[], results: any
+): Promise<void> {
+  try {
+    const userEmail = await resolveCurrentEmail();
+    if (!userEmail) return;
+    const { api } = await import("./auth/apiClient");
+    await api.post("/api/completeSharedMockExam", { userId: userEmail, locale, answers, results });
+  } catch (error: any) {
+    console.error("completeSharedMockExam error:", error?.message);
+  }
+}
+
 // Cognito 사용자도 잡기 위한 email fallback. Firebase auth.currentUser 가 null 인 경우(=Cognito 인증)
 // Cognito 세션에서 email claim 을 가져온다. 둘 다 없으면 null.
 async function resolveCurrentEmail(): Promise<string | null> {

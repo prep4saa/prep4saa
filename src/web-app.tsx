@@ -20,7 +20,7 @@ import { CognitoLoginModal } from "./components/Modals/CognitoLoginModal";
 import { CAT, CONCEPTS_KO, LINKS, NODES } from "./data";
 import { CONCEPTS_EN } from "./CONCEPTS_EN";
 import { CONCEPTS_JA } from "./concepts_ja";
-import { auth, deleteExpiredResults, deleteOldMockExamProblems, deletePost, getAdminStatsSecure, getAllUsersForAdminSecure, getCurrentUser, getExamStartDate, getPostById, getPosts, getTodayMockExamProblems, getUserPaidStatus, getUserProblemSessions, getUserProblemSessionsSecure, getUserQuizStats, isPasswordLinked, isSubscriptionCancelled, onAuthStateChange, saveTodayMockExamProblems, saveUserInfoToFirebase, signIn, signInWithGoogle, signOut, signUp, updateMockExamProblemsProgressively, updateStreakInFirebase, updateUserPaidStatus, uploadPDFToStorage, refreshUserData, resendEmailVerification, uploadCurrentMockExamToPastExams, fetchPastExamPage, getPastExamTotalCount } from "./firebase";
+import { auth, completeSharedMockExam, deleteExpiredResults, deleteOldMockExamProblems, deletePost, getAdminStatsSecure, getAllUsersForAdminSecure, getCurrentUser, getExamStartDate, getPostById, getPosts, getSharedMockExam, getTodayMockExamProblems, getUserPaidStatus, getUserProblemSessions, getUserProblemSessionsSecure, getUserQuizStats, isPasswordLinked, isSubscriptionCancelled, onAuthStateChange, saveMockExamAnswers, saveTodayMockExamProblems, saveUserInfoToFirebase, signIn, signInWithGoogle, signOut, signUp, updateMockExamProblemsProgressively, updateStreakInFirebase, updateUserPaidStatus, uploadPDFToStorage, refreshUserData, resendEmailVerification, uploadCurrentMockExamToPastExams, fetchPastExamPage, getPastExamTotalCount } from "./firebase";
 import { useLocale } from "./LocaleContext";
 import { useTheme } from "./ThemeContext";
 // SEC Challenges
@@ -1387,6 +1387,11 @@ function App() {
  };
  setMockExamResults(results);
  setMockExamRunning(false);
+ // ai 5단계: 공유 모의시험 완료 — user_mock_exam_attempts 에 저장 (다음 진입 시 시험시작 차단)
+ try {
+ const examLocale = (localStorage.getItem("mockExamStartedLocale") || locale) as "ko" | "en" | "ja";
+ completeSharedMockExam(examLocale, mockExamAnswers || [], results).catch(() => {});
+ } catch {}
  // ✅ 시험 종료: 고정된 언어 정보 제거
  localStorage.removeItem("mockExamStartedLocale");
 
@@ -4942,6 +4947,11 @@ function App() {
  };
  setMockExamResults(results);
  setMockExamRunning(false);
+ // ai 5단계: 공유 모의시험 완료 — user_mock_exam_attempts 에 저장 (다음 진입 시 시험시작 차단)
+ try {
+ const examLocale = (localStorage.getItem("mockExamStartedLocale") || locale) as "ko" | "en" | "ja";
+ completeSharedMockExam(examLocale, mockExamAnswers || [], results).catch(() => {});
+ } catch {}
  // ✅ 시험 종료: 고정된 언어 정보 제거
  localStorage.removeItem("mockExamStartedLocale");
 
@@ -5408,9 +5418,18 @@ function App() {
  setLoading(true);
  setMockExamIsLoading(true);
  try {
- // 1단계: Firestore에서 오늘의 UTC 기준 문제 조회 (언어별)
- const existingProblems = await getTodayMockExamProblems(locale);
- let allProblems = existingProblems;
+ // ai 5단계: 공유 모의시험 — 모든 사용자가 같은 50문제 (백엔드 스케줄러가 자정 생성)
+ const shared = await getSharedMockExam(locale);
+ if (shared.attempt?.completed) {
+ alert(locale === 'en' ? "You already completed today's mock exam."
+   : locale === 'ja' ? "本日の模擬試験は完了済みです。"
+   : "오늘 모의시험을 이미 완료하셨습니다.");
+ setLoading(false);
+ setMockExamIsLoading(false);
+ return;
+ }
+ const existingProblems = shared.problems;
+ let allProblems = existingProblems || [];
  let difficulties: string[] = [];
  let domains: string[] = [];
 
