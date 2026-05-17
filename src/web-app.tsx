@@ -1526,8 +1526,68 @@ function App() {
 
   const selectedNode = selected ? NODES.find(n => n.id === selected) : null;
 
-  // PDF 생성 및 업로드 함수 (html2pdf로 한글 지원)
+  // PDF 다운로드 — 서버 사이드 생성 + S3 presigned URL (2026-05).
+  // 기존 클라이언트 html2pdf 흐름은 폰트/offscreen 렌더링 이슈로 제거됨.
+  // 자바 백엔드가 quiz_results 조회 → PDF → S3 → presigned URL 반환.
   const generatePDF = async (session: any) => {
+ if (!session || !session.sessionTimestamp) return;
+ const uid = getCurrentUser()?.uid || userEmail;
+ if (!uid) return;
+
+ setPdfGeneratingId(session.sessionTimestamp);
+ try {
+ const { api } = await import("./auth/apiClient");
+ const res = await api.post("/api/exportQuizSessionPdf", {
+ userId: uid,
+ sessionTimestamp: session.sessionTimestamp,
+ });
+ if (!res.ok) throw new Error(`Server returned ${res.status}`);
+ const { url, filename } = await res.json();
+ const link = document.createElement('a');
+ link.href = url;
+ link.download = filename || `SAA-Quiz-${session.sessionTimestamp}.pdf`;
+ document.body.appendChild(link);
+ link.click();
+ document.body.removeChild(link);
+ } catch (error) {
+ alert(locale === 'en' ? 'PDF generation failed. Please try again.'
+   : locale === 'ja' ? 'PDF生成に失敗しました。'
+   : 'PDF 생성에 실패했습니다. 다시 시도해주세요.');
+ } finally {
+ setPdfGeneratingId(null);
+ }
+  };
+
+  // 모의시험 PDF 다운로드 — 서버 사이드 (S3 presigned URL).
+  // 모의시험은 (user_id, locale, exam_date=today) 단일 행이라 examDate 는 서버 기본값(오늘) 사용.
+  const generateMockExamPDF = async () => {
+ const uid = getCurrentUser()?.uid || userEmail;
+ if (!uid) return;
+ try {
+ const { api } = await import("./auth/apiClient");
+ const res = await api.post("/api/exportMockExamPdf", { userId: uid, locale });
+ if (!res.ok) throw new Error(`Server returned ${res.status}`);
+ const { url, filename } = await res.json();
+ const link = document.createElement('a');
+ link.href = url;
+ link.download = filename || `SAA-MockExam-${locale}.pdf`;
+ document.body.appendChild(link);
+ link.click();
+ document.body.removeChild(link);
+ const now = Date.now();
+ setMockExamPdfCreatedAt(now);
+ localStorage.setItem("mockExamPdfCreatedAt", now.toString());
+ } catch (error) {
+ alert(locale === 'en' ? 'PDF generation failed. Please try again.'
+   : locale === 'ja' ? 'PDF生成に失敗しました。'
+   : 'PDF 생성에 실패했습니다. 다시 시도해주세요.');
+ }
+  };
+
+  // ⚠️ 아래 _legacyGeneratePDF 는 옛 클라이언트 html2pdf 구현(데드 코드).
+  // 폰트/offscreen 캡처 이슈로 서버 사이드로 전환했고, 다음 정리 단계에서 통째로 제거.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _legacyGeneratePDF = async (session: any) => {
  if (!session || !session.problems || session.problems.length === 0) return;
 
  // undefined/null 문제 필터링
