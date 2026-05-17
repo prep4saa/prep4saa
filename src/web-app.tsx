@@ -525,6 +525,7 @@ function App() {
   const [streak, setStreak] = useState(0);
   const [sessionId] = useState<string>(`${Date.now()}`); // 현재 세션 ID
   const [pdfGeneratingId, setPdfGeneratingId] = useState<string | number | null>(null); // PDF 생성 중인 세션
+  const [mockExamPdfGenerating, setMockExamPdfGenerating] = useState<boolean>(false); // 모의시험 PDF 다운로드 진행
 
   // 문제 세션 (PDF 다운로드용)
   const [problemSessions, setProblemSessions] = useState<Array<{
@@ -1578,6 +1579,8 @@ function App() {
   const generateMockExamPDF = async () => {
  const uid = getCurrentUser()?.uid || userEmail;
  if (!uid) return;
+ if (mockExamPdfGenerating) return; // 중복 클릭 방지
+ setMockExamPdfGenerating(true);
  try {
  const { api } = await import("./auth/apiClient");
  const res = await api.post("/api/exportMockExamPdf", { userId: uid, locale });
@@ -1596,6 +1599,8 @@ function App() {
  alert(locale === 'en' ? 'PDF generation failed. Please try again.'
    : locale === 'ja' ? 'PDF生成に失敗しました。'
    : 'PDF 생성에 실패했습니다. 다시 시도해주세요.');
+ } finally {
+ setMockExamPdfGenerating(false);
  }
   };
 
@@ -3679,19 +3684,25 @@ function App() {
  setMockExamPdfCreatedAt(now);
  localStorage.setItem("mockExamPdfCreatedAt", now.toString());
  }}
- disabled={isPdfExpired}
+ disabled={isPdfExpired || mockExamPdfGenerating}
  style={{
  padding: "12px 16px",
- background: isPdfExpired ? "rgba(100, 116, 139, 0.5)" : "rgba(59, 130, 246, 0.3)",
- border: `1px solid ${isPdfExpired ? "rgba(100, 116, 139, 0.3)" : "rgba(59, 130, 246, 0.6)"}`,
+ background: (isPdfExpired || mockExamPdfGenerating) ? "rgba(100, 116, 139, 0.5)" : "rgba(59, 130, 246, 0.3)",
+ border: `1px solid ${(isPdfExpired || mockExamPdfGenerating) ? "rgba(100, 116, 139, 0.3)" : "rgba(59, 130, 246, 0.6)"}`,
  borderRadius: "6px",
- color: isPdfExpired ? "#64748b" : "var(--accent)",
- cursor: isPdfExpired ? "not-allowed" : "pointer",
+ color: (isPdfExpired || mockExamPdfGenerating) ? "#64748b" : "var(--accent)",
+ cursor: (isPdfExpired || mockExamPdfGenerating) ? "not-allowed" : "pointer",
  fontSize: "14px",
- fontWeight: "500"
+ fontWeight: "500",
+ opacity: mockExamPdfGenerating ? 0.7 : 1
  }}
  >
- {isPdfExpired ? t("mockExamPdfExpired") : t("mockExamPdfDownload")}
+ {mockExamPdfGenerating ? (
+ <>
+ <span style={{ display: "inline-block", animation: "spin 1s linear infinite", marginRight: "6px" }}>⏳</span>
+ PDF 생성 중...
+ </>
+ ) : (isPdfExpired ? t("mockExamPdfExpired") : t("mockExamPdfDownload"))}
  </button>
 
  {mockExamPdfCreatedAt && !isPdfExpired && (
@@ -3844,19 +3855,25 @@ function App() {
  if (element.parentNode) document.body.removeChild(element);
  });
  }}
- disabled={isPdfExpired}
+ disabled={isPdfExpired || mockExamPdfGenerating}
  style={{
  padding: "12px 16px",
- background: isPdfExpired ? "rgba(100, 116, 139, 0.5)" : "rgba(59, 130, 246, 0.3)",
- border: `1px solid ${isPdfExpired ? "rgba(100, 116, 139, 0.3)" : "rgba(59, 130, 246, 0.6)"}`,
+ background: (isPdfExpired || mockExamPdfGenerating) ? "rgba(100, 116, 139, 0.5)" : "rgba(59, 130, 246, 0.3)",
+ border: `1px solid ${(isPdfExpired || mockExamPdfGenerating) ? "rgba(100, 116, 139, 0.3)" : "rgba(59, 130, 246, 0.6)"}`,
  borderRadius: "6px",
- color: isPdfExpired ? "#64748b" : "var(--accent)",
- cursor: isPdfExpired ? "not-allowed" : "pointer",
+ color: (isPdfExpired || mockExamPdfGenerating) ? "#64748b" : "var(--accent)",
+ cursor: (isPdfExpired || mockExamPdfGenerating) ? "not-allowed" : "pointer",
  fontSize: "14px",
- fontWeight: "500"
+ fontWeight: "500",
+ opacity: mockExamPdfGenerating ? 0.7 : 1
  }}
  >
- {isPdfExpired ? t("mockExamPdfExpired") : t("mockExamPdfDownload")}
+ {mockExamPdfGenerating ? (
+ <>
+ <span style={{ display: "inline-block", animation: "spin 1s linear infinite", marginRight: "6px" }}>⏳</span>
+ PDF 생성 중...
+ </>
+ ) : (isPdfExpired ? t("mockExamPdfExpired") : t("mockExamPdfDownload"))}
  </button>
 
  {!isPdfExpired && (
