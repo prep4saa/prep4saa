@@ -3507,6 +3507,10 @@ function App() {
  onClick={() => {
  if (!mockExamResults) return;
 
+ // ✅ 서버 사이드 PDF (S3 presigned URL) 사용 — 옛 클라이언트 html2pdf 흐름은 아래 dead code.
+ generateMockExamPDF();
+ return;
+
  // mockExamProblems가 없으면 localStorage에서 복구
  let problems = mockExamProblems;
  if (!problems || problems.length === 0) {
@@ -3720,6 +3724,10 @@ function App() {
  <button
  onClick={() => {
  if (!mockExamResults) return;
+
+ // ✅ 서버 사이드 PDF (S3 presigned URL) 사용 — 옛 클라이언트 html2pdf 흐름은 아래 dead code.
+ generateMockExamPDF();
+ return;
 
  // mockExamProblems가 없으면 localStorage에서 복구
  let problems = mockExamProblems;
