@@ -1474,8 +1474,22 @@ function App() {
  setMockExamAnswers(new Array(50).fill(null));
  localStorage.setItem("mockExamProblemsCount", newProblems.length.toString());
 
- // ✅ 점진적 Firebase 저장 (배치마다, 고정된 언어 사용)
- await updateMockExamProblemsProgressively(newProblems, mockExamLocale);
+ // ✅ 점진적 저장 (배치마다, 고정된 언어 사용)
+ // firebase.ts 우회 — Cognito 인증 시 auth.currentUser 가 null 인 케이스 피하려고
+ // userEmail state 를 직접 사용해 자바 백엔드 호출.
+ try {
+ const uid = auth.currentUser?.email || userEmail;
+ if (uid) {
+ const { api } = await import("./auth/apiClient");
+ await api.post("/api/saveMockExamProblems", {
+ userId: uid,
+ locale: mockExamLocale,
+ problems: newProblems,
+ });
+ }
+ } catch (e) {
+ console.error("❌ saveMockExamProblems(progressive) failed:", e);
+ }
  }
  }
 
@@ -5300,7 +5314,20 @@ function App() {
    const problem = await generateSAAProblem(serviceList, "medium", locale, domain, t);
    problems.push(problem);
  }
- await saveTodayMockExamProblems(problems, locale);
+ // firebase.ts 우회 — userEmail state 직접 사용 (Cognito 호환)
+ try {
+ const uid = auth.currentUser?.email || userEmail;
+ if (uid) {
+ const { api } = await import("./auth/apiClient");
+ await api.post("/api/saveMockExamProblems", {
+ userId: uid,
+ locale,
+ problems,
+ });
+ }
+ } catch (e) {
+ console.error("❌ saveMockExamProblems(final) failed:", e);
+ }
  setMockExamProblems(problems);
  } catch (err) {
  setError(t("errorProblemGeneration"));
