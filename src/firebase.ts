@@ -724,7 +724,7 @@ export async function deletePost(
 
 export async function getTodayMockExamProblems(locale: string = "ko"): Promise<Problem[] | null> {
   try {
-    const userEmail = auth.currentUser?.email;
+    const userEmail = await resolveCurrentEmail();
     if (!userEmail) return null;
     const { api } = await import("./auth/apiClient");
     const res = await api.post("/api/getTodayMockExam", { userId: userEmail, locale });
@@ -738,13 +738,26 @@ export async function getTodayMockExamProblems(locale: string = "ko"): Promise<P
 }
 
 
+// Cognito 사용자도 잡기 위한 email fallback. Firebase auth.currentUser 가 null 인 경우(=Cognito 인증)
+// Cognito 세션에서 email claim 을 가져온다. 둘 다 없으면 null.
+async function resolveCurrentEmail(): Promise<string | null> {
+  const fbEmail = auth.currentUser?.email;
+  if (fbEmail) return fbEmail;
+  try {
+    const { getCurrentUserEmail } = await import("./auth/cognito");
+    return await getCurrentUserEmail();
+  } catch {
+    return null;
+  }
+}
+
 /**
  * 오늘의 모의시험 문제 저장 (첫 번째 사용자만 호출)
  * 생성된 50개 문제를 Firestore에 저장 (언어별로 따로 저장)
  */
 export async function saveTodayMockExamProblems(problems: Problem[], locale: string = "ko"): Promise<void> {
   try {
-    const userEmail = auth.currentUser?.email;
+    const userEmail = await resolveCurrentEmail();
     if (!userEmail) return;
     const { api } = await import("./auth/apiClient");
     await api.post("/api/saveMockExamProblems", { userId: userEmail, locale, problems });
@@ -763,7 +776,7 @@ export async function updateMockExamProblemsProgressively(
   locale: string = "ko"
 ): Promise<void> {
   try {
-    const userEmail = auth.currentUser?.email;
+    const userEmail = await resolveCurrentEmail();
     if (!userEmail) return;
     const { api } = await import("./auth/apiClient");
     await api.post("/api/saveMockExamProblems", { userId: userEmail, locale, problems });
