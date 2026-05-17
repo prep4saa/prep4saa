@@ -1057,10 +1057,12 @@ function App() {
 
  try {
  //  보안: Firebase 서버에서 권한 확인 (sessionStorage 우회 방지, 운영자는 제한 없음)
- if (userEmail && auth.currentUser?.uid) {
+ // 인증 ID: Firebase auth.currentUser?.uid 우선, Cognito 마이그레이션 후엔 userEmail fallback.
+ const authUserId = auth.currentUser?.uid || userEmail;
+ if (userEmail && authUserId) {
  if (!isAdmin) {
  const { canGenerate, count, limit } = await canGenerateProblemToday(
- auth.currentUser.uid,
+ authUserId,
  userStatus
  );
 
@@ -1083,7 +1085,7 @@ function App() {
  try {
  const { api } = await import("./auth/apiClient");
  await api.post("/api/recordProblemGeneration", {
- userId: auth.currentUser.uid,
+ userId: authUserId,
  problem: generatedProblem
  });
  } catch (error) {
@@ -1097,7 +1099,7 @@ function App() {
  await new Promise(resolve => setTimeout(resolve, 300));
 
  const { count: updatedCount } = await canGenerateProblemToday(
- auth.currentUser.uid,
+ authUserId,
  userStatus
  );
  // 클라이언트 카운트 업데이트 (Firebase 기반)
@@ -2405,9 +2407,11 @@ function App() {
  onClick={async () => {
  setIsSubmitted(true);
  // 로그인된 사용자면 결과 저장
+ // Cognito 마이그레이션 후엔 Firebase getCurrentUser() 가 null 이라 userEmail fallback 사용.
  const user = getCurrentUser();
+ const recordUid = user?.uid || userEmail;
 
- if (user && problem) {
+ if (recordUid && problem) {
  try {
  // Strangler Fig: /api/recordQuizResult 은 자바 백엔드(quiz 슬라이스)로 이전됨
  const backendUrl = resolveJavaBackendUrl();
@@ -2417,7 +2421,7 @@ function App() {
  "Content-Type": "application/json",
  },
  body: JSON.stringify({
- userId: user.uid,
+ userId: recordUid,
  problem: problem,
  selectedAnswer: selectedAnswer,
  difficulty: difficulty as "medium" | "hard" | "challenge",
@@ -2431,7 +2435,7 @@ function App() {
  }
 
  // 세션 목록 즉시 갱신 (현황 탭 PDF 다운로드 반영)
- const sessions = await getUserProblemSessions(user.uid);
+ const sessions = await getUserProblemSessions(recordUid);
  setProblemSessions(sessions);
  } catch (error) {
  console.error(`❌ Error in recordQuizResult:`, error);
