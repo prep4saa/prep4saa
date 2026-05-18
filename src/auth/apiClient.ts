@@ -16,6 +16,8 @@ const USE_COGNITO_AUTH = import.meta.env.VITE_USE_COGNITO_AUTH === "true";
 // 여기 등록된 경로는 자바(VITE_JAVA_BACKEND_URL)로, 나머지는 server.js 로 라우팅된다.
 // 도메인을 옮길 때마다 이 집합에 경로를 추가한다.
 const MIGRATED_TO_JAVA = new Set<string>([
+  // user 슬라이스
+  "/api/user/me",
   // quiz 슬라이스
   "/api/recordQuizResult",
   "/api/getQuizStats",

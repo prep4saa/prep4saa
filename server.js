@@ -1311,10 +1311,29 @@ app.post('/api/lemonsqueezy/cancel-subscription', (req, res) => {
   });
 });
 
-app.post('/api/webhooks/lemon-squeezy', (req, res) => {
-  // TODO Phase 7: webhook -> PostgreSQL users.is_premium update
-  console.log('LemonSqueezy webhook received (no-op during migration)');
-  res.status(200).json({ received: true });
+// LemonSqueezy webhook → 자바 PaymentService 로 proxy.
+// HMAC 서명 검증은 자바 측에서 수행하므로 req.rawBody 를 그대로 전달해야 한다
+// (JSON.stringify 로 재직렬화하면 공백/순서가 바뀌어 서명 불일치).
+// 환경변수 JAVA_BACKEND_URL 미설정 시 같은 호스트의 8080 으로 기본 라우팅.
+app.post('/api/webhooks/lemon-squeezy', async (req, res) => {
+  const javaBackendUrl = process.env.JAVA_BACKEND_URL || 'http://localhost:8080';
+  try {
+    const javaResponse = await fetch(`${javaBackendUrl}/api/webhooks/lemon-squeezy`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Signature': req.headers['x-signature'] || '',
+      },
+      body: req.rawBody,
+    });
+    const text = await javaResponse.text();
+    res.status(javaResponse.status)
+      .type(javaResponse.headers.get('content-type') || 'application/json')
+      .send(text);
+  } catch (e) {
+    console.error('❌ LemonSqueezy webhook proxy error:', e);
+    res.status(502).json({ error: { message: 'webhook proxy failed: ' + e.message } });
+  }
 });
 
 // Start server on port 5000

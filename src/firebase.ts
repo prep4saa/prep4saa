@@ -447,11 +447,24 @@ function getErrorMessage(errorCode: string): string {
 // ===== Firestore 함수 =====
 
 /**
- * 사용자의 결제 상태 조회
+ * 사용자의 결제 상태 조회 — PostgreSQL users.is_premium 이 진실의 원천.
+ * 자바 백엔드 GET /api/user/me 가 Cognito JWT 로 본인 식별 후 premium 필드 반환.
+ * userId 매개변수는 후방 호환을 위해 유지하지만 실제 식별은 JWT 가 한다.
  */
 export async function getUserPaidStatus(_userId: string): Promise<boolean> {
-  // TODO Phase 7: PostgreSQL users.is_premium 조회
-  return false;
+  try {
+    const { api } = await import("./auth/apiClient");
+    const response = await api.get("/api/user/me");
+    if (!response.ok) {
+      console.warn("⚠️ /api/user/me failed:", response.status);
+      return false;
+    }
+    const profile = await response.json();
+    return Boolean(profile?.premium);
+  } catch (e) {
+    console.error("getUserPaidStatus error:", e);
+    return false;
+  }
 }
 
 /**
