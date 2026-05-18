@@ -34,7 +34,7 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, o
   const handleFreeClick = () => userEmail ? onGetStarted() : onLoginClick?.();
   const handleProClick = () => {
     if (!userEmail) { onLoginClick?.(); return; }
-    if (userStatus === "paid") { onGetStarted(); return; } // 이미 paid → 퀴즈로 이동
+    if (userStatus === "paid" || isAdmin) { onGetStarted(); return; } // paid 또는 운영자 → 퀴즈로 이동
     onProClick?.();
   };
   const [locale, setLocale] = useState<Locale>(() => {
@@ -506,7 +506,7 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, o
                     <div className="pro-feature-title">{t.landingProPlanFeature4Title}</div>
                   </div>
                 </div>
-                {userStatus === "paid" ? (
+                {(userStatus === "paid" || isAdmin) ? (
                   <button className="btn-pro" onClick={handleProClick}>
                     {locale === 'ko' ? '퀴즈 시작하기' : locale === 'ja' ? 'クイズを始める' : 'Start Quiz'}
                   </button>

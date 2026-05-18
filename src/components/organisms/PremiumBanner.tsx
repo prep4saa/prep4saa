@@ -6,11 +6,13 @@ interface PremiumBannerProps {
   userEmail: string | null;
   onLoginClick: () => void;
   onUpgradeClick: () => void;
+  /** 운영자는 결제 권유 자체가 불필요하므로 배너 숨김. */
+  isAdmin?: boolean;
 }
 
 /**
  * 프리미엄 업그레이드 배너.
- * paid 사용자에게는 노출되지 않음.
+ * paid 사용자 또는 운영자(admin)에게는 노출되지 않음.
  * 비로그인 상태에서 업그레이드 버튼을 누르면 로그인 모달로 유도.
  */
 export default function PremiumBanner({
@@ -18,10 +20,11 @@ export default function PremiumBanner({
   userEmail: _userEmail,
   onLoginClick,
   onUpgradeClick,
+  isAdmin = false,
 }: PremiumBannerProps) {
   const { t } = useLocale();
 
-  if (userStatus === "paid") return null;
+  if (userStatus === "paid" || isAdmin) return null;
 
   // guest 면 로그인 모달, 로그인 상태면 결제 핸들러 호출.
   const handleClick = userStatus === "guest" ? onLoginClick : onUpgradeClick;

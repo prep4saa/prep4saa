@@ -2644,6 +2644,7 @@ function App() {
  userEmail={userEmail}
  onLoginClick={() => setShowCognitoLogin(true)}
  onUpgradeClick={handleCheckout}
+ isAdmin={isAdmin}
  />
  </>
  )}
