@@ -483,29 +483,6 @@ export const en: Strings = {
   sessionPdfGenerating: "Generating...",
   sessionPdfDownload: "Download PDF",
 
-  // Console Challenge
-  tabConsole: "CLI Lab",
-  consoleDone: "done",
-  consoleHintShow: "Show Hint ▼",
-  consoleHintHide: "Hide Hint ▲",
-  consoleExplShow: "Show Explanation ▼",
-  consoleExplHide: "Hide Explanation ▲",
-  consoleNextChallenge: "Next Challenge ▶",
-  consoleEmptyHint: "Type an AWS CLI command to solve the challenge. (↑↓ history, Enter to run)",
-  consoleChallengeComplete: "🎉 Challenge Complete!",
-  consolePlaceholderSolved: "Challenge complete! Select the next challenge above.",
-  consolePlaceholderInput: "Enter AWS CLI command...",
-  consoleClear: "Clear",
-  consoleRun: "Run",
-  consoleShowAnswer: "Show Answer",
-  consoleHideAnswer: "Hide Answer",
-  consoleWrongAnswer: "Incorrect. Please check again. Hint: ",
-  consoleSelectScenario: "Select a number to start a scenario",
-  consoleAnswerLabel: "Answer: ",
-  consoleExplanationLabel: "Explanation",
-  consoleNextBtn: "Next →",
-  consoleNextStep: "Moving to next step...",
-
   // Email Verification
   emailVerificationTitle: "Email Verification Required",
   emailVerificationMessage: "A confirmation link has been sent to {email}. Please check your email to activate your account.",
@@ -523,17 +500,4 @@ export const en: Strings = {
   emailVerificationGoogleOnly: "This email is currently connected only via Google login. Please sign in with Google and then connect a password.",
   emailVerificationUserNotFound: "User not found. Please try again.",
   emailVerificationCancelBtn: "Cancel",
-
-  // CLI Lab - Scenario Console
-  cliLabSelectTypeMsg: "Select a type button above",
-  cliLabInputHint: "Type a command and click the Submit button.",
-  cliLabInputPlaceholder: "Enter AWS CLI command...",
-  cliLabSubmitBtn: "Submit",
-  cliLabShowAnswerBtn: "Show Answer",
-  cliLabHideAnswerBtn: "Hide Answer",
-  cliLabAnswerLabel: "Correct Command:",
-  cliLabSuccessMsg: "✓ Correct!",
-  cliLabErrorMsg: "✗ Incorrect. Please try again.",
-  cliLabCompleteMsg: "✓ Scenario Complete! Select another scenario or read the explanation.",
-  cliLabStepLabel: "Step",
 };

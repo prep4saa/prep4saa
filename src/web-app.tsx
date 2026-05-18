@@ -23,23 +23,6 @@ import { CONCEPTS_JA } from "./concepts_ja";
 import { auth, completeSharedMockExam, deleteExpiredResults, deleteOldMockExamProblems, deletePost, getAdminStatsSecure, getAllUsersForAdminSecure, getCurrentUser, getExamStartDate, getPostById, getPosts, getSharedMockExam, getTodayMockExamProblems, getUserPaidStatus, getUserProblemSessions, getUserProblemSessionsSecure, getUserQuizStats, isPasswordLinked, isSubscriptionCancelled, onAuthStateChange, saveMockExamAnswers, saveTodayMockExamProblems, saveUserInfoToFirebase, signIn, signInWithGoogle, signOut, signUp, updateMockExamProblemsProgressively, updateStreakInFirebase, updateUserPaidStatus, uploadPDFToStorage, refreshUserData, resendEmailVerification, uploadCurrentMockExamToPastExams, fetchPastExamPage, getPastExamTotalCount } from "./firebase";
 import { useLocale } from "./LocaleContext";
 import { useTheme } from "./ThemeContext";
-// SEC Challenges
-import { SEC_CHALLENGES_I18N as SEC_KO } from "./locales/sec-ko";
-import { SEC_CHALLENGES_I18N as SEC_EN } from "./locales/sec-en";
-import { SEC_CHALLENGES_I18N as SEC_JA } from "./locales/sec-ja";
-// RES Challenges
-import { RES_CHALLENGES_I18N as RES_KO } from "./locales/res-ko";
-import { RES_CHALLENGES_I18N as RES_EN } from "./locales/res-en";
-import { RES_CHALLENGES_I18N as RES_JA } from "./locales/res-ja";
-// PERF Challenges
-import { PERF_CHALLENGES_I18N as PERF_KO } from "./locales/perf-ko";
-import { PERF_CHALLENGES_I18N as PERF_EN } from "./locales/perf-en";
-import { PERF_CHALLENGES_I18N as PERF_JA } from "./locales/perf-ja";
-// COST Challenges
-import { COST_CHALLENGES_I18N as COST_KO } from "./locales/cost-ko";
-import { COST_CHALLENGES_I18N as COST_EN } from "./locales/cost-en";
-import { COST_CHALLENGES_I18N as COST_JA } from "./locales/cost-ja";
-import { SEC_ANSWERS, RES_ANSWERS, PERF_ANSWERS, COST_ANSWERS, isAnswerCorrect } from "./scenario-answers";
 import { canGenerateProblemToday, getUserMockExamDate, recordMockExamDate } from "./firebase";
 import "./styles.css";
 import { validateEmail, validatePassword, sanitizeInput } from "./utils/validation";
@@ -397,7 +380,7 @@ function App() {
   //  보안: admin 이메일은 번들에 담지 않음 (서버 /api/checkAdmin 사용)
   //  테스트용 paid 이메일도 번들 제거 (프로덕션에서 사용 안 함)
   const TEST_PAID_EMAILS: string[] = [];
-  const [tab, setTab] = useState<"quiz" | "concept" | "status" | "mockExam" | "pastExam" | "posts" | "admin" | "users" | "console">("quiz");
+  const [tab, setTab] = useState<"quiz" | "concept" | "status" | "mockExam" | "pastExam" | "posts" | "admin" | "users">("quiz");
   const [showQuizIntroModal, setShowQuizIntroModal] = useState(false);
   const [quizIntroStep, setQuizIntroStep] = useState(0);
   const [quizIntroDontShowToday, setQuizIntroDontShowToday] = useState(false);
@@ -485,26 +468,6 @@ function App() {
   const [showCognitoLogin, setShowCognitoLogin] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
-  // Scenario Console State
-  const [scenarioType, setScenarioType] = useState<'sec' | 'res' | 'perf' | 'cost' | null>(null);
-  const [selectedScenario, setSelectedScenario] = useState<number | null>(null);
-  const [scenarioStepIdx, setScenarioStepIdx] = useState(0);
-  const [consoleInput, setConsoleInput] = useState('');
-  const [consoleHistory, setConsoleHistory] = useState<Array<{type: 'cmd' | 'output' | 'error' | 'hint'; text: string; isCorrect?: boolean}>>([]);
-  const [, setScenarioAttempts] = useState(0);
-  const [showScenarioAnswer, setShowScenarioAnswer] = useState(false);
-  const [scenarioSubmitFeedback, setScenarioSubmitFeedback] = useState<string | null>(null);
-
-  // Helper function to get challenges by type and locale
-  const getChallengesForLocale = (type: 'sec' | 'res' | 'perf' | 'cost', loc: string) => {
-    const maps: Record<string, Record<string, Record<number, any>>> = {
-      sec: { ko: SEC_KO, en: SEC_EN, ja: SEC_JA },
-      res: { ko: RES_KO, en: RES_EN, ja: RES_JA },
-      perf: { ko: PERF_KO, en: PERF_EN, ja: PERF_JA },
-      cost: { ko: COST_KO, en: COST_EN, ja: COST_JA },
-    };
-    return maps[type]?.[loc] || maps[type]?.['ko']; // Fallback to Korean
-  };
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [emailVerified, setEmailVerified] = useState(false);
   const [isAuthChecked, setIsAuthChecked] = useState(false);
@@ -2345,7 +2308,7 @@ function App() {
 
  <div className="main-area" style={{ cursor: isResizing ? 'col-resize' : 'default' }}>
  {/* Left: Controls */}
- <div className="controls-panel" style={{ flex: `0 0 ${(tab === "posts" || tab === "console" || tab === "pastExam") ? "100%" : (100 - graphPanelWidth) + "%"}`, display: (tab === "posts" || tab === "console" || tab === "pastExam") ? "flex" : "flex" }}>
+ <div className="controls-panel" style={{ flex: `0 0 ${(tab === "posts" || tab === "pastExam") ? "100%" : (100 - graphPanelWidth) + "%"}`, display: (tab === "posts" || tab === "pastExam") ? "flex" : "flex" }}>
  {tab === "quiz" && (
  <>
  {/* Category filter */}
@@ -3023,309 +2986,6 @@ function App() {
      </div>
    );
  })()}
-
- {/* Console Tab - CLI 실습 (ConsoleChallenge) */}
- {tab === "console" && (
-   <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-start", height: "100%", padding: "20px", overflowY: "auto" }}>
-     <div style={{ display: "flex", flexDirection: "column", maxWidth: "900px", width: "100%", gap: "16px" }}>
-     {/* Challenge Selector */}
-     <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-       {(['sec', 'res', 'perf', 'cost'] as const).map((type) => {
-         const colors: Record<string, string> = { sec: '#f85149', res: '#58a6ff', perf: '#3fb950', cost: '#e3b341' };
-         const labels: Record<string, string> = { sec: 'SEC', res: 'RES', perf: 'PERF', cost: 'COST' };
-         return (
-           <button
-             key={type}
-             onClick={() => {
-               setScenarioType(type);
-               setSelectedScenario(1);
-             }}
-             style={{
-               padding: "8px 16px",
-               background: scenarioType === type ? colors[type] : "#2a344a",
-               color: scenarioType === type ? "#000" : "#e6edf3",
-               border: `2px solid ${colors[type]}`,
-               borderRadius: "6px",
-               cursor: "pointer",
-               fontWeight: 700,
-               fontSize: "13px",
-               transition: "all 0.2s"
-             }}
-           >
-             {labels[type]}
-           </button>
-         );
-       })}
-     </div>
-
-     {/* Challenge Content */}
-     {scenarioType && selectedScenario && (() => {
-       const challenges = getChallengesForLocale(scenarioType, locale);
-       const scenario = challenges?.[selectedScenario];
-       if (!scenario) return <div style={{ color: "#8b949e" }}>로드 중...</div>;
-
-       const currentStep = scenario.steps?.[scenarioStepIdx];
-       const isScenarioComplete = scenarioStepIdx >= (scenario.steps?.length || 0);
-
-       // Get answer data for current step
-       const getScenarioAnswers = () => {
-         const answerMap = {
-           sec: SEC_ANSWERS,
-           res: RES_ANSWERS,
-           perf: PERF_ANSWERS,
-           cost: COST_ANSWERS,
-         };
-         const answers = answerMap[scenarioType];
-         return answers?.[selectedScenario]?.answers?.[scenarioStepIdx] || [];
-       };
-
-       const stepAnswers = getScenarioAnswers();
-
-       const handleScenarioSubmit = () => {
-         if (!consoleInput.trim() || !currentStep) return;
-
-         const isCorrect = isAnswerCorrect(consoleInput, stepAnswers);
-
-         setConsoleHistory(prev => [
-           ...prev,
-           { type: 'cmd', text: consoleInput, isCorrect }
-         ]);
-
-         if (isCorrect) {
-           setScenarioSubmitFeedback(t("cliLabSuccessMsg"));
-           setConsoleHistory(prev => [
-             ...prev,
-             { type: 'output', text: t("cliLabSuccessMsg") }
-           ]);
-
-           // Auto-move to next step
-           setTimeout(() => {
-             setConsoleInput('');
-             setScenarioAttempts(0);
-             setShowScenarioAnswer(false);
-             setScenarioSubmitFeedback(null);
-
-             if (!isScenarioComplete) {
-               setScenarioStepIdx(prev => prev + 1);
-             }
-           }, 1500);
-         } else {
-           setScenarioSubmitFeedback(t("cliLabErrorMsg"));
-           setConsoleHistory(prev => [
-             ...prev,
-             { type: 'error', text: t("cliLabErrorMsg") }
-           ]);
-           setScenarioAttempts(prev => prev + 1);
-         }
-       };
-
-       return (
-         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "16px" }}>
-           {/* Title & Scenario */}
-           <div style={{ background: "#161b22", padding: "16px", borderRadius: "8px", border: "1px solid #30363d" }}>
-             <h3 style={{ marginTop: 0, color: "#f0f6fc", fontSize: "16px", marginBottom: "8px" }}>
-               {scenarioType.toUpperCase()}-{String(selectedScenario).padStart(2, '0')}: {scenario.title}
-             </h3>
-             <p style={{ color: "#c9d1d9", fontSize: "13px", lineHeight: "1.6", margin: 0 }}>
-               {scenario.scenario}
-             </p>
-           </div>
-
-           {/* Steps & Console */}
-           <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "12px", minHeight: 0 }}>
-             {/* Step Info */}
-             {!isScenarioComplete ? (
-               <div style={{ background: "#1A253D", padding: "12px", borderRadius: "8px", border: "1px solid #2A344A" }}>
-                 <p style={{ color: "#58a6ff", fontSize: "12px", fontWeight: 600, margin: "0 0 8px 0" }}>
-                   {t("cliLabStepLabel")} {scenarioStepIdx + 1} / {scenario.steps?.length || 0}: {currentStep?.title || ""}
-                 </p>
-                 <p style={{ color: "#D1D5DB", fontSize: "12px", margin: 0 }}>
-                   {currentStep?.desc || ""}
-                 </p>
-               </div>
-             ) : (
-               <div style={{ background: "#1a3d2c", padding: "12px", borderRadius: "8px", border: "1px solid #2a5a47" }}>
-                 <p style={{ color: "#3fb950", fontSize: "12px", fontWeight: 600, margin: 0 }}>
-                   {t("cliLabCompleteMsg")}
-                 </p>
-               </div>
-             )}
-
-             {/* Console Output */}
-             <div style={{
-               flex: 1,
-               background: "#0d1117",
-               border: "1px solid #30363d",
-               borderRadius: "8px",
-               padding: "12px",
-               fontFamily: "monospace",
-               fontSize: "12px",
-               color: "#e6edf3",
-               overflowY: "auto",
-               minHeight: "150px"
-             }}>
-               {consoleHistory.length === 0 ? (
-                 <div style={{ color: "#8b949e" }}>{t("cliLabInputHint")}</div>
-               ) : (
-                 consoleHistory.map((line, idx) => (
-                   <div key={idx} style={{
-                     color: line.type === 'cmd' ? (line.isCorrect ? '#3fb950' : '#f85149') : line.type === 'output' ? '#3fb950' : line.type === 'error' ? '#f85149' : '#8b949e',
-                     marginBottom: '4px'
-                   }}>
-                     {line.type === 'cmd' ? '$ ' : ''}{line.text}
-                   </div>
-                 ))
-               )}
-             </div>
-
-             {/* Input Area */}
-             {!isScenarioComplete && currentStep && (
-               <div style={{ display: "flex", gap: "8px", flexDirection: "column" }}>
-                 <input
-                   type="text"
-                   placeholder={t("cliLabInputPlaceholder")}
-                   value={consoleInput}
-                   onChange={(e) => setConsoleInput(e.target.value)}
-                   onKeyDown={(e) => {
-                     if (e.key === "Enter" && consoleInput.trim()) {
-                       handleScenarioSubmit();
-                     }
-                   }}
-                   style={{
-                     padding: "10px 12px",
-                     background: "#161b22",
-                     border: "1px solid #30363d",
-                     borderRadius: "6px",
-                     color: "#e6edf3",
-                     fontSize: "12px"
-                   }}
-                 />
-
-                 {/* Feedback Message */}
-                 {scenarioSubmitFeedback && (
-                   <div style={{
-                     padding: "8px 12px",
-                     borderRadius: "6px",
-                     fontSize: "12px",
-                     fontWeight: 600,
-                     background: scenarioSubmitFeedback.includes(t("cliLabSuccessMsg").substring(2)) ? 'rgba(63,185,80,0.2)' : 'rgba(248,81,73,0.2)',
-                     color: scenarioSubmitFeedback.includes(t("cliLabSuccessMsg").substring(2)) ? '#3fb950' : '#f85149',
-                     border: `1px solid ${scenarioSubmitFeedback.includes(t("cliLabSuccessMsg").substring(2)) ? '#3fb950' : '#f85149'}`
-                   }}>
-                     {scenarioSubmitFeedback}
-                   </div>
-                 )}
-
-                 {/* Buttons */}
-                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                   <button
-                     onClick={handleScenarioSubmit}
-                     disabled={!consoleInput.trim() || (userStatus !== "paid" && !isAdmin)}
-                     style={{
-                       padding: "10px 16px",
-                       background: consoleInput.trim() && (userStatus === "paid" || isAdmin) ? "#3fb950" : "#1a3a2a",
-                       color: consoleInput.trim() && (userStatus === "paid" || isAdmin) ? "#000" : "#666",
-                       border: "none",
-                       borderRadius: "6px",
-                       cursor: consoleInput.trim() && (userStatus === "paid" || isAdmin) ? "pointer" : "not-allowed",
-                       fontSize: "12px",
-                       fontWeight: 600,
-                       opacity: consoleInput.trim() && (userStatus === "paid" || isAdmin) ? 1 : 0.5
-                     }}
-                   >
-                     {t("cliLabSubmitBtn")}
-                   </button>
-
-                   <button
-                     onClick={() => setShowScenarioAnswer(!showScenarioAnswer)}
-                     disabled={userStatus !== "paid" && !isAdmin}
-                     style={{
-                       padding: "10px 16px",
-                       background: (userStatus === "paid" || isAdmin) ? (showScenarioAnswer ? "#ff9900" : "#2a344a") : "#1a3a2a",
-                       color: (userStatus === "paid" || isAdmin) ? (showScenarioAnswer ? "#000" : "#e6edf3") : "#666",
-                       border: (userStatus === "paid" || isAdmin) ? "1px solid #ff9900" : "1px solid #444",
-                       borderRadius: "6px",
-                       cursor: (userStatus === "paid" || isAdmin) ? "pointer" : "not-allowed",
-                       fontSize: "12px",
-                       fontWeight: 600,
-                       opacity: (userStatus === "paid" || isAdmin) ? 1 : 0.5
-                     }}
-                   >
-                     {showScenarioAnswer ? t("cliLabHideAnswerBtn") : t("cliLabShowAnswerBtn")}
-                   </button>
-                 </div>
-
-                 {showScenarioAnswer && stepAnswers.length > 0 && (
-                   <div style={{
-                     background: "#1a253d",
-                     border: "1px solid #ff9900",
-                     borderRadius: "6px",
-                     padding: "10px 12px",
-                     fontSize: "12px",
-                     color: "#e6edf3"
-                   }}>
-                     <div style={{ color: "#ff9900", fontWeight: 600, marginBottom: "8px" }}>{t("cliLabAnswerLabel")}</div>
-                     {stepAnswers.map((answer, idx) => (
-                       <div key={idx} style={{ color: "#58a6ff", marginBottom: idx < stepAnswers.length - 1 ? "6px" : 0 }}>
-                         $ {answer}
-                       </div>
-                     ))}
-                   </div>
-                 )}
-               </div>
-             )}
-           </div>
-
-           {/* Explanation */}
-           {isScenarioComplete && (
-             <div style={{ background: "#161b22", padding: "12px", borderRadius: "8px", border: "1px solid #30363d" }}>
-               <p style={{ color: "#c9d1d9", fontSize: "12px", lineHeight: "1.6", margin: 0 }}>
-                 {scenario.explanation}
-               </p>
-             </div>
-           )}
-
-           {/* Navigation */}
-           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-             {Array.from({ length: 30 }).map((_, i) => (
-               <button
-                 key={i + 1}
-                 onClick={() => {
-                   setSelectedScenario(i + 1);
-                   setScenarioStepIdx(0);
-                   setConsoleInput('');
-                   setConsoleHistory([]);
-                   setScenarioAttempts(0);
-                   setShowScenarioAnswer(false);
-                   setScenarioSubmitFeedback(null);
-                 }}
-                 style={{
-                   padding: "6px 10px",
-                   background: selectedScenario === i + 1 ? "#ff9900" : "#2a344a",
-                   color: selectedScenario === i + 1 ? "#000" : "#D1D5DB",
-                   border: "1px solid #30363d",
-                   borderRadius: "4px",
-                   cursor: "pointer",
-                   fontSize: "11px",
-                   fontWeight: selectedScenario === i + 1 ? 600 : 500
-                 }}
-               >
-                 {i + 1}
-               </button>
-             ))}
-           </div>
-         </div>
-       );
-     })()}
-
-     {!scenarioType && (
-       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#8b949e" }}>
-         {t("cliLabSelectTypeMsg")}
-       </div>
-     )}
-     </div>
-   </div>
- )}
 
  {tab === "concept" && (
  <div className="concept-panel">
@@ -4417,7 +4077,6 @@ function App() {
  </div>
 
  {/* Resizer Handle */}
- {tab !== "console" && (
  <div
  onMouseDown={(e) => {
  resizeStartPosRef.current = { startX: e.clientX, startWidth: graphPanelWidth };
@@ -4443,11 +4102,9 @@ function App() {
  }}
  title={t("panelResizeHint")}
  />
- )}
 
  {/* Right: Graph or Admin Chart */}
- {tab !== "console" && (
- <div className="graph-panel" style={{ flex: `0 0 ${tab === "posts" ? "100%" : (tab === "pastExam" || tab === "console") ? "0%" : graphPanelWidth + "%"}`, position: 'relative', display: (tab === "pastExam") ? "none" : undefined }}>
+ <div className="graph-panel" style={{ flex: `0 0 ${tab === "posts" ? "100%" : tab === "pastExam" ? "0%" : graphPanelWidth + "%"}`, position: 'relative', display: (tab === "pastExam") ? "none" : undefined }}>
  {tab === "admin" ? (
  <>
  {/* Admin Bar Graph */}
@@ -6074,7 +5731,6 @@ function App() {
  </>
  )}
  </div>
- )}
 
  {/* 시험 시작일 설정 모달 */}
  <ExamDateModal
