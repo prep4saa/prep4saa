@@ -10,7 +10,7 @@ type Locale = 'ko' | 'en' | 'ja';
 
 interface LandingPageProps {
   onGetStarted: () => void;
-  onTabChange: (tab: "quiz" | "concept" | "status" | "mockExam" | "pastExam" | "admin" | "users" | "console") => void;
+  onTabChange: (tab: "quiz" | "concept" | "status" | "mockExam" | "pastExam" | "admin" | "users") => void;
   onLoginClick?: () => void;
   onProClick?: () => void;
   userEmail?: string | null;
@@ -511,17 +511,8 @@ export default function LandingPage({ onGetStarted, onTabChange, onLoginClick, o
                     {locale === 'ko' ? '퀴즈 시작하기' : locale === 'ja' ? 'クイズを始める' : 'Start Quiz'}
                   </button>
                 ) : (
-                  <button
-                    className="btn-pro"
-                    disabled
-                    style={{
-                      background: "#4B5563",
-                      color: "#9CA3AF",
-                      cursor: "not-allowed",
-                      opacity: 0.7
-                    }}
-                  >
-                    {t.btnComingSoon}
+                  <button className="btn-pro" onClick={handleProClick}>
+                    {t.premiumUpgradeBtn}
                   </button>
                 )}
               </div>

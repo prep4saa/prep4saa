@@ -16,12 +16,15 @@ interface PremiumBannerProps {
 export default function PremiumBanner({
   userStatus,
   userEmail: _userEmail,
-  onLoginClick: _onLoginClick,
-  onUpgradeClick: _onUpgradeClick,
+  onLoginClick,
+  onUpgradeClick,
 }: PremiumBannerProps) {
   const { t } = useLocale();
 
   if (userStatus === "paid") return null;
+
+  // guest 면 로그인 모달, 로그인 상태면 결제 핸들러 호출.
+  const handleClick = userStatus === "guest" ? onLoginClick : onUpgradeClick;
 
   return (
     <div style={{
@@ -39,16 +42,15 @@ export default function PremiumBanner({
         {t("mockExamPremiumDaily")}
       </div>
       <button
-        disabled
+        onClick={handleClick}
         style={{
           width: "100%", padding: "10px",
-          background: "#4B5563", color: "#9CA3AF",
+          background: "#FF9900", color: "#0F1629",
           border: "none", borderRadius: "6px",
-          cursor: "not-allowed", fontSize: "12px", fontWeight: "bold",
-          opacity: 0.7
+          cursor: "pointer", fontSize: "12px", fontWeight: "bold"
         }}
       >
-        {t("btnComingSoon")}
+        {t("premiumUpgradeBtn")}
       </button>
     </div>
   );

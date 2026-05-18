@@ -971,6 +971,32 @@ function App() {
  };
   }, [isResizing]);
 
+  // 결제 체크아웃 — LemonSqueezy 결제 페이지로 다이렉트 이동 (모든 프리미엄 권유 버튼 공용 핸들러).
+  // 비로그인 상태면 로그인 모달부터 띄움 — userEmail 없으면 체크아웃 자체가 안 됨.
+  const handleCheckout = async () => {
+    if (!userEmail) {
+      setShowCognitoLogin(true);
+      return;
+    }
+    try {
+      const { api } = await import("./auth/apiClient");
+      const response = await api.post("/api/lemonsqueezy/checkout", { userEmail });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error?.message || `Server returned ${response.status}`);
+      }
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout url in response");
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('결제 페이지를 열 수 없습니다.');
+    }
+  };
+
   const handleGenerateProblem = async () => {
  // 로그인 확인
  if (!userEmail) {
@@ -2178,7 +2204,7 @@ function App() {
           setShowLanding(false);
         }}
         onLoginClick={() => setShowCognitoLogin(true)}
-        onProClick={() => setShowPaymentModal(true)}
+        onProClick={handleCheckout}
         currentLocale={locale}
         onLocaleChange={setLocale}
         userEmail={userEmail}
@@ -2617,7 +2643,7 @@ function App() {
  userStatus={userStatus}
  userEmail={userEmail}
  onLoginClick={() => setShowCognitoLogin(true)}
- onUpgradeClick={() => setShowPaymentModal(true)}
+ onUpgradeClick={handleCheckout}
  />
  </>
  )}
@@ -2823,19 +2849,18 @@ function App() {
                    {t("pastExamPaidLockDesc")}
                  </p>
                  <button
-                   disabled
+                   onClick={handleCheckout}
                    style={{
                      padding: "12px 24px",
-                     background: "#4B5563",
-                     color: "#9CA3AF",
+                     background: "#FF9900",
+                     color: "#0F1629",
                      border: "none",
                      borderRadius: "8px",
                      fontSize: "14px",
                      fontWeight: 700,
-                     cursor: "not-allowed",
-                     opacity: 0.7
+                     cursor: "pointer"
                    }}
-                 >{t("btnComingSoon")}</button>
+                 >{t("premiumUpgradeBtn")}</button>
                </div>
              ) : pastExamLoading ? (
                /* 로딩 스피너 */
@@ -3599,22 +3624,21 @@ function App() {
  </div>
 
  <button
- disabled
+ onClick={handleCheckout}
  style={{
  width: "100%",
  padding: "12px 16px",
- background: "#4B5563",
- border: "2px solid #6B7280",
+ background: "#FF9900",
+ border: "2px solid #FF9900",
  borderRadius: "8px",
- color: "#9CA3AF",
- cursor: "not-allowed",
+ color: "#0F1629",
+ cursor: "pointer",
  fontSize: "14px",
  fontWeight: "bold",
- marginBottom: "12px",
- opacity: 0.7
+ marginBottom: "12px"
  }}
  >
- {t("btnComingSoon")}
+ {t("premiumUpgradeBtn")}
  </button>
 
  {userStatus === "guest" && (
