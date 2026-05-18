@@ -682,11 +682,27 @@ function App() {
      if (cognitoEmail) {
        setUserEmail(cognitoEmail);
        setEmailVerified(true);
-       setUserStatusLocal("loggedIn");
        setIsPasswordLoginLinked(true);
        setShowLanding(false);
        localStorage.setItem("userEmail", cognitoEmail);
-       localStorage.setItem("userStatus", "loggedIn");
+
+       // PostgreSQL 결제 상태 확인 — 자바 /api/user/me 가 JWT 로 본인 식별.
+       // 실패하면 안전하게 loggedIn 으로 폴백.
+       let status: UserStatus = "loggedIn";
+       try {
+         const isPaid = await getUserPaidStatus(cognitoEmail);
+         if (isPaid) {
+           status = "paid";
+           const paidToken = `PAID_TOKEN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+           sessionStorage.setItem("userStatus", paidToken);
+         } else {
+           sessionStorage.setItem("userStatus", "loggedIn");
+         }
+       } catch (e) {
+         sessionStorage.setItem("userStatus", "loggedIn");
+       }
+       setUserStatusLocal(status);
+       localStorage.setItem("userStatus", status);
        setIsAuthChecked(true);
        return;
      }
