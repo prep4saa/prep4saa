@@ -5115,6 +5115,17 @@ function App() {
  // ai 5단계: 공유 모의시험 — 모든 사용자가 같은 50문제 (백엔드 스케줄러가 자정 생성)
  const shared = await getSharedMockExam(locale);
  if (shared.attempt?.completed) {
+ // 이미 완료된 사용자에게는 결과 + PDF 다운로드 버튼이 보이도록 state 채우기.
+ // V005 mock_exams 흐름과 동등한 UX 유지.
+ if (shared.problems) {
+   setMockExamProblems(shared.problems as Problem[]);
+ }
+ if (Array.isArray(shared.attempt.answers)) {
+   setMockExamAnswers(shared.attempt.answers as number[]);
+ }
+ if (shared.attempt.results) {
+   setMockExamResults(shared.attempt.results);
+ }
  alert(locale === 'en' ? "You already completed today's mock exam."
    : locale === 'ja' ? "本日の模擬試験は完了済みです。"
    : "오늘 모의시험을 이미 완료하셨습니다.");
