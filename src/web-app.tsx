@@ -2210,6 +2210,38 @@ function App() {
  </div>
   );
 
+  // Cognito 로그인/회원가입 성공 시 호출 — 자바 백엔드에서 결제 상태 확인 후 paid/loggedIn 결정.
+  // 모달 onSuccess 가 무조건 "loggedIn" 으로 세팅하던 버그를 막기 위해 분리.
+  const handleCognitoAuthSuccess = async (email: string) => {
+    setUserEmail(email);
+    setEmailVerified(true);
+    localStorage.setItem("userEmail", email);
+
+    let status: UserStatus = "loggedIn";
+    try {
+      const isPaid = await getUserPaidStatus(email);
+      if (isPaid) {
+        status = "paid";
+        const paidToken = `PAID_TOKEN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        sessionStorage.setItem("userStatus", paidToken);
+      } else {
+        sessionStorage.setItem("userStatus", "loggedIn");
+      }
+    } catch (e) {
+      console.warn('[cognito-login] paid status check failed', e);
+      sessionStorage.setItem("userStatus", "loggedIn");
+    }
+    setUserStatusLocal(status);
+    localStorage.setItem("userStatus", status);
+
+    try {
+      const cancelled = await isSubscriptionCancelled(email);
+      setSubscriptionCancelled(cancelled);
+    } catch (e) {
+      /* ignore — TODO Phase 7 에서 구현 */
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await signOut();
@@ -2317,13 +2349,9 @@ function App() {
       <CognitoSignupModal
         isOpen={showCognitoSignup}
         onClose={() => setShowCognitoSignup(false)}
-        onSuccess={(email) => {
+        onSuccess={async (email) => {
           setShowCognitoSignup(false);
-          setUserEmail(email);
-          setEmailVerified(true);
-          setUserStatusLocal("loggedIn");
-          localStorage.setItem("userEmail", email);
-          localStorage.setItem("userStatus", "loggedIn");
+          await handleCognitoAuthSuccess(email);
         }}
       />
 
@@ -2331,13 +2359,9 @@ function App() {
       <CognitoLoginModal
         isOpen={showCognitoLogin}
         onClose={() => setShowCognitoLogin(false)}
-        onSuccess={(email) => {
+        onSuccess={async (email) => {
           setShowCognitoLogin(false);
-          setUserEmail(email);
-          setEmailVerified(true);
-          setUserStatusLocal("loggedIn");
-          localStorage.setItem("userEmail", email);
-          localStorage.setItem("userStatus", "loggedIn");
+          await handleCognitoAuthSuccess(email);
         }}
         onSwitchToSignup={() => {
           setShowCognitoLogin(false);
