@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
@@ -249,6 +249,35 @@ app.post('/api/generateSAAProblem', async (req, res) => {
       content = content.replace(/99\.9{1,2}%\s*(?:이상의?\s*)?가용성/g, '고가용성');
       content = content.replace(/(?:guarantee|ensure|provide|achieve)\s+99\.9{1,2}%\s+availability/gi, 'guarantee high availability');
       content = content.replace(/99\.9{1,2}%\s*の?可用性/g, '高可用性');
+    }
+
+    // 🚫 안전장치 4: 한국어 문제 시작 패턴 치환 (AI스러운 '한 회사가' 방지 및 실무형 도입부 강제)
+    if (typeof content === 'string' && locale === 'ko') {
+      const pickKoStart = () => {
+        const starts = [
+          "글로벌 이커머스 플랫폼이 블랙프라이데이 트래픽 폭증을 대비하여 ",
+          "금융 기술 혁신을 주도하는 핀테크 스타트업이 ",
+          "대형 유통 제조 기업이 대고객 서비스 고도화를 위해 ",
+          "기존 온프레미스 데이터베이스의 분기말 배치 처리 시 응답 지연을 해결하기 위해 ",
+          "레거시 관계형 데이터베이스의 성능 한계와 단일 장애점(SPOF)을 극복하고자 ",
+          "DevOps 팀은 마이크로서비스 50개의 분산 로그 통합 관리를 위해 ",
+          "플랫폼 인프라 엔지니어링 팀은 전체 시스템의 고가용성 및 재해 복구(DR) 시간 최소화를 목표로 ",
+          "모바일 뱅킹 애플리케이션이 일일 100만 건 이상의 결제 트랜잭션을 안정적으로 처리하도록 ",
+          "실시간 대용량 동영상 스트리밍 플랫폼이 전 세계 유저에게 끊김 없는 고품질 영상을 제공하기 위해 ",
+          "민감한 개인정보를 취급하는 헬스케어 솔루션 기업이 최근 보안 감사 지적 사항을 해결하고자 ",
+          "글로벌 게임 배급사가 신작 출시 후 급증하는 전 세계 접속자 트래픽에 대응하기 위해 ",
+          "지속 가능한 데이터 보존 전략을 수립 중인 데이터 과학 부서에서 비용 효율적인 아카이브를 구축하고자 ",
+          "스마트 시티 프로젝트를 진행 중인 IoT 디바이스 관리 팀이 초당 수천 개의 센서 데이터를 처리하기 위해 "
+        ];
+        return starts[Math.floor(Math.random() * starts.length)];
+      };
+
+      const isConceptComparison = /다음\s*중\s*.*의\s*(?:차이점|설명|특징|작동\s*방식)으로\s*옳은\s*것은/i.test(content);
+      if (!isConceptComparison) {
+        content = content.replace(/"question"\s*:\s*"\s*(?:한\s*회사[가는]|회사[는가]|한\s*기업[은이]|기업[은이]|어느\s*회사[가는]|한\s*조직[이은]|솔루션\s*설계자[는가]|솔루션\s*아키텍트[는가])\s+/g, () => {
+          return `"question": "${pickKoStart()}`;
+        });
+      }
     }
 
     res.json({ content, source });
