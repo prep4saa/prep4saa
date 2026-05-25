@@ -17,10 +17,11 @@ import PostFormModal from "./components/Modals/PostFormModal";
 import { CognitoTestPage } from "./components/CognitoTestPage";
 import { CognitoSignupModal } from "./components/Modals/CognitoSignupModal";
 import { CognitoLoginModal } from "./components/Modals/CognitoLoginModal";
-import { CAT, CONCEPTS_KO, LINKS, NODES } from "./data";
+import { CAT, LINKS, NODES } from "./data";
+import { CONCEPTS_KO } from "./CONCEPTS_KO";
 import { CONCEPTS_EN } from "./CONCEPTS_EN";
 import { CONCEPTS_JA } from "./concepts_ja";
-import { auth, completeSharedMockExam, deleteExpiredResults, deleteOldMockExamProblems, deletePost, getAdminStatsSecure, getAllUsersForAdminSecure, getCurrentUser, getExamStartDate, getPostById, getPosts, getSharedMockExam, getTodayMockExamProblems, getUserPaidStatus, getUserProblemSessions, getUserProblemSessionsSecure, getUserQuizStats, isPasswordLinked, isSubscriptionCancelled, onAuthStateChange, saveMockExamAnswers, saveTodayMockExamProblems, saveUserInfoToFirebase, signIn, signInWithGoogle, signOut, signUp, updateMockExamProblemsProgressively, updateStreakInFirebase, updateUserPaidStatus, uploadPDFToStorage, refreshUserData, resendEmailVerification, uploadCurrentMockExamToPastExams, fetchPastExamPage, getPastExamTotalCount } from "./firebase";
+import { auth, completeSharedMockExam, deleteExpiredResults, deleteOldMockExamProblems, deletePost, getAdminStatsSecure, getAllUsersForAdminSecure, getCurrentUser, getExamStartDate, getPostById, getPosts, getSharedMockExam, getTodayMockExamProblems, getUserPaidStatus, getPremiumUntil, getUserProblemSessions, getUserProblemSessionsSecure, getUserQuizStats, isPasswordLinked, isSubscriptionCancelled, onAuthStateChange, saveMockExamAnswers, saveTodayMockExamProblems, saveUserInfoToFirebase, signIn, signInWithGoogle, signOut, signUp, updateMockExamProblemsProgressively, updateStreakInFirebase, updateUserPaidStatus, uploadPDFToStorage, refreshUserData, resendEmailVerification, uploadCurrentMockExamToPastExams, fetchPastExamPage, getPastExamTotalCount } from "./firebase";
 import { useLocale } from "./LocaleContext";
 import { useTheme } from "./ThemeContext";
 import { canGenerateProblemToday, getUserMockExamDate, recordMockExamDate } from "./firebase";
@@ -474,6 +475,8 @@ function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [subscriptionCancelled, setSubscriptionCancelled] = useState(false);
+  // 프리미엄 이용 종료 예정일(ISO). 구독 취소 후 "○○까지 이용 가능" 안내에 사용.
+  const [premiumUntil, setPremiumUntil] = useState<string | null>(null);
   const [dday, setDday] = useState("-");
   const [showExamDateModal, setShowExamDateModal] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
@@ -530,6 +533,18 @@ function App() {
  localStorage.removeItem("mockExamStartedToday");
  }
   }, []);
+
+  // 프리미엄(유료) 상태가 되면 이용 종료 예정일(premiumUntil)을 한 번 로드한다.
+  // 구독 취소 후 계정 메뉴의 "○○까지 이용 가능" 안내에 사용.
+  useEffect(() => {
+    let aborted = false;
+    if (userStatus === "paid" && userEmail && !premiumUntil) {
+      getPremiumUntil(userEmail)
+        .then((v) => { if (!aborted) setPremiumUntil(v); })
+        .catch(() => {});
+    }
+    return () => { aborted = true; };
+  }, [userStatus, userEmail, premiumUntil]);
 
   // 동적 메타데이터 업데이트 (다국어 SEO)
   useEffect(() => {
@@ -2297,16 +2312,26 @@ function App() {
       setUserStatusLocal("paid");
       localStorage.setItem("userStatus", "paid");
       setSubscriptionCancelled(true);
-      alert(
-        locale === 'ko'
-          ? '구독이 취소되었습니다. 현재 결제 기간 종료일까지는 이용하실 수 있습니다.'
-          : locale === 'ja'
-            ? '購読がキャンセルされました。現在の請求期間が終わるまではご利用いただけます。'
-            : 'Subscription cancelled. You can keep using it until the current billing period ends.'
-      );
+
+      // 이용 종료 예정일을 최신화해 안내 문구에 사용한다.
+      let until = premiumUntil;
+      try {
+        const fresh = userEmail ? await getPremiumUntil(userEmail) : null;
+        if (fresh) { until = fresh; setPremiumUntil(fresh); }
+      } catch { /* ignore */ }
+
+      if (until) {
+        const localeTag = locale === 'ko' ? 'ko-KR' : locale === 'ja' ? 'ja-JP' : 'en-US';
+        const end = new Date(until);
+        const dateStr = end.toLocaleDateString(localeTag, { month: 'long', day: 'numeric' });
+        const daysLeft = Math.max(0, Math.ceil((end.getTime() - Date.now()) / 86400000));
+        alert(t("cancelSuccessUntil").replace("{date}", dateStr).replace("{days}", String(daysLeft)));
+      } else {
+        alert(t("cancelSuccessGeneric"));
+      }
     } catch (error) {
       console.error('[cancelSubscription]', error);
-      alert(locale === 'ko' ? '구독 취소에 실패했습니다.' : locale === 'ja' ? '購読のキャンセルに失敗しました。' : 'Failed to cancel subscription.');
+      alert(t("cancelFailed"));
     }
   };
 
@@ -2331,6 +2356,7 @@ function App() {
         onDdayClick={() => setShowExamDateModal(true)}
         userStatus={userStatus}
         subscriptionCancelled={subscriptionCancelled}
+        premiumUntil={premiumUntil}
         onLogout={handleLogout}
         onCancelSubscription={handleCancelSubscription}
         isAdmin={isAdmin}
@@ -2390,6 +2416,7 @@ function App() {
    onDdayClick={() => setShowExamDateModal(true)}
    userStatus={userStatus}
    subscriptionCancelled={subscriptionCancelled}
+   premiumUntil={premiumUntil}
    onLogout={handleLogout}
    onCancelSubscription={handleCancelSubscription}
    isAdmin={isAdmin}

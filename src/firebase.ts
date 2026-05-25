@@ -468,6 +468,24 @@ export async function getUserPaidStatus(_userId: string): Promise<boolean> {
 }
 
 /**
+ * 프리미엄 이용 종료 예정일(premium_until) 조회.
+ * /api/user/me 의 premiumUntil(ISO 문자열) 을 그대로 반환. 없으면 null.
+ * 구독 취소 후 "○○까지 이용 가능" 안내에 사용.
+ */
+export async function getPremiumUntil(_userId: string): Promise<string | null> {
+  try {
+    const { api } = await import("./auth/apiClient");
+    const response = await api.get("/api/user/me");
+    if (!response.ok) return null;
+    const profile = await response.json();
+    return profile?.premiumUntil ?? null;
+  } catch (e) {
+    console.error("getPremiumUntil error:", e);
+    return null;
+  }
+}
+
+/**
  * 구독이 이미 취소된 상태인지 확인.
  * Lemon Squeezy 의 subscription.status 가 'cancelled' / 'expired' / 'unpaid'
  * 중 하나거나, subscriptionCancelledAt 필드가 존재하면 취소된 것으로 간주.

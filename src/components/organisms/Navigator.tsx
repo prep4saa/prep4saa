@@ -23,9 +23,11 @@ interface NavigatorProps {
   onCancelSubscription?: () => void;
   /** 이미 구독이 취소된 상태면 구독 취소 버튼 숨김 */
   subscriptionCancelled?: boolean;
+  /** 프리미엄 이용 종료 예정일(ISO). 취소 후 "○○까지 이용 가능" 안내에 사용 */
+  premiumUntil?: string | null;
 }
 
-export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleChange, onLoginClick, showLoginButton = true, onLogoClick, isAdmin = false, currentTab, dday, streak, userEmail, onDdayClick, userStatus, onLogout, onCancelSubscription, subscriptionCancelled = false }: NavigatorProps) {
+export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleChange, onLoginClick, showLoginButton = true, onLogoClick, isAdmin = false, currentTab, dday, streak, userEmail, onDdayClick, userStatus, onLogout, onCancelSubscription, subscriptionCancelled = false, premiumUntil = null }: NavigatorProps) {
   const [locale, setLocale] = useState<Locale>(currentLocale);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -37,6 +39,19 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
 
   const locales = { ko, en, ja };
   const t = locales[locale];
+
+  // 구독 취소 후 "○월 ○일까지 이용 가능 · N일 남음" 문구 생성. 종료일 없으면 null.
+  const subscriptionUntilText = (() => {
+    if (!subscriptionCancelled || userStatus !== 'paid' || !premiumUntil) return null;
+    const end = new Date(premiumUntil);
+    if (isNaN(end.getTime())) return null;
+    const localeTag = locale === 'ko' ? 'ko-KR' : locale === 'ja' ? 'ja-JP' : 'en-US';
+    const dateStr = end.toLocaleDateString(localeTag, { month: 'long', day: 'numeric' });
+    const daysLeft = Math.max(0, Math.ceil((end.getTime() - Date.now()) / 86400000));
+    return (t.subscriptionUntilTemplate || '{date} · {days}')
+      .replace('{date}', dateStr)
+      .replace('{days}', String(daysLeft));
+  })();
 
   const handleLanguageChange = (newLocale: Locale) => {
     setLocale(newLocale);
@@ -214,6 +229,19 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
                         {t.cancelSubscriptionBtn}
                       </button>
                     )}
+                    {subscriptionUntilText && (
+                      <div
+                        style={{
+                          padding: '.75rem 1rem',
+                          color: '#9CA3AF',
+                          fontSize: '.8125rem',
+                          lineHeight: 1.4,
+                          borderTop: '1px solid #2A344A'
+                        }}
+                      >
+                        {subscriptionUntilText}
+                      </div>
+                    )}
                   </div>
                 )}
                 {dday && (
@@ -302,6 +330,9 @@ export default function Navigator({ onTabChange, currentLocale = 'ko', onLocaleC
             <button className="mobile-menu-btn" style={{ color: '#fca5a5' }} onClick={() => { onLogout?.(); setShowMobileMenu(false); }}>{t.logoutBtn}</button>
             {userStatus === 'paid' && !subscriptionCancelled && (
               <button className="mobile-menu-btn" style={{ color: '#fca5a5' }} onClick={() => { onCancelSubscription?.(); setShowMobileMenu(false); }}>{t.cancelSubscriptionBtn}</button>
+            )}
+            {subscriptionUntilText && (
+              <span style={{ color: '#9CA3AF', fontSize: '.8125rem', padding: '.5rem 0', lineHeight: 1.4 }}>{subscriptionUntilText}</span>
             )}
           </div>
         ) : showLoginButton ? (
