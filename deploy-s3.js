@@ -21,8 +21,11 @@ const explicitCreds = envVars.AWS_ACCESS_KEY_ID && envVars.AWS_SECRET_ACCESS_KEY
   ? { accessKeyId: envVars.AWS_ACCESS_KEY_ID, secretAccessKey: envVars.AWS_SECRET_ACCESS_KEY }
   : undefined;
 
+// S3 버킷 region 은 일반 AWS_REGION (SES/SQS 용) 과 다를 수 있어서 별도 변수로 분리.
+// prep4saa.com 버킷은 us-east-1 에 있음.
+const s3Region = process.env.AWS_S3_REGION || envVars.AWS_S3_REGION || 'us-east-1';
 const s3Client = new S3Client({
-  region: envVars.AWS_REGION || 'ap-northeast-1',
+  region: s3Region,
   ...(explicitCreds ? { credentials: explicitCreds } : {})
 });
 

@@ -2210,6 +2210,72 @@ function App() {
  </div>
   );
 
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (e) {
+      console.warn('[logout] signOut failed', e);
+    }
+
+    // 보존할 UI 설정 (사용자와 무관)
+    const PRESERVE_KEYS = [
+      'aws-quiz-locale',
+      'aws-quiz-theme',
+      'landingPageLocale',
+      'cookieConsent',
+      'quizIntroModalSeen',
+      'quizIntroHideUntil',
+    ];
+    const preserved: Record<string, string> = {};
+    for (const k of PRESERVE_KEYS) {
+      const v = localStorage.getItem(k);
+      if (v !== null) preserved[k] = v;
+    }
+
+    localStorage.clear();
+    sessionStorage.clear();
+
+    for (const [k, v] of Object.entries(preserved)) {
+      localStorage.setItem(k, v);
+    }
+
+    // 모든 React state 를 초기화하기 위해 전체 리로드 — 다른 계정으로 로그인할 때 stale state 안남게.
+    window.location.reload();
+  };
+
+  const handleCancelSubscription = async () => {
+    const currentUser = getCurrentUser();
+    if (!currentUser) {
+      alert(locale === 'ko' ? '로그인이 필요합니다.' : locale === 'ja' ? 'ログインが必要です。' : 'Login required.');
+      return;
+    }
+    try {
+      const { api } = await import("./auth/apiClient");
+      const response = await api.post("/api/lemonsqueezy/cancel-subscription", {
+        subscriptionId: localStorage.getItem("lemonSubscriptionId") || "",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || errorData.error || 'Failed to cancel subscription');
+      }
+
+      setUserStatusLocal("paid");
+      localStorage.setItem("userStatus", "paid");
+      setSubscriptionCancelled(true);
+      alert(
+        locale === 'ko'
+          ? '구독이 취소되었습니다. 현재 결제 기간 종료일까지는 이용하실 수 있습니다.'
+          : locale === 'ja'
+            ? '購読がキャンセルされました。現在の請求期間が終わるまではご利用いただけます。'
+            : 'Subscription cancelled. You can keep using it until the current billing period ends.'
+      );
+    } catch (error) {
+      console.error('[cancelSubscription]', error);
+      alert(locale === 'ko' ? '구독 취소에 실패했습니다.' : locale === 'ja' ? '購読のキャンセルに失敗しました。' : 'Failed to cancel subscription.');
+    }
+  };
+
   // 랜딩 페이지 표시 (초기 상태, 비로그인, 또는 로고 클릭 시)
   if (showLanding) {
     return <>
@@ -2231,13 +2297,8 @@ function App() {
         onDdayClick={() => setShowExamDateModal(true)}
         userStatus={userStatus}
         subscriptionCancelled={subscriptionCancelled}
-        onLogout={async () => {
-          await signOut();
-          setUserEmail(null);
-          setUserStatusLocal("guest");
-          localStorage.removeItem("userStatus");
-          setShowLanding(true);
-        }}
+        onLogout={handleLogout}
+        onCancelSubscription={handleCancelSubscription}
         isAdmin={isAdmin}
       />
       {/* 시험 시작일 설정 모달 (랜딩페이지에서도 사용) */}
@@ -2303,45 +2364,8 @@ function App() {
    onDdayClick={() => setShowExamDateModal(true)}
    userStatus={userStatus}
    subscriptionCancelled={subscriptionCancelled}
-   onLogout={async () => {
-     await signOut();
-     setUserEmail(null);
-     setUserStatusLocal("guest");
-     localStorage.removeItem("userStatus");
-     localStorage.removeItem("userName");
-     localStorage.removeItem("examStartDate");
-     setShowLanding(true);
-   }}
-   onCancelSubscription={async () => {
-     const currentUser = getCurrentUser();
-     if (currentUser) {
-       try {
-         // payment 슬라이스 — server.js → 자바(2026-05). apiClient 가 MIGRATED_TO_JAVA 로 자동 라우팅.
-         const { api } = await import("./auth/apiClient");
-         const response = await api.post("/api/lemonsqueezy/cancel-subscription", {
-           subscriptionId: localStorage.getItem("lemonSubscriptionId") || "",
-         });
-
-         if (!response.ok) {
-           const errorData = await response.json().catch(() => ({}));
-           throw new Error(errorData.error?.message || errorData.error || 'Failed to cancel subscription');
-         }
-
-         setUserStatusLocal("paid");
-         localStorage.setItem("userStatus", "paid");
-         setSubscriptionCancelled(true);
-         alert(
-           locale === 'ko'
-             ? '구독이 취소되었습니다. 현재 결제 기간 종료일까지는 이용하실 수 있습니다.'
-             : locale === 'ja'
-               ? '購読がキャンセルされました。現在の請求期間が終わるまではご利用いただけます。'
-               : 'Subscription cancelled. You can keep using it until the current billing period ends.'
-         );
-       } catch (error) {
-         alert(locale === 'ko' ? '구독 취소에 실패했습니다.' : locale === 'ja' ? '購読のキャンセルに失敗しました。' : 'Failed to cancel subscription.');
-       }
-     }
-   }}
+   onLogout={handleLogout}
+   onCancelSubscription={handleCancelSubscription}
    isAdmin={isAdmin}
  />
 
