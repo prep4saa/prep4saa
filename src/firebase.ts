@@ -491,8 +491,25 @@ export async function getPremiumUntil(_userId: string): Promise<string | null> {
  * 중 하나거나, subscriptionCancelledAt 필드가 존재하면 취소된 것으로 간주.
  */
 export async function isSubscriptionCancelled(_userId: string): Promise<boolean> {
-  // TODO Phase 7: LemonSqueezy webhook + PostgreSQL 변환 후 구현
-  return false;
+  // 서버(DB)의 subscriptionCancelled 가 진실의 원천 — 기기와 무관하게 일치한다.
+  // 네트워크 실패 시에만 같은 기기 localStorage 로 폴백.
+  try {
+    const { api } = await import("./auth/apiClient");
+    const response = await api.get("/api/user/me");
+    if (response.ok) {
+      const profile = await response.json();
+      if (typeof profile?.subscriptionCancelled === "boolean") {
+        return profile.subscriptionCancelled;
+      }
+    }
+  } catch (e) {
+    console.warn("isSubscriptionCancelled: /api/user/me 조회 실패, localStorage 폴백", e);
+  }
+  try {
+    return localStorage.getItem("subscriptionCancelled") === "true";
+  } catch {
+    return false;
+  }
 }
 
 /**

@@ -1009,6 +1009,9 @@ function App() {
       setShowCognitoLogin(true);
       return;
     }
+    // 재구독 시작 시 이전 취소 상태 플래그 정리(결제 후 '취소됨'으로 잘못 표시 방지).
+    localStorage.removeItem("subscriptionCancelled");
+    setSubscriptionCancelled(false);
     try {
       const { api } = await import("./auth/apiClient");
       const response = await api.post("/api/lemonsqueezy/checkout", { userEmail });
@@ -2312,6 +2315,8 @@ function App() {
       setUserStatusLocal("paid");
       localStorage.setItem("userStatus", "paid");
       setSubscriptionCancelled(true);
+      // 새로고침 후에도 취소 상태를 유지(서버에 취소 플래그가 없어 클라이언트에 보존).
+      localStorage.setItem("subscriptionCancelled", "true");
 
       // 이용 종료 예정일을 최신화해 안내 문구에 사용한다.
       let until = premiumUntil;
