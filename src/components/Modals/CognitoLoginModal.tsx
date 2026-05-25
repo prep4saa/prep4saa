@@ -10,6 +10,7 @@ import {
   forgotPassword,
   confirmForgotPassword,
 } from "../../auth/cognito";
+import { useLocale } from "../../LocaleContext";
 
 interface Props {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export function CognitoLoginModal({
   onSuccess,
   onSwitchToSignup,
 }: Props) {
+  const { t } = useLocale();
   const [step, setStep] = useState<Step>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -59,7 +61,7 @@ export function CognitoLoginModal({
     setInfo(null);
 
     if (!email || !password) {
-      setError("이메일과 비밀번호를 입력하세요.");
+      setError(t("cognitoErrEmailPwRequired"));
       return;
     }
 
@@ -82,14 +84,14 @@ export function CognitoLoginModal({
     setInfo(null);
 
     if (!email) {
-      setError("이메일을 입력하세요.");
+      setError(t("cognitoErrEmailRequired"));
       return;
     }
 
     setLoading(true);
     try {
       await forgotPassword(email);
-      setInfo(`📧 비밀번호 재설정 코드가 ${email} 로 발송됐습니다.`);
+      setInfo(t("cognitoInfoResetCodeSent").replace("{email}", email));
       setStep("forgot-confirm");
     } catch (err: unknown) {
       const e = err as Error;
@@ -105,11 +107,11 @@ export function CognitoLoginModal({
     setInfo(null);
 
     if (!code || !newPassword) {
-      setError("코드와 새 비밀번호를 입력하세요.");
+      setError(t("cognitoErrCodeAndPwRequired"));
       return;
     }
     if (newPassword.length < 12) {
-      setError("비밀번호는 12자 이상이어야 합니다.");
+      setError(t("cognitoErrPwTooShort"));
       return;
     }
 
@@ -200,10 +202,10 @@ export function CognitoLoginModal({
           }}
         >
           {step === "login"
-            ? "🔐 로그인"
+            ? t("cognitoLoginTitle")
             : step === "forgot-request"
-            ? "🔑 비밀번호 재설정"
-            : "✉️ 새 비밀번호 설정"}
+            ? t("cognitoForgotTitle")
+            : t("cognitoNewPasswordTitle")}
         </h2>
         <p
           style={{
@@ -214,10 +216,10 @@ export function CognitoLoginModal({
           }}
         >
           {step === "login"
-            ? "이메일과 비밀번호로 로그인하세요"
+            ? t("cognitoLoginDesc")
             : step === "forgot-request"
-            ? "이메일로 재설정 코드를 받으세요"
-            : `${email} 로 받은 코드를 입력하세요`}
+            ? t("cognitoForgotRequestDesc")
+            : t("cognitoForgotConfirmDesc").replace("{email}", email)}
         </p>
 
         {error && (
@@ -264,14 +266,14 @@ export function CognitoLoginModal({
             />
             <input
               type="password"
-              placeholder="비밀번호"
+              placeholder={t("cognitoLoginPwPlaceholder")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               style={inputStyle}
             />
             <button type="submit" disabled={loading} style={primaryBtn}>
-              {loading ? "로그인 중..." : "로그인"}
+              {loading ? t("cognitoLoggingIn") : t("btnLogIn")}
             </button>
 
             {/* 비밀번호 잊음 + 회원가입 전환 링크 */}
@@ -293,12 +295,12 @@ export function CognitoLoginModal({
                   marginRight: "12px",
                 }}
               >
-                비밀번호를 잊으셨나요?
+                {t("cognitoForgotPasswordLink")}
               </button>
             </div>
             <div style={{ textAlign: "center", marginBottom: "16px" }}>
               <span style={{ color: "#D1D5DB", fontSize: "13px" }}>
-                계정이 없으신가요?{" "}
+                {t("dontHaveAccount")}{" "}
                 <button
                   type="button"
                   onClick={() => {
@@ -314,7 +316,7 @@ export function CognitoLoginModal({
                     fontSize: "13px",
                   }}
                 >
-                  회원가입
+                  {t("btnSignUp")}
                 </button>
               </span>
             </div>
@@ -332,7 +334,7 @@ export function CognitoLoginModal({
               style={inputStyle}
             />
             <button type="submit" disabled={loading} style={primaryBtn}>
-              {loading ? "발송 중..." : "재설정 코드 받기"}
+              {loading ? t("cognitoSending") : t("cognitoGetResetCode")}
             </button>
             <button
               type="button"
@@ -349,7 +351,7 @@ export function CognitoLoginModal({
                 marginBottom: "12px",
               }}
             >
-              ← 로그인으로 돌아가기
+              {t("cognitoBackToLogin")}
             </button>
           </form>
         )}
@@ -358,7 +360,7 @@ export function CognitoLoginModal({
           <form onSubmit={handleForgotConfirm}>
             <input
               type="text"
-              placeholder="6자리 인증 코드"
+              placeholder={t("cognitoCodePlaceholder")}
               value={code}
               onChange={(e) => setCode(e.target.value)}
               required
@@ -372,14 +374,14 @@ export function CognitoLoginModal({
             />
             <input
               type="password"
-              placeholder="새 비밀번호 (12자 이상, 대/소/숫자/특수)"
+              placeholder={t("cognitoNewPwPlaceholder")}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
               style={inputStyle}
             />
             <button type="submit" disabled={loading} style={primaryBtn}>
-              {loading ? "변경 중..." : "비밀번호 변경 + 로그인"}
+              {loading ? t("cognitoChanging") : t("cognitoChangePwAndLogin")}
             </button>
           </form>
         )}
@@ -399,7 +401,7 @@ export function CognitoLoginModal({
             marginTop: "8px",
           }}
         >
-          취소
+          {t("cancelBtn")}
         </button>
       </div>
     </div>

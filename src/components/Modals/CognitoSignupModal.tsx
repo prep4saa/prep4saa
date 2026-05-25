@@ -8,6 +8,7 @@
 
 import React, { useState } from "react";
 import { signUp, confirmSignUp, signIn, resendConfirmationCode } from "../../auth/cognito";
+import { useLocale } from "../../LocaleContext";
 
 interface Props {
   isOpen: boolean;
@@ -18,6 +19,7 @@ interface Props {
 type Step = "signup" | "confirm";
 
 export function CognitoSignupModal({ isOpen, onClose, onSuccess }: Props) {
+  const { t } = useLocale();
   const [step, setStep] = useState<Step>("signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -51,22 +53,22 @@ export function CognitoSignupModal({ isOpen, onClose, onSuccess }: Props) {
     setInfo(null);
 
     if (!email || !password || !passwordConfirm) {
-      setError("이메일, 비밀번호, 비밀번호 확인을 모두 입력하세요.");
+      setError(t("cognitoErrAllFieldsRequired"));
       return;
     }
     if (password !== passwordConfirm) {
-      setError("비밀번호가 일치하지 않습니다. 다시 확인하세요.");
+      setError(t("cognitoErrPwMismatch"));
       return;
     }
     if (password.length < 12) {
-      setError("비밀번호는 12자 이상이어야 합니다 (대/소문자, 숫자, 특수문자 포함).");
+      setError(t("cognitoErrPwTooShortSignup"));
       return;
     }
 
     setLoading(true);
     try {
       await signUp(email, password);
-      setInfo(`✅ ${email} 로 6자리 인증 코드가 발송되었습니다.`);
+      setInfo(t("cognitoInfoSignupCodeSent").replace("{email}", email));
       setStep("confirm");
     } catch (err: unknown) {
       const e = err as Error;
@@ -82,7 +84,7 @@ export function CognitoSignupModal({ isOpen, onClose, onSuccess }: Props) {
     setInfo(null);
 
     if (!code) {
-      setError("인증 코드를 입력하세요.");
+      setError(t("cognitoErrCodeRequired"));
       return;
     }
 
@@ -105,7 +107,7 @@ export function CognitoSignupModal({ isOpen, onClose, onSuccess }: Props) {
     setError(null);
     try {
       await resendConfirmationCode(email);
-      setInfo(`📧 코드가 ${email} 로 재발송됐습니다.`);
+      setInfo(t("cognitoInfoCodeResent").replace("{email}", email));
     } catch (err: unknown) {
       const e = err as Error;
       setError(`❌ ${e.message}`);
@@ -157,7 +159,7 @@ export function CognitoSignupModal({ isOpen, onClose, onSuccess }: Props) {
             textAlign: "center",
           }}
         >
-          {step === "signup" ? "🔐 회원가입" : "✉️ 이메일 인증"}
+          {step === "signup" ? t("cognitoSignupTitle") : t("cognitoEmailVerifyTitle")}
         </h2>
         <p
           style={{
@@ -168,8 +170,8 @@ export function CognitoSignupModal({ isOpen, onClose, onSuccess }: Props) {
           }}
         >
           {step === "signup"
-            ? "이메일과 비밀번호로 가입하세요 (AWS Cognito)"
-            : `${email} 로 받은 6자리 코드를 입력하세요`}
+            ? t("cognitoSignupDesc")
+            : t("cognitoEmailVerifyDesc").replace("{email}", email)}
         </p>
 
         {error && (
@@ -226,7 +228,7 @@ export function CognitoSignupModal({ isOpen, onClose, onSuccess }: Props) {
             />
             <input
               type="password"
-              placeholder="비밀번호 (12자 이상, 대/소/숫자/특수)"
+              placeholder={t("cognitoSignupPwPlaceholder")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -244,7 +246,7 @@ export function CognitoSignupModal({ isOpen, onClose, onSuccess }: Props) {
             />
             <input
               type="password"
-              placeholder="비밀번호 확인"
+              placeholder={t("cognitoSignupPwConfirmPlaceholder")}
               value={passwordConfirm}
               onChange={(e) => setPasswordConfirm(e.target.value)}
               required
@@ -272,7 +274,7 @@ export function CognitoSignupModal({ isOpen, onClose, onSuccess }: Props) {
                   marginBottom: "12px",
                 }}
               >
-                ⚠️ 비밀번호가 일치하지 않습니다.
+                {t("cognitoPwMismatchHint")}
               </div>
             )}
             <button
@@ -292,14 +294,14 @@ export function CognitoSignupModal({ isOpen, onClose, onSuccess }: Props) {
                 marginBottom: "12px",
               }}
             >
-              {loading ? "처리 중..." : "회원가입"}
+              {loading ? t("cognitoProcessing") : t("cognitoSignupBtn")}
             </button>
           </form>
         ) : (
           <form onSubmit={handleConfirm}>
             <input
               type="text"
-              placeholder="6자리 인증 코드"
+              placeholder={t("cognitoCodePlaceholder")}
               value={code}
               onChange={(e) => setCode(e.target.value)}
               required
@@ -335,7 +337,7 @@ export function CognitoSignupModal({ isOpen, onClose, onSuccess }: Props) {
                 marginBottom: "8px",
               }}
             >
-              {loading ? "확인 중..." : "인증 + 로그인"}
+              {loading ? t("cognitoConfirming") : t("cognitoVerifyAndLogin")}
             </button>
             <button
               type="button"
@@ -353,7 +355,7 @@ export function CognitoSignupModal({ isOpen, onClose, onSuccess }: Props) {
                 marginBottom: "12px",
               }}
             >
-              코드 재발송
+              {t("cognitoResendCode")}
             </button>
           </form>
         )}
@@ -373,7 +375,7 @@ export function CognitoSignupModal({ isOpen, onClose, onSuccess }: Props) {
             marginTop: "8px",
           }}
         >
-          취소
+          {t("cancelBtn")}
         </button>
       </div>
     </div>
