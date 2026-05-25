@@ -1,10 +1,12 @@
 import React from 'react';
+import { useLocale } from '../../LocaleContext';
 
 interface CookiePolicyModalProps {
   onClose: () => void;
 }
 
 const CookiePolicyModal: React.FC<CookiePolicyModalProps> = ({ onClose }) => {
+  const { locale } = useLocale();
 
   const content = {
     ko: {
@@ -108,7 +110,7 @@ const CookiePolicyModal: React.FC<CookiePolicyModalProps> = ({ onClose }) => {
     }
   };
 
-  const data = content.en;
+  const data = content[locale] || content.en;
 
   return (
     <div style={{

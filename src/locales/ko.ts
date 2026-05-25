@@ -541,6 +541,46 @@ export const ko = {
   cognitoVerifyAndLogin: "인증 + 로그인",
   cognitoResendCode: "코드 재발송",
   cognitoSignupBtn: "회원가입",
+
+  // Quota 모달
+  quotaGuestLabel: "Guest (비로그인):",
+  quotaGuestFree: "하루 2회 무료",
+  quotaGuestDesc: "로그인하면 하루 **2회 무료**를 이용할 수 있으며, 결제 후에는 **하루 20개 문제**를 생성할 수 있습니다.",
+  quotaLoggedInLabel: "로그인:",
+  quotaLoggedInUsed: "2회 무료 이용 완료",
+  quotaLoggedInDesc: "결제하시면 **하루 20개 문제**를 생성하실 수 있습니다!",
+  quotaPaidLabel: "Premium (결제):",
+  quotaPaidStatus: "하루 20개 문제 이용 중",
+  quotaPaidReset: "내일 자정에 카운트가 초기화됩니다.",
+  quotaCloseBtn: "닫기",
+
+  // 시험일 설정 모달
+  examSetCompleteBtn: "✅ 설정 완료",
+
+  // 게시글 폼 모달
+  postsSubmitting: "등록 중...",
+
+  // 관리자 통계 그리드
+  adminTodayVisitors: "오늘 방문자",
+  adminTotalVisitors: "전체 방문자",
+  adminPaidUsers: "유료 사용자",
+  adminFreeUsers: "2회 무료 사용자",
+
+  // 모의시험 알림/오류 메시지
+  btnShowOriginal: "▼ 원본 보기",
+  btnHideOriginal: "▲ 원본 닫기",
+  alertNoSavedProblems: "저장된 문제가 없습니다.",
+  alertLoadProblemsFailed: "문제 불러오기 실패",
+  alertMockExamAlreadyDone: "오늘 모의시험을 이미 완료하셨습니다.",
+  errorMockExamCreateFailed: "모의시험 생성 실패",
+
+  // 퀴즈 인트로 모달 (3단계)
+  quizIntroStep1Title: "서비스를 조합하면 문제가 나와요",
+  quizIntroStep1Desc: "공부하고 싶은 AWS 서비스 2~4개를 골라보세요. 그 서비스들이 실제 아키텍처에서 어떻게 쓰이는지 시나리오 문제로 만들어 드려요.",
+  quizIntroStep2Title: "관계도로 서비스 연결을 배우세요",
+  quizIntroStep2Desc: "노드를 탭하면 관련 서비스만 밝아져요. \"VPC를 탭하면 EC2·RDS·Lambda가 하이라이트되는\" 방식으로 전체 그림을 잡을 수 있어요.",
+  quizIntroStep3Title: "매일 조금씩, 꾸준히 합격까지",
+  quizIntroStep3Desc: "매일 꾸준히 하면 약점이 자동으로 분석되고, 합격까지 갈 길이 보입니다. 지금 바로 시작해보세요.",
 };
 
 export type Strings = Record<keyof typeof ko, string>;

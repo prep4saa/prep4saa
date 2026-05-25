@@ -204,7 +204,7 @@ export default function PostFormModal({ open, onClose, userEmail, onSubmitted }:
                 fontWeight: 600
               }}
             >
-              {loading ? "등록 중..." : t("postsSubmit")}
+              {loading ? t("postsSubmitting") : t("postsSubmit")}
             </button>
             <button
               onClick={onClose}

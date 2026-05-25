@@ -41,10 +41,8 @@ export default function QuotaModal({
         <div style={{ marginBottom: "24px", color: "#D1D5DB", lineHeight: "1.6", fontSize: "14px" }}>
           {userStatus === "guest" && (
             <>
-              <p> <strong>Guest (비로그인):</strong> 하루 2회 무료</p>
-              <p style={{ marginTop: "12px" }}>
-                로그인하면 하루 <strong>2회 무료</strong>를 이용할 수 있으며, 결제 후에는 <strong>하루 20개 문제</strong>를 생성할 수 있습니다.
-              </p>
+              <p> <strong>{t("quotaGuestLabel")}</strong> {t("quotaGuestFree")}</p>
+              <p style={{ marginTop: "12px" }}>{t("quotaGuestDesc")}</p>
               <div style={{ marginTop: "16px", padding: "12px", background: "rgba(255,153,0,0.15)", borderRadius: "6px", border: "1px solid rgba(255,153,0,0.3)" }}>
                 <p style={{ margin: "0 0 8px 0", color: "#e0e7ff", fontWeight: "bold" }}> {t("premiumPlan")}</p>
                 <p style={{ margin: "0 0 8px 0", fontSize: "16px", color: "#FF9900", fontWeight: "bold" }}>{t("premiumPrice")}</p>
@@ -59,10 +57,8 @@ export default function QuotaModal({
           )}
           {userStatus === "loggedIn" && (
             <>
-              <p> <strong>로그인:</strong> 2회 무료 이용 완료</p>
-              <p style={{ marginTop: "12px" }}>
-                결제하시면 <strong>하루 20개 문제</strong>를 생성하실 수 있습니다!
-              </p>
+              <p> <strong>{t("quotaLoggedInLabel")}</strong> {t("quotaLoggedInUsed")}</p>
+              <p style={{ marginTop: "12px" }}>{t("quotaLoggedInDesc")}</p>
               <div style={{ marginTop: "16px", padding: "12px", background: "rgba(255,153,0,0.15)", borderRadius: "6px", border: "1px solid rgba(255,153,0,0.3)" }}>
                 <p style={{ margin: "0 0 8px 0", color: "#e0e7ff", fontWeight: "bold" }}> {t("premiumPlan")}</p>
                 <p style={{ margin: "0 0 8px 0", fontSize: "16px", color: "#FF9900", fontWeight: "bold" }}>{t("premiumPrice")}</p>
@@ -77,8 +73,8 @@ export default function QuotaModal({
           )}
           {userStatus === "paid" && (
             <>
-              <p> <strong>Premium (결제):</strong> 하루 20개 문제 이용 중</p>
-              <p style={{ marginTop: "12px" }}>내일 자정에 카운트가 초기화됩니다.</p>
+              <p> <strong>{t("quotaPaidLabel")}</strong> {t("quotaPaidStatus")}</p>
+              <p style={{ marginTop: "12px" }}>{t("quotaPaidReset")}</p>
             </>
           )}
         </div>
@@ -93,7 +89,7 @@ export default function QuotaModal({
                   border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold"
                 }}
               >
-                로그인
+                {t("btnLogIn")}
               </button>
               <button
                 onClick={() => onCheckout()}
@@ -124,7 +120,7 @@ export default function QuotaModal({
               border: "1px solid #2A344A", borderRadius: "6px", cursor: "pointer"
             }}
           >
-            닫기
+            {t("quotaCloseBtn")}
           </button>
         </div>
       </div>

@@ -1,10 +1,12 @@
 import React from 'react';
+import { useLocale } from '../../LocaleContext';
 
 interface PrivacyPolicyModalProps {
   onClose: () => void;
 }
 
 const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({ onClose }) => {
+  const { locale } = useLocale();
 
   const content = {
     ko: {
@@ -156,7 +158,7 @@ const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({ onClose }) => {
     }
   };
 
-  const data = content.en;
+  const data = content[locale] || content.en;
 
   return (
     <div style={{

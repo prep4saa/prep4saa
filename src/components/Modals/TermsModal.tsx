@@ -1,10 +1,12 @@
 import React from 'react';
+import { useLocale } from '../../LocaleContext';
 
 interface TermsModalProps {
   onClose: () => void;
 }
 
 const TermsModal: React.FC<TermsModalProps> = ({ onClose }) => {
+  const { locale } = useLocale();
 
   const content = {
     ko: {
@@ -120,7 +122,7 @@ const TermsModal: React.FC<TermsModalProps> = ({ onClose }) => {
     }
   };
 
-  const data = content.en;
+  const data = content[locale] || content.en;
 
   return (
     <div style={{

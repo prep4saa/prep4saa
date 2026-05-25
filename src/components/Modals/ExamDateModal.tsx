@@ -103,7 +103,7 @@ export default function ExamDateModal({ open, onClose, onSaved }: ExamDateModalP
               border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold"
             }}
           >
-            ✅ 설정 완료
+            {t("examSetCompleteBtn")}
           </button>
           <button
             onClick={onClose}
@@ -112,7 +112,7 @@ export default function ExamDateModal({ open, onClose, onSaved }: ExamDateModalP
               border: "1px solid #2A344A", borderRadius: "6px", cursor: "pointer"
             }}
           >
-            취소
+            {t("cancelBtn")}
           </button>
         </div>
       </div>

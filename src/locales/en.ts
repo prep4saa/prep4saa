@@ -543,4 +543,44 @@ export const en: Strings = {
   cognitoVerifyAndLogin: "Verify & sign in",
   cognitoResendCode: "Resend code",
   cognitoSignupBtn: "Sign Up",
+
+  // Quota modal
+  quotaGuestLabel: "Guest:",
+  quotaGuestFree: "2 free attempts per day",
+  quotaGuestDesc: "Sign in for **2 free attempts per day**. After payment, generate up to **20 questions per day**.",
+  quotaLoggedInLabel: "Signed in:",
+  quotaLoggedInUsed: "2 free attempts used",
+  quotaLoggedInDesc: "Upgrade to generate up to **20 questions per day**!",
+  quotaPaidLabel: "Premium:",
+  quotaPaidStatus: "Using 20 questions per day",
+  quotaPaidReset: "Counter resets at midnight tomorrow.",
+  quotaCloseBtn: "Close",
+
+  // Exam date modal
+  examSetCompleteBtn: "✅ Save",
+
+  // Posts form modal
+  postsSubmitting: "Submitting...",
+
+  // Admin stats grid
+  adminTodayVisitors: "Today's Visitors",
+  adminTotalVisitors: "Total Visitors",
+  adminPaidUsers: "Paid Users",
+  adminFreeUsers: "Free Users (2/day)",
+
+  // Mock exam alerts/errors
+  btnShowOriginal: "▼ Show Original",
+  btnHideOriginal: "▲ Hide Original",
+  alertNoSavedProblems: "No saved problems.",
+  alertLoadProblemsFailed: "Failed to load problems",
+  alertMockExamAlreadyDone: "You already completed today's mock exam.",
+  errorMockExamCreateFailed: "Failed to create mock exam",
+
+  // Quiz intro modal (3 steps)
+  quizIntroStep1Title: "Combine services to generate questions",
+  quizIntroStep1Desc: "Pick 2–4 AWS services you want to study. We'll create scenario questions showing how they fit into real architectures.",
+  quizIntroStep2Title: "Learn service connections via the relationship map",
+  quizIntroStep2Desc: "Tap a node and only the related services light up. For example, tapping VPC highlights EC2, RDS, and Lambda — helping you see the big picture.",
+  quizIntroStep3Title: "A little every day, all the way to passing",
+  quizIntroStep3Desc: "Keep at it daily — your weak spots are auto-analyzed and your path to passing becomes clear. Start now.",
 };

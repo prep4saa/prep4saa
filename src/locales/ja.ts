@@ -543,4 +543,44 @@ export const ja: Strings = {
   cognitoVerifyAndLogin: "認証とログイン",
   cognitoResendCode: "コードを再送信",
   cognitoSignupBtn: "サインアップ",
+
+  // クォータモーダル
+  quotaGuestLabel: "ゲスト:",
+  quotaGuestFree: "1日2回無料",
+  quotaGuestDesc: "ログインすると1日**2回無料**で利用でき、決済後は**1日20問**生成できます。",
+  quotaLoggedInLabel: "ログイン済み:",
+  quotaLoggedInUsed: "無料2回使用完了",
+  quotaLoggedInDesc: "アップグレードすると**1日20問**生成できます！",
+  quotaPaidLabel: "プレミアム:",
+  quotaPaidStatus: "1日20問利用中",
+  quotaPaidReset: "明日の0時にカウントがリセットされます。",
+  quotaCloseBtn: "閉じる",
+
+  // 試験日設定モーダル
+  examSetCompleteBtn: "✅ 設定完了",
+
+  // 投稿フォームモーダル
+  postsSubmitting: "送信中...",
+
+  // 管理者統計グリッド
+  adminTodayVisitors: "本日の訪問者",
+  adminTotalVisitors: "総訪問者数",
+  adminPaidUsers: "有料ユーザー",
+  adminFreeUsers: "無料2回ユーザー",
+
+  // 模擬試験 アラート/エラー
+  btnShowOriginal: "▼ 原文を表示",
+  btnHideOriginal: "▲ 原文を非表示",
+  alertNoSavedProblems: "保存された問題はありません。",
+  alertLoadProblemsFailed: "問題の読み込みに失敗",
+  alertMockExamAlreadyDone: "本日の模擬試験は完了済みです。",
+  errorMockExamCreateFailed: "模擬試験の作成に失敗",
+
+  // クイズイントロモーダル (3ステップ)
+  quizIntroStep1Title: "サービスを組み合わせると問題が生成されます",
+  quizIntroStep1Desc: "学びたいAWSサービスを2〜4個選んでください。それらが実際のアーキテクチャでどう使われるか、シナリオ問題を作成します。",
+  quizIntroStep2Title: "関係図でサービスの繋がりを学びましょう",
+  quizIntroStep2Desc: "ノードをタップすると関連サービスのみが点灯します。「VPCをタップするとEC2・RDS・Lambdaがハイライトされる」方式で全体像を把握できます。",
+  quizIntroStep3Title: "毎日少しずつ、合格まで",
+  quizIntroStep3Desc: "毎日続けると弱点が自動分析され、合格までの道筋が見えます。今すぐ始めましょう。",
 };

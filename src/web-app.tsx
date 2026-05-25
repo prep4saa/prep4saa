@@ -2276,8 +2276,9 @@ function App() {
   };
 
   const handleCancelSubscription = async () => {
-    const currentUser = getCurrentUser();
-    if (!currentUser) {
+    // Cognito 로 로그인한 사용자는 getCurrentUser() (Firebase auth.currentUser) 가 null.
+    // userEmail 은 Firebase/Cognito 둘 다 셋팅되므로 이걸로 로그인 여부 판정.
+    if (!userEmail) {
       alert(locale === 'ko' ? '로그인이 필요합니다.' : locale === 'ja' ? 'ログインが必要です。' : 'Login required.');
       return;
     }
@@ -4759,7 +4760,7 @@ function App() {
      fontSize: "11px",
    }}
  >
-   {showOriginalMap[idx] ? "▲ 원본 닫기" : "▼ 원본 보기"}
+   {showOriginalMap[idx] ? t("btnHideOriginal") : t("btnShowOriginal")}
  </button>
 
  {/* 원본 선택지 표시 */}
@@ -4915,7 +4916,7 @@ function App() {
        }
 
        if (!savedProblems || savedProblems.length === 0) {
-         alert("저장된 문제가 없습니다.");
+         alert(t("alertNoSavedProblems"));
          return;
        }
        setMockExamProblems(savedProblems);
@@ -4930,7 +4931,7 @@ function App() {
        localStorage.setItem("mockExamProblemsCount", savedProblems.length.toString());
        setMockExamRunning(true);
      } catch (err) {
-       alert("문제 불러오기 실패");
+       alert(t("alertLoadProblemsFailed"));
      } finally {
        setLoading(false);
      }
@@ -5174,9 +5175,7 @@ function App() {
  if (shared.attempt.results) {
    setMockExamResults(shared.attempt.results);
  }
- alert(locale === 'en' ? "You already completed today's mock exam."
-   : locale === 'ja' ? "本日の模擬試験は完了済みです。"
-   : "오늘 모의시험을 이미 완료하셨습니다.");
+ alert(t("alertMockExamAlreadyDone"));
  setLoading(false);
  setMockExamIsLoading(false);
  return;
@@ -5370,7 +5369,7 @@ function App() {
  }
 
  } catch (err) {
- setError("모의시험 생성 실패");
+ setError(t("errorMockExamCreateFailed"));
  } finally {
  setLoading(false);
  }
@@ -5942,16 +5941,16 @@ function App() {
  {showQuizIntroModal && (() => {
    const steps = [
      {
-       title: "서비스를 조합하면 문제가 나와요",
-       desc: "공부하고 싶은 AWS 서비스 2~4개를 골라보세요. 그 서비스들이 실제 아키텍처에서 어떻게 쓰이는지 시나리오 문제로 만들어 드려요.",
+       title: t("quizIntroStep1Title"),
+       desc: t("quizIntroStep1Desc"),
      },
      {
-       title: "관계도로 서비스 연결을 배우세요",
-       desc: "노드를 탭하면 관련 서비스만 밝아져요. \"VPC를 탭하면 EC2·RDS·Lambda가 하이라이트되는\" 방식으로 전체 그림을 잡을 수 있어요.",
+       title: t("quizIntroStep2Title"),
+       desc: t("quizIntroStep2Desc"),
      },
      {
-       title: "매일 조금씩, 꾸준히 합격까지",
-       desc: "매일 꾸준히 하면 약점이 자동으로 분석되고, 합격까지 갈 길이 보입니다. 지금 바로 시작해보세요.",
+       title: t("quizIntroStep3Title"),
+       desc: t("quizIntroStep3Desc"),
      },
    ];
    const current = steps[quizIntroStep];
