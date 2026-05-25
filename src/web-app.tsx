@@ -2284,8 +2284,32 @@ function App() {
     }
     try {
       const { api } = await import("./auth/apiClient");
+
+      // subscriptionId 는 클라이언트가 직접 알 수 없음 (webhook 으로 백엔드에만 저장됨).
+      // 캐시된 값이 있으면 사용, 없으면 /api/user/me 로 조회.
+      let subscriptionId = localStorage.getItem("lemonSubscriptionId") || "";
+      if (!subscriptionId) {
+        try {
+          const profileRes = await api.get("/api/user/me");
+          if (profileRes.ok) {
+            const profile = await profileRes.json();
+            // 백엔드가 어떤 필드명을 쓰는지 명세가 없어 흔한 후보를 모두 시도.
+            subscriptionId = profile?.subscriptionId
+              || profile?.subscription_id
+              || profile?.lemonSubscriptionId
+              || profile?.lemon_subscription_id
+              || profile?.lemonSqueezySubscriptionId
+              || "";
+            if (subscriptionId) localStorage.setItem("lemonSubscriptionId", String(subscriptionId));
+            else console.warn('[cancelSubscription] /api/user/me 응답에 subscription id 필드 없음. 응답 키:', Object.keys(profile || {}));
+          }
+        } catch (e) {
+          console.warn('[cancelSubscription] /api/user/me 조회 실패', e);
+        }
+      }
+
       const response = await api.post("/api/lemonsqueezy/cancel-subscription", {
-        subscriptionId: localStorage.getItem("lemonSubscriptionId") || "",
+        subscriptionId,
       });
 
       if (!response.ok) {
