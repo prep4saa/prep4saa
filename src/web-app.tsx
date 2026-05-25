@@ -718,6 +718,12 @@ function App() {
        }
        setUserStatusLocal(status);
        localStorage.setItem("userStatus", status);
+       // 새로고침/세션 복원 시에도 구독 취소 상태를 서버에서 다시 읽어 반영.
+       // (이 호출이 없어 새로고침하면 취소 버튼이 다시 나타나던 버그 수정)
+       try {
+         const cancelled = await isSubscriptionCancelled(cognitoEmail);
+         setSubscriptionCancelled(cancelled);
+       } catch { /* ignore */ }
        setIsAuthChecked(true);
        return;
      }
